@@ -8,10 +8,10 @@ namespace OA.Core.Services
 {
     public interface IBaseService<TEntity, TCreateVModel, TUpdateVModel, TGetByIdVModel, TGetAllVModel> where TEntity : BaseEntity
     {
-        Task<ResponseResult> GetById(long id);
+        Task<ResponseResult> GetById(int id);
         Task Create(TCreateVModel model);
         Task Update(TUpdateVModel model);
-        Task ChangeStatus(long id);
-        Task Remove(long id);//Remove data 
+        Task ChangeStatus(int id);
+        Task Remove(int id);//Remove data 
     }
 }

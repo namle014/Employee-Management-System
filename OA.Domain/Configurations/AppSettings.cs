@@ -9,9 +9,9 @@ namespace OA.Core.Configurations
     }
     public class UploadConfigurations
     {
-        public string? TempFolder { get; set; }
-        public string? ImageUrl { get; set; }
-        public string? FileUrl { get; set; }
+        public string TempFolder { get; set; } = string.Empty;
+        public string ImageUrl { get; set; } = string.Empty;
+        public string FileUrl { get; set; } = string.Empty;
         public int ChunkSize { get; set; }
     }
     public class FacebookAuthSettings

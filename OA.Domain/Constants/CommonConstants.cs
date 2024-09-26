@@ -134,10 +134,7 @@
 
         public struct StoreProceduresName
         {
-            public static string ProductSearch = "ProductSearch";
-            public static string CustomerSearch = "CustomerSearch";
-            public static string SupplierSearch = "SupplierSearch";
-            public static string InvoiceSearch = "InvoiceSearch";
+            public static string SearchAspNetRole = "SearchAspNetRole";
         }
         public struct TypeAllowFunction
         {

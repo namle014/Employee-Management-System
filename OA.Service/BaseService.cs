@@ -24,7 +24,7 @@ namespace OA.Service
             _mapper = mapper;
         }
 
-        public virtual async Task<ResponseResult> GetById(long id)
+        public virtual async Task<ResponseResult> GetById(int id)
         {
             var result = new ResponseResult();
             var entity = await _repository.GetById(id);
@@ -80,7 +80,7 @@ namespace OA.Service
             return result;
         }
 
-        public virtual async Task ChangeStatus(long id)
+        public virtual async Task ChangeStatus(int id)
         {
             var entity = await _repository.GetById(id);
             if (entity != null)
@@ -98,7 +98,7 @@ namespace OA.Service
             }
         }
 
-        public virtual async Task Remove(long id)
+        public virtual async Task Remove(int id)
         {
             var entity = await _repository.GetById(id);
             if (entity != null)

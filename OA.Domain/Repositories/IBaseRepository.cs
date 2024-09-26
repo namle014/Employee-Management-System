@@ -11,11 +11,11 @@ namespace OA.Core.Repositories
     {
         Task<Pagination> GetAllPagination(int pageNumber, int pageSize, Expression<Func<T, bool>>? where = null,
             Expression<Func<T, dynamic>>? orderDesc = null, Expression<Func<T, dynamic>>? orderAsc = null);
-        Task<T?> GetById(long id);
+        Task<T?> GetById(int id);
         Task<ResponseResult> Create(T entity);
         Task<ResponseResult> Update(T entity);
         Task<ResponseResult> UpdateMany(IEnumerable<T> entity);
-        Task<ResponseResult> Remove(long id);
+        Task<ResponseResult> Remove(int id);
         Task<ResponseResult> RemoveAll(IEnumerable<T> entities);
         Task<bool> SaveChanges(ResponseResult result);
         IQueryable<T> AsQueryable();

@@ -46,7 +46,7 @@ namespace OA.Repository
                 TotalRecords = query.Count()
             };
         }
-        public async Task<T?> GetById(long id)
+        public async Task<T?> GetById(int id)
         {
             var entity = await _entities.FindAsync(id);
             return entity;
@@ -122,7 +122,7 @@ namespace OA.Repository
             }
             return result;
         }
-        public async Task<ResponseResult> Remove(long id)
+        public async Task<ResponseResult> Remove(int id)
         {
             var result = new ResponseResult();
             T? entity = await GetById(id);

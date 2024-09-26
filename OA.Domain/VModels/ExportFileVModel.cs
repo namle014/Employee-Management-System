@@ -7,14 +7,14 @@ namespace OA.Core.VModels
     {
         [Required]
         [RegularExpression(@"^[a-zA-Z0-9\s]*$")]
-        public string? FileName { get; set; }
+        public string FileName { get; set; } = string.Empty;
 
         [Required]
         [RegularExpression(@"^[a-zA-Z0-9\s]*$")]
-        public string? SheetName { get; set; }
+        public string SheetName { get; set; } = string.Empty;
 
         [Required]
         [StringInList("EXCEL", "PDF")]
-        public string? Type { get; set; }
+        public string Type { get; set; } = string.Empty;
     }
 }

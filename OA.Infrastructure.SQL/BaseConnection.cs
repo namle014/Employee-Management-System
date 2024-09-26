@@ -15,11 +15,11 @@ namespace OA.Infrastructure.SQL
         private static BaseConnection? _instance;
         private string? _connectionString { get; set; }
 
-        private BaseConnection(IConfiguration configuration)
+        private BaseConnection(IConfiguration? configuration)
         {
-            _connectionString = configuration.GetConnectionString(nameof(ConnectionStrings.DefaultConnection));
+            _connectionString = configuration?.GetConnectionString(nameof(ConnectionStrings.DefaultConnection));
         }
-        public static BaseConnection Instance(IConfiguration configuration)
+        public static BaseConnection Instance(IConfiguration? configuration = null)
         {
             return _instance ?? (_instance = new BaseConnection(configuration));
         }

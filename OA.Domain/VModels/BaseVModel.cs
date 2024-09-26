@@ -7,7 +7,7 @@ namespace OA.Core.VModels
     {
         public bool? IsActive { get; set; }
         public DateTime? CreatedDate { get; set; }
-        public string? CreatedBy { get; set; }
+        public string CreatedBy { get; set; } = string.Empty;
         public DateTime? UpdatedDate { get; set; }
         public string? UpdatedBy { get; set; }
         [Range(1, int.MaxValue)]
@@ -23,7 +23,6 @@ namespace OA.Core.VModels
     public class FiltersGetAllByQueryStringVModel
     {
         public string? Keyword { get; set; }
-        public string? CategoryId { get; set; }
         public string? CreatedDate { get; set; }
         public bool? IsActive { get; set; }
         public string? OrderBy { get; set; }

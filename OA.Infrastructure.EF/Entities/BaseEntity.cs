@@ -8,7 +8,7 @@ namespace OA.Infrastructure.EF.Entities
 {
     public class BaseEntity
     {
-        public long Id { get; set; }
+        public int Id { get; set; }
         public bool IsActive { get; set; }
         public string? CreatedBy { get; set; }
         public DateTime? CreatedDate { get; set; }

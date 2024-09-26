@@ -17,8 +17,12 @@ namespace OA.Infrastructure.EF.Context
         }
 
         #region --DBSET--
-        public virtual DbSet<AspNetUser> AspNetUser { get; set; }
-        public virtual DbSet<Unit> Unit { get; set; }
+        public virtual DbSet<AspNetUser> AspNetUsers { get; set; }
+        public virtual DbSet<AspNetRole> AspNetRoles { get; set; }
+        public virtual DbSet<SysFile> SysFile { get; set; } = null!;
+        public virtual DbSet<SysFunction> SysFunctions { get; set; } = null!;
+        public virtual DbSet<SysApi> SysApis { get; set; } = null!;
+        public virtual DbSet<SysConfiguration> SysConfigurations { get; set; } = null!;
         #endregion --DBSET--
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

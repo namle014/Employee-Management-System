@@ -27,7 +27,7 @@ namespace OA.WebApi.Controllers
         }
 
         [HttpGet]
-        public virtual async Task<IActionResult> GetById(long id)
+        public virtual async Task<IActionResult> GetById(int id)
         {
             if (id <= 0)
             {
@@ -69,7 +69,7 @@ namespace OA.WebApi.Controllers
         }
 
         [HttpPut(CommonConstants.Routes.Id)]
-        public virtual async Task<IActionResult> ChangeStatus(long id)
+        public virtual async Task<IActionResult> ChangeStatus(int id)
         {
             if (id <= 0)
             {
@@ -82,7 +82,7 @@ namespace OA.WebApi.Controllers
         }
 
         [HttpDelete(CommonConstants.Routes.Id)]
-        public virtual async Task<IActionResult> Remove(long id)
+        public virtual async Task<IActionResult> Remove(int id)
         {
             if (id <= 0)
             {

@@ -29,15 +29,9 @@ namespace OA.WebAPI.AdminControllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll([FromQuery] FilterSysAPIVModel model)
+        public async Task<IActionResult> Search([FromQuery] FilterSysAPIVModel model)
         {
-            var response = await _sysApiService.GetAll(model);
-
-            if (!response.Success)
-            {
-                _logger.LogWarning(CommonConstants.LoggingEvents.GetItem, MsgConstants.ErrorMessages.ErrorGetById, _nameController);
-            }
-
+            var response = await _sysApiService.Search(model);
             return Ok(response);
         }
 

@@ -17,6 +17,5 @@ namespace OA.Domain.Services
         Task UpadateJsonAPIFunctionId(UpadateJsonAPIFunctionIdVModel model);
         Task<ResponseResult> GetAll(FilterSysFunctionVModel model);
         Task<ResponseResult> GetAllAsTree(FilterSysFunctionVModel model);
-
     }
 }

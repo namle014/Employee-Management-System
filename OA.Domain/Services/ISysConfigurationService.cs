@@ -9,5 +9,7 @@ namespace OA.Core.Services
     public interface ISysConfigurationService : IBaseService<SysConfiguration, SysConfigurationCreateVModel, SysConfigurationUpdateVModel, SysConfigurationGetByIdVModel, SysConfigurationGetAllVModel>
     {
         Task<ResponseResult> GetByConfigTypeKey(string type, string key);
+        Task<ResponseResult> Search(FilterSysConfigurationVModel model);
+        Task<ExportStream> ExportFile(FilterSysConfigurationVModel model, ExportFileVModel exportModel);
     }
 }

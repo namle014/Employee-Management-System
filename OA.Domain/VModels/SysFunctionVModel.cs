@@ -11,30 +11,34 @@ namespace OA.Domain.VModels
         public string Name { get; set; } = string.Empty;
         public int? ParentId { get; set; }
         public int? Sort { get; set; }
-        public string PathTo { get; set; } = string.Empty;
-        public string PathIcon { get; set; } = string.Empty;
+        public string? PathTo { get; set; }
+        public string? PathIcon { get; set; }
         public bool IsActive { get; set; }
     }
+
     public class SysFunctionUpdateVModel : SysFunctionCreateVModel
     {
         public int Id { get; set; }
     }
+
     public class SysFunctionGetByIdVModel : SysFunctionUpdateVModel
     {
         public DateTime? CreatedDate { get; set; }
         public string? CreatedBy { get; set; }
         public DateTime? UpdatedDate { get; set; }
         public string? UpdatedBy { get; set; }
-        public string JsonFunctionHasApisForView { get; set; } = string.Empty;
-        public string JsonFunctionHasApisForCreate { get; set; } = string.Empty;
-        public string JsonFunctionHasApisForEdit { get; set; } = string.Empty;
-        public string JsonFunctionHasApisForPrint { get; set; } = string.Empty;
-        public string JsonFunctionHasApisForDelete { get; set; } = string.Empty;
+        public string? JsonFunctionHasApisForView { get; set; }
+        public string? JsonFunctionHasApisForCreate { get; set; }
+        public string? JsonFunctionHasApisForEdit { get; set; }
+        public string? JsonFunctionHasApisForPrint { get; set; }
+        public string? JsonFunctionHasApisForDelete { get; set; }
     }
+
     public class SysFunctionGetAllVModel : SysFunctionGetByIdVModel
     {
         public SysFunctionIsAllowVModel Function { get; set; } = new SysFunctionIsAllowVModel();
     }
+
     public class SysFunctionIsAllowVModel
     {
         public bool IsAllowAll { get; set; } = false;
@@ -44,12 +48,14 @@ namespace OA.Domain.VModels
         public bool IsAllowPrint { get; set; } = false;
         public bool IsAllowDelete { get; set; } = false;
     }
+
     public class UpadateJsonAPIFunctionIdVModel
     {
         public int Id { get; set; }
         public string Type { get; set; } = string.Empty;
         public string JsonAPIFunction { get; set; } = string.Empty;
     }
+
     public class SysFunctionGetAllAsTreesVModel
     {
         public int Id { get; set; }
@@ -64,22 +70,19 @@ namespace OA.Domain.VModels
         public string? CreatedBy { get; set; }
         public DateTime? UpdatedDate { get; set; }
         public string? UpdatedBy { get; set; }
-        public bool? IsActive { get; set; }
+        public bool IsActive { get; set; }
     }
+
     public class FilterSysFunctionVModel
     {
         public bool? IsActive { get; set; }
-        public string Name { get; set; } = string.Empty;
+        public string? Keyword { get; set; }
         public DateTime? CreatedDate { get; set; }
-        public string? CreatedBy { get; set; }
-        public DateTime? UpdatedDate { get; set; }
-        public string? UpdatedBy { get; set; }
         [Range(1, int.MaxValue)]
         public int PageSize { get; set; } = CommonConstants.ConfigNumber.pageSizeDefault;
         [Range(1, int.MaxValue)]
         public int PageNumber { get; set; } = 1;
         public string? SortBy { get; set; }
-        public bool IsExport { get; set; } = false;
         public bool IsDescending { get; set; } = false;
     }
 

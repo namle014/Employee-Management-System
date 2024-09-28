@@ -10,19 +10,23 @@ namespace OA.Domain.VModels
     public class SysFileCreateVModel
     {
         public string Name { get; set; } = null!;
-        public string Path { get; set; } = null!;
         public string Type { get; set; } = string.Empty;
     }
-    public class SysFileCreateBase64VModel : SysFileCreateVModel
+
+    public class SysFileCreateBase64VModel
     {
+        [Required]
+        public string Name { get; set; } = null!;
         [Required]
         public string Base64String { get; set; } = string.Empty;
     }
+
     public class FileChunk
     {
         public string FileName { get; set; } = string.Empty;
         public IFormFile File { get; set; } = default!;
     }
+
     public class SysFileBase64ToFileVModel
     {
         public Guid SessionId { get; set; }
@@ -37,10 +41,9 @@ namespace OA.Domain.VModels
     }
     public class SysFileGetAllVModel : SysFileUpdateVModel
     {
+        public string Path { get; set; } = null!;
         public DateTime? CreatedDate { get; set; }
-        public DateTime? UpdatedDate { get; set; }
         public string? CreatedBy { get; set; }
-        public string? UpdatedBy { get; set; }
     }
 
     public class SysFileGetByIdVModel : SysFileGetAllVModel
@@ -51,13 +54,8 @@ namespace OA.Domain.VModels
     public class FilterSysFileVModel
     {
         public bool? IsActive { get; set; }
-        public string? Name { get; set; }
-        public string? Path { get; set; }
-        public string? Type { get; set; }
+        public string? Keyword { get; set; }
         public DateTime? CreatedDate { get; set; }
-        public string? CreatedBy { get; set; }
-        public DateTime? UpdatedDate { get; set; }
-        public string? UpdatedBy { get; set; }
         [Range(1, int.MaxValue)]
         public int PageSize { get; set; } = CommonConstants.ConfigNumber.pageSizeDefault;
         [Range(1, int.MaxValue)]
@@ -70,8 +68,6 @@ namespace OA.Domain.VModels
     [DataContract]
     public class SysFileExportVModel
     {
-        [DataMember(Name = @"Id")]
-        public long Id { get; set; }
         [DataMember(Name = @"Name")]
         public string Name { get; set; } = null!;
         [DataMember(Name = @"Path")]
@@ -82,10 +78,6 @@ namespace OA.Domain.VModels
         public DateTime? CreatedDate { get; set; }
         [DataMember(Name = @"CreatedBy")]
         public string CreatedBy { get; set; } = string.Empty;
-        [DataMember(Name = @"UpdatedDate")]
-        public DateTime? UpdatedDate { get; set; }
-        [DataMember(Name = @"UpdatedBy")]
-        public string UpdatedBy { get; set; } = string.Empty;
         [DataMember(Name = @"IsActive")]
         public bool? IsActive { get; set; }
     }

@@ -8,12 +8,7 @@ using OA.Domain.VModels;
 using OA.Infrastructure.EF.Entities;
 using OA.Repository;
 using OA.Service.Helpers;
-using System;
-using System.Collections.Generic;
 using System.Dynamic;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Threading.Tasks;
 using static OA.Core.Constants.CommonConstants;
 
 namespace OA.Service
@@ -47,40 +42,43 @@ namespace OA.Service
         {
             var result = new ResponseResult();
 
-            var data = await _sysFunctionRepo.GetAllPagination(
-                model.PageNumber,
-                model.PageSize,
-                BuildPredicate(model)
-            );
+            string? keyword = model.Keyword?.ToLower();
 
-            var mappedRecords = data.Records.Select(r => _mapper.Map<SysFunction, SysFunctionGetAllVModel>(r));
+            var records = await _sysFunctionRepo.Where(x =>
+                        (model.IsActive == null || x.IsActive == model.IsActive) &&
+                        (model.CreatedDate == null ||
+                                (x.CreatedDate.HasValue &&
+                                x.CreatedDate.Value.Year == model.CreatedDate.Value.Year &&
+                                x.CreatedDate.Value.Month == model.CreatedDate.Value.Month &&
+                                x.CreatedDate.Value.Day == model.CreatedDate.Value.Day)) &&
+                        (string.IsNullOrEmpty(keyword) ||
+                                x.Name.ToLower().Contains(keyword) ||
+                                (x.CreatedBy != null && x.CreatedBy.ToLower().Contains(keyword))
+                        ));
 
             if (!model.IsDescending)
             {
-                data.Records = string.IsNullOrEmpty(model.SortBy)
-                    ? mappedRecords.OrderBy(r => r.Id).ToList()
-                    : mappedRecords.OrderBy(r => r.GetType().GetProperty(model.SortBy)?.GetValue(r, null)).ToList();
+                records = string.IsNullOrEmpty(model.SortBy)
+                        ? records.OrderBy(r => r.Id).ToList()
+                        : records.OrderBy(r => r.GetType().GetProperty(model.SortBy)?.GetValue(r, null)).ToList();
             }
             else
             {
-                data.Records = string.IsNullOrEmpty(model.SortBy)
-                    ? mappedRecords.OrderByDescending(r => r.Id).ToList()
-                    : mappedRecords.OrderByDescending(r => r.GetType().GetProperty(model.SortBy)?.GetValue(r, null)).ToList();
+                records = string.IsNullOrEmpty(model.SortBy)
+                        ? records.OrderByDescending(r => r.Id).ToList()
+                        : records.OrderByDescending(r => r.GetType().GetProperty(model.SortBy)?.GetValue(r, null)).ToList();
             }
 
-            data.TotalRecords = data.Records.Count();
-            result.Data = data;
+            result.Data = new Pagination();
+
+            var mappedRecords = records.Select(r => _mapper.Map<SysFunction, SysFunctionGetAllVModel>(r));
+
+            var pagedRecords = mappedRecords.Skip((model.PageNumber - 1) * model.PageSize).Take(model.PageSize).ToList();
+
+            result.Data.Records = pagedRecords;
+            result.Data.TotalRecords = records.ToList().Count;
 
             return result;
-        }
-
-        private Expression<Func<SysFunction, bool>> BuildPredicate(FilterSysFunctionVModel model)
-        {
-            return m =>
-                (string.IsNullOrEmpty(model.Name) || m.Name.Contains(model.Name)) &&
-                (string.IsNullOrEmpty(model.CreatedBy) || m.CreatedBy == model.CreatedBy) &&
-                (string.IsNullOrEmpty(model.UpdatedBy) || m.CreatedBy == model.UpdatedBy) &&
-                (model.IsActive == null || m.IsActive == model.IsActive);
         }
 
         public override async Task Update(SysFunctionUpdateVModel model)
@@ -106,16 +104,29 @@ namespace OA.Service
         {
             var result = new ResponseResult();
 
-            var data = await _sysFunctionRepo.GetAllPagination(
-                model.PageNumber,
-                model.PageSize,
-                BuildPredicate(model)
-            );
+            string? keyword = model.Keyword?.ToLower();
 
-            IEnumerable<dynamic> records = data.Records.Select(r => _mapper.Map<SysFunction, SysFunctionGetAllAsTreesVModel>(r));
+            var records = await _sysFunctionRepo.Where(x =>
+                        (model.IsActive == null || x.IsActive == model.IsActive) &&
+                        (model.CreatedDate == null ||
+                                (x.CreatedDate.HasValue &&
+                                x.CreatedDate.Value.Year == model.CreatedDate.Value.Year &&
+                                x.CreatedDate.Value.Month == model.CreatedDate.Value.Month &&
+                                x.CreatedDate.Value.Day == model.CreatedDate.Value.Day)) &&
+                        (string.IsNullOrEmpty(keyword) ||
+                                x.Name.ToLower().Contains(keyword)
+                        ));
 
-            data.Records = HandleRecursive(data.Records);
-            result.Data = data;
+            result.Data = new Pagination();
+
+            var mappedRecords = records.Select(r => _mapper.Map<SysFunction, SysFunctionGetAllAsTreesVModel>(r));
+
+            var solveRecords = HandleRecursive(mappedRecords);
+
+            var pagedRecords = solveRecords.Skip((model.PageNumber - 1) * model.PageSize).Take(model.PageSize).ToList();
+
+            result.Data.Records = pagedRecords;
+            result.Data.TotalRecords = solveRecords.ToList().Count;
 
             return result;
         }

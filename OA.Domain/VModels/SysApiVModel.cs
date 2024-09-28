@@ -41,15 +41,18 @@ namespace OA.Domain.VModels
         public string ActionName { get; set; } = string.Empty;
         [DataMember(Name = @"HttpMethod")]
         public string HttpMethod { get; set; } = string.Empty;
+
+        [DataMember(Name = @"CreatedDate")]
+        public DateTime CreatedDate { get; set; }
+
+        [DataMember(Name = @"CreatedBy")]
+        public string CreatedBy { get; set; } = string.Empty;
     }
 
     public class FilterSysAPIVModel
     {
         public bool? IsActive { get; set; }
         public DateTime? CreatedDate { get; set; }
-        public string? CreatedBy { get; set; }
-        public DateTime? UpdatedDate { get; set; }
-        public string? UpdatedBy { get; set; }
         [Range(1, int.MaxValue)]
         public int PageSize { get; set; } = CommonConstants.ConfigNumber.pageSizeDefault;
         [Range(1, int.MaxValue)]

@@ -9,7 +9,7 @@ namespace OA.Domain.Services
 {
     public interface ISysApiService : IBaseService<SysApi, SysApiCreateVModel, SysApiUpdateVModel, SysApiGetByIdVModel, SysApiGetAllVModel>
     {
-        Task<ResponseResult> GetAll(FilterSysAPIVModel model);
+        Task<ResponseResult> Search(FilterSysAPIVModel model);
         Task<ExportStream> ExportFile(FilterSysAPIVModel model, ExportFileVModel exportModel);
     }
 }

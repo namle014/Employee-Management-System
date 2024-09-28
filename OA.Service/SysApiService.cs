@@ -15,6 +15,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace OA.Service
 {
@@ -29,43 +30,61 @@ namespace OA.Service
             _mapper = mapper;
         }
 
-
-        public async Task<ResponseResult> GetAll(FilterSysAPIVModel model)
+        public async Task<ResponseResult> Search(FilterSysAPIVModel model)
         {
             var result = new ResponseResult();
 
-            var data = await _sysApiRepo.GetAllPagination(
-                model.PageNumber,
-                model.PageSize
-            );
-
-            if (!model.IsExport)
-            {
-                data.Records = data.Records.Select(r => _mapper.Map<SysApi, SysApiGetAllVModel>(r));
-            }
-
-            string? keyword = model.Keyword;
-            var mappedRecords = data.Records
-                .Where(r => string.IsNullOrEmpty(keyword)
-                || (r.ControllerName?.ToLower()?.Contains(keyword.ToLower()) == true)
-                || (r.ActionName?.ToLower()?.Contains(keyword?.ToLower()) == true)
-                || (r.HttpMethod?.ToLower()?.Contains(keyword?.ToLower()) == true));
+            string? keyword = model.Keyword?.ToLower();
+            var records = await _sysApiRepo.
+                        Where(x =>
+                            (model.IsActive == null || model.IsActive == x.IsActive) &&
+                            (model.CreatedDate == null ||
+                                    (x.CreatedDate.HasValue &&
+                                    x.CreatedDate.Value.Year == model.CreatedDate.Value.Year &&
+                                    x.CreatedDate.Value.Month == model.CreatedDate.Value.Month &&
+                                    x.CreatedDate.Value.Day == model.CreatedDate.Value.Day)) &&
+                            (string.IsNullOrEmpty(keyword) ||
+                                    (x.ControllerName.ToLower().Contains(keyword) == true) ||
+                                    (x.ActionName.ToLower().Contains(keyword) == true) ||
+                                    (x.HttpMethod.ToLower().Contains(keyword) == true) ||
+                                    (x.CreatedBy != null && x.CreatedBy.ToLower().Contains(keyword))
+                        ));
 
             if (!model.IsDescending)
             {
-                data.Records = string.IsNullOrEmpty(model.SortBy)
-                    ? mappedRecords.OrderBy(r => r.Id).ToList()
-                    : mappedRecords.OrderBy(r => r.GetType().GetProperty(model.SortBy)?.GetValue(r, null)).ToList();
+                records = string.IsNullOrEmpty(model.SortBy)
+                    ? records.OrderBy(r => r.Id).ToList()
+                    : records.OrderBy(r => r.GetType().GetProperty(model.SortBy)?.GetValue(r, null)).ToList();
             }
             else
             {
-                data.Records = string.IsNullOrEmpty(model.SortBy)
-                    ? mappedRecords.OrderByDescending(r => r.Id).ToList()
-                    : mappedRecords.OrderByDescending(r => r.GetType().GetProperty(model.SortBy)?.GetValue(r, null)).ToList();
+                records = string.IsNullOrEmpty(model.SortBy)
+                    ? records.OrderByDescending(r => r.Id).ToList()
+                    : records.OrderByDescending(r => r.GetType().GetProperty(model.SortBy)?.GetValue(r, null)).ToList();
             }
 
-            data.TotalRecords = data.Records.Count();
-            result.Data = data;
+            result.Data = new Pagination();
+
+            if (!model.IsExport)
+            {
+                var list = new List<SysApiGetAllVModel>();
+                foreach (var entity in records)
+                {
+                    var vmodel = _mapper.Map<SysApiGetAllVModel>(entity);
+                    list.Add(vmodel);
+                }
+                var pagedRecords = list.Skip((model.PageNumber - 1) * model.PageSize).Take(model.PageSize).ToList();
+
+                result.Data.Records = pagedRecords;
+                result.Data.TotalRecords = list.Count;
+            }
+            else
+            {
+                var pagedRecords = records.Skip((model.PageNumber - 1) * model.PageSize).Take(model.PageSize).ToList();
+
+                result.Data.Records = pagedRecords;
+                result.Data.TotalRecords = records.ToList().Count;
+            }
 
             return result;
         }
@@ -73,18 +92,11 @@ namespace OA.Service
         public async Task<ExportStream> ExportFile(FilterSysAPIVModel model, ExportFileVModel exportModel)
         {
             model.IsExport = true;
-            var result = await GetAll(model);
+            var result = await Search(model);
 
-            if (result.Success)
-            {
-                var records = _mapper.Map<IEnumerable<SysApiExportVModel>>(result.Data?.Records);
-                var exportData = ImportExportHelper<SysApiExportVModel>.ExportFile(exportModel, records);
-                return exportData;
-            }
-            else
-            {
-                throw new BadRequestException(MsgConstants.ErrorMessages.ErrorExport);
-            }
+            var records = _mapper.Map<IEnumerable<SysApiExportVModel>>(result.Data?.Records);
+            var exportData = ImportExportHelper<SysApiExportVModel>.ExportFile(exportModel, records);
+            return exportData;
         }
     }
 }

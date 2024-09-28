@@ -16,6 +16,7 @@ using SixLabors.ImageSharp.Formats;
 using System.Globalization;
 using System.Linq.Expressions;
 using System.Web;
+using static Microsoft.Extensions.Logging.EventSource.LoggingEventSource;
 
 namespace OA.Service
 {
@@ -32,6 +33,7 @@ namespace OA.Service
         private readonly string[] _medias = { CommonConstants.FileType.Audio, CommonConstants.FileType.Image, CommonConstants.FileType.Video, CommonConstants.FileType.Document };
         private readonly IWebHostEnvironment _env;
         private readonly UploadConfigurations _uploadConfigs;
+        private readonly string _avatarPath;
 
         public SysFileService(IBaseRepository<SysFile> sysFileRepo,
             IMapper mapper,
@@ -49,106 +51,130 @@ namespace OA.Service
             _uploadConfigs = uploadConfigs.Value;
             _env = env;
             _tempFolder = uploadConfigs.Value.TempFolder;
-            _chunkSize = 1048576 * _uploadConfigs.ChunkSize;
-            _tempPath = _env.WebRootPath + "/" + _uploadConfigs.FileUrl + _tempFolder;
+            _chunkSize = 1048576 * _uploadConfigs.ChunkSize; // Kích thước của mỗi chunk (1MB * chunk size)
+            _tempPath = Path.Combine(_env.WebRootPath, _uploadConfigs.FileUrl, _tempFolder);
+            _avatarPath = Path.Combine(_env.WebRootPath, "avatars"); // Tạo đường dẫn đến thư mục avatars
             _httpContextAccessor = httpContextAccessor;
         }
+
 
         public async Task<ResponseResult> GetAll(FilterSysFileVModel model)
         {
             var result = new ResponseResult();
 
-            var data = await _sysFileRepo.GetAllPagination(
-                model.PageNumber,
-                model.PageSize,
-                BuildPredicate(model),
-                BuildOrderBy(model)
-            );
+            string? keyword = model.Keyword?.ToLower();
 
-            foreach (var entity in data.Records)
+            var records = await _sysFileRepo.
+                            Where(x =>
+                                (model.IsActive == null || x.IsActive == model.IsActive) &&
+                                (model.CreatedDate == null ||
+                                    (x.CreatedDate.HasValue &&
+                                    x.CreatedDate.Value.Year == model.CreatedDate.Value.Year &&
+                                    x.CreatedDate.Value.Month == model.CreatedDate.Value.Month &&
+                                    x.CreatedDate.Value.Day == model.CreatedDate.Value.Day)) &&
+                                (string.IsNullOrEmpty(keyword) ||
+                                    x.Type.ToLower().Contains(keyword) ||
+                                    x.Name.ToLower().Contains(keyword) ||
+                                    (x.CreatedBy != null && x.CreatedBy.ToLower().Contains(keyword))
+                                )
+                            );
+
+            if (model.IsDescending == true)
             {
-                if (!string.IsNullOrEmpty(entity.Path) && !entity.Path.StartsWith(_jwtIssuerOptions.Audience, StringComparison.OrdinalIgnoreCase))
+                records = string.IsNullOrEmpty(model.SortBy)
+                        ? records.OrderBy(r => r.Id).ToList()
+                        : records.OrderBy(r => r.GetType().GetProperty(model.SortBy)?.GetValue(r, null)).ToList();
+            }
+            else
+            {
+                records = string.IsNullOrEmpty(model.SortBy)
+                        ? records.OrderByDescending(r => r.Id).ToList()
+                        : records.OrderByDescending(r => r.GetType().GetProperty(model.SortBy)?.GetValue(r, null)).ToList();
+            }
+
+            result.Data = new Pagination();
+
+            var list = new List<SysFileGetByIdVModel>();
+            foreach (var entity in records)
+            {
+                if (!string.IsNullOrEmpty(entity.Path) && !string.IsNullOrEmpty(_jwtIssuerOptions.Audience) &&
+                        !entity.Path.StartsWith(_jwtIssuerOptions.Audience, StringComparison.OrdinalIgnoreCase))
                 {
                     entity.Path = $"{_jwtIssuerOptions.Audience?.TrimEnd('/')}{entity.Path}";
                 }
+
+                var vmodel = _mapper.Map<SysFileGetByIdVModel>(entity);
+                list.Add(vmodel);
             }
 
-            var sysFileList = _mapper.Map<IEnumerable<SysFile>, IEnumerable<SysFileGetByIdVModel>>((IEnumerable<SysFile>)data.Records);
-            data.Records = sysFileList;
-            result.Data = data;
+            var pagedRecords = list.Skip((model.PageNumber - 1) * model.PageSize).Take(model.PageSize).ToList();
+
+            result.Data.Records = pagedRecords;
+            result.Data.TotalRecords = list.Count;
 
             return result;
         }
 
-        private Expression<Func<SysFile, bool>> BuildPredicate(FilterSysFileVModel model)
+        public override async Task Create(SysFileCreateVModel model)
         {
-            return m =>
-              (string.IsNullOrEmpty(model.Name) || m.Name.Contains(model.Name)) &&
-              (string.IsNullOrEmpty(model.CreatedBy) || m.CreatedBy == model.CreatedBy) &&
-              (string.IsNullOrEmpty(model.Path) || m.Path == model.Path) &&
-              (model.IsActive == null || m.IsActive == model.IsActive) &&
-              (string.IsNullOrEmpty(model.Type) || m.Type == model.Type);
-        }
-
-
-        private Expression<Func<SysFile, dynamic>> BuildOrderBy(FilterSysFileVModel model)
-        {
-            Expression<Func<SysFile, dynamic>> orderBy = x => x.Id;
-
-            if (!string.IsNullOrEmpty(model.SortBy))
-            {
-                switch (model.SortBy.ToLower())
-                {
-                    case "name":
-                        orderBy = x => x.Name;
-                        break;
-                    case "path":
-                        orderBy = x => x.Path;
-                        break;
-                    case "type":
-                        orderBy = x => x.Type;
-                        break;
-                }
-            }
-            return orderBy;
-        }
-
-        public override async Task<ResponseResult> Create(SysFileCreateVModel model)
-        {
-            var result = new ResponseResult();
+            // Ensure the model name is formatted correctly
             model.Name = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(model.Name);
             model.Type = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(model.Type);
             model.Type = _medias.Contains(model.Type) ? model.Type : CommonConstants.FileType.Other;
+
+            // Create directory structure based on the current date
             string yyyy = DateTime.Now.ToString("yyyy");
             string mm = DateTime.Now.ToString("MM");
-            string envPath = _uploadConfigs.FileUrl + "/" + yyyy + "/" + mm;
-            if (!Directory.Exists(_env.WebRootPath + "/" + envPath))
-                Directory.CreateDirectory(_env.WebRootPath + "/" + envPath);
+            string envPath = Path.Combine(_uploadConfigs.FileUrl, yyyy, mm);
+
+            // Ensure the directory exists
+            string fullPath = Path.Combine(_env.WebRootPath, envPath);
+            if (!Directory.Exists(fullPath))
+                Directory.CreateDirectory(fullPath);
+
+            // Prepare the new file path
             string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(model.Name);
             string fileExtension = Path.GetExtension(model.Name);
-            string newFilePath = _env.WebRootPath + "/" + envPath + "/" + fileNameWithoutExtension + fileExtension;
+            string newFilePath = Path.Combine(fullPath, fileNameWithoutExtension + fileExtension);
+
+            // Handle duplicate file names
             int count = 1;
+            while (File.Exists(newFilePath))
+            {
+                fileNameWithoutExtension = $"{Path.GetFileNameWithoutExtension(model.Name)}_{count}";
+                newFilePath = Path.Combine(fullPath, fileNameWithoutExtension + fileExtension);
+                count++;
+            }
+
             try
             {
-                while (File.Exists(newFilePath))
+                // Move the file from the temporary path to the new path
+                string tempFilePath = Path.Combine(_tempPath, model.Name);
+                if (!File.Exists(tempFilePath))
                 {
-                    fileNameWithoutExtension = $"{Path.GetFileNameWithoutExtension(model.Name)}_{count}";
-                    newFilePath = _env.WebRootPath + "/" + envPath + "/" + fileNameWithoutExtension + fileExtension;
-                    count++;
+                    throw new FileNotFoundException($"Temporary file not found: {tempFilePath}");
                 }
-                File.Move(_tempPath + "/" + model.Name, newFilePath);
-                model.Path = $"/{envPath}/{Path.GetFileName(newFilePath)}";
-                var aspSystemFile = _mapper.Map<SysFile>(model);
-                result = await _sysFileRepo.Create(aspSystemFile);
-                aspSystemFile.CreatedDate = DateTime.Now;
-                result.Data = Utilities.ConvertModel<SysFileCreateVModel>(result.Data);
-                result.Data.Path = $"{GetBaseUrl()}{result.Data.Path}";
+
+                File.Move(tempFilePath, newFilePath);
+
+                // Map the model to SysFile and save to repository
+                var entity = _mapper.Map<SysFile>(model);
+
+                // Update the model path for database storage
+                entity.Path = $"/{envPath}/{Path.GetFileName(newFilePath)}";
+
+                entity.CreatedDate = DateTime.Now; // Set created date here
+                var createdResult = await _sysFileRepo.Create(entity);
+
+                if (!createdResult.Success)
+                {
+                    throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorCreate, "File"));
+                }
             }
             catch (Exception ex)
             {
                 throw new BadRequestException(Utilities.MakeExceptionMessage(ex));
             }
-            return result;
         }
 
         public async Task FileChunks(FileChunk fileChunk)
@@ -166,34 +192,8 @@ namespace OA.Service
             }
         }
 
-        private void MergeChunks(string chunk1, string chunk2)
-        {
-            FileStream fs1 = default!;
-            FileStream fs2 = default!;
-            try
-            {
-                fs1 = File.Open(chunk1, FileMode.Append);
-                fs2 = File.Open(chunk2, FileMode.Open);
-                byte[] fs2Content = new byte[fs2.Length];
-                fs2.Read(fs2Content, 0, (int)fs2.Length);
-                fs1.Write(fs2Content, 0, (int)fs2.Length);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex.Message + " : " + ex.StackTrace);
-            }
-            finally
-            {
-                fs1?.Close();
-                fs2?.Close();
-                File.Delete(chunk2);
-            }
-        }
-
         public override async Task Update(SysFileUpdateVModel model)
         {
-            var result = new ResponseResult();
-
             var entity = await _sysFileRepo.GetById(model.Id);
             if (entity == null)
             {
@@ -213,32 +213,39 @@ namespace OA.Service
                 }
             }
 
-            result = await _sysFileRepo.Update(entity);
+            var updatedResult = await _sysFileRepo.Update(entity);
+
+            if (!updatedResult.Success)
+            {
+                throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorUpdate, "File"));
+            }
         }
 
-        public async Task<ResponseResult> CreateBase64(SysFileCreateBase64VModel model)
+        public async Task CreateBase64(SysFileCreateBase64VModel model)
         {
             string path = string.Empty;
             string type = string.Empty;
             if (!string.IsNullOrEmpty(model.Base64String))
             {
                 string name = model.Name;
-                var (uploadConfigs, typeOf) = ConvertBase64String.ConvertBase64ToImage(model.Base64String, $"{_env.WebRootPath}/{_uploadConfigs.ImageUrl}", name);
-                path = uploadConfigs;
-                type = typeOf;
+                var convertSolve = ConvertBase64String.ConvertBase64ToImage(model.Base64String, $"{_env.WebRootPath}/{_uploadConfigs.ImageUrl}", name);
+                path = convertSolve.FilePath;
+                type = convertSolve.FileType;
             }
-            // Map SysFileCreateBase64VModel sang SysFile
-            var createdEntityBase64String = _mapper.Map<SysFileCreateBase64VModel, SysFile>(model);
+
+            var createdEntityBase64String = new SysFile()
+            {
+                Name = model.Name,
+                Path = path.Replace(_env.WebRootPath, ""),
+                Type = type.Trim()
+            };
             // Lấy sub domain www.local/upload/abc -> /upload/abc
-            createdEntityBase64String.Path = path.Replace(_env.WebRootPath, "");
-            createdEntityBase64String.Type = type.Trim();
-            createdEntityBase64String.CreatedDate = DateTime.Now;
             // Thêm vào repo
-            var result = await _sysFileRepo.Create(createdEntityBase64String);
-            // Chuyển sang GetById để trả về đối tượng
-            result.Data = _mapper.Map<SysFile, SysFileGetByIdVModel>(result.Data);
-            result.Data.Path = $"{GetBaseUrl()}{result.Data.Path}";
-            return result;
+            var createdResult = await _sysFileRepo.Create(createdEntityBase64String);
+            if (!createdResult.Success)
+            {
+                throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorCreate, "File"));
+            }
         }
 
         private string GetBaseUrl()
@@ -247,27 +254,30 @@ namespace OA.Service
             return $"{request?.Scheme}://{request?.Host}";
         }
 
-        public async Task<ResponseResult> RemoveByUrl(string url)
+        public async Task RemoveByUrl(string url)
         {
-            ResponseResult result = new ResponseResult();
             url = HttpUtility.UrlDecode(url);
             string urlRemovedDomain = url.Replace(_jwtIssuerOptions.Audience ?? string.Empty, "");
+
             var entity = _sysFileRepo.AsQueryable().FirstOrDefault(x => x.Path.Contains(urlRemovedDomain));
             if (entity == null)
             {
                 throw new NotFoundException(MsgConstants.WarningMessages.NotFoundData);
             }
+
             string path = $"{_env.WebRootPath}/{entity.Path.Replace(_jwtIssuerOptions.Audience ?? string.Empty, "")}";
             if (File.Exists(path))
                 File.Delete(path);
-            result = await _sysFileRepo.Remove(entity.Id);
 
-            return result;
+            var removedResult = await _sysFileRepo.Remove(entity.Id);
+            if (!removedResult.Success)
+            {
+                throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorRemove, "SysFile"));
+            }
         }
 
         public override async Task Remove(int id)
         {
-            ResponseResult result = new ResponseResult();
             var entity = await _sysFileRepo.GetById(id);
 
             if (entity == null)
@@ -278,7 +288,12 @@ namespace OA.Service
             string path = $"{_env.WebRootPath}/{entity.Path.Replace(_jwtIssuerOptions.Audience ?? string.Empty, "")}";
             if (File.Exists(path))
                 File.Delete(path);
-            result = await _sysFileRepo.Remove(entity.Id);
+
+            var removedResult = await _sysFileRepo.Remove(entity.Id);
+            if (!removedResult.Success)
+            {
+                throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorRemove, "SysFile"));
+            }
         }
 
         private IImageFormat GetImageFormat(string path)
@@ -289,69 +304,60 @@ namespace OA.Service
             }
         }
 
-        public async Task<ResponseResult> UploadAvatar(FileChunk fileChunk)
+        public async Task UploadAvatar(FileChunk fileChunk)
         {
-            var result = new ResponseResult();
-            if (!Directory.Exists(_tempPath))
-                Directory.CreateDirectory(_tempPath);
+            if (!Directory.Exists(_avatarPath))
+                Directory.CreateDirectory(_avatarPath);
 
             FileInfo fi = new FileInfo(fileChunk.FileName);
-            fileChunk.FileName = string.Format("{0}{1}", Guid.NewGuid().ToString(), fi.Extension);
-            string newpath = Path.Combine(_tempPath, fileChunk.FileName);
+            string newFileName = $"{Guid.NewGuid()}{fi.Extension}"; // This creates a unique filename for storage
+            string newpath = Path.Combine(_avatarPath, newFileName);
 
-            using (FileStream fs = File.Create(newpath))
+            using (FileStream fs = new FileStream(newpath, FileMode.Create))
             {
                 byte[] bytes = new byte[_chunkSize];
-                int bytesRead = 0;
-
-                if ((bytesRead = await fileChunk.File.OpenReadStream().ReadAsync(bytes, 0, bytes.Length)) > 0)
+                int bytesRead;
+                try
                 {
-                    fs.Write(bytes, 0, bytesRead);
+                    using (var fileStream = fileChunk.File.OpenReadStream())
+                    {
+                        if (fileChunk.File.Length == 0)
+                        {
+                            throw new BadRequestException("File không chứa dữ liệu.");
+                        }
+
+                        while ((bytesRead = await fileStream.ReadAsync(bytes, 0, bytes.Length)) > 0)
+                        {
+                            await fs.WriteAsync(bytes, 0, bytesRead);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    throw new BadRequestException($"Đã xảy ra lỗi khi đọc file: {ex.Message}");
                 }
             }
 
             IImageFormat imageFormat = GetImageFormat(newpath);
+            if (imageFormat == null)
+            {
+                File.Delete(newpath);
+                throw new BadRequestException("File không phải là định dạng ảnh hợp lệ.");
+            }
 
             var fileData = new SysFile()
             {
                 Name = fileChunk.FileName,
-                Path = Path.Combine(_env.WebRootPath, "Upload", "Files", fileChunk.FileName)
-                    .Replace(_env.WebRootPath, "")
-                    .Replace(Path.DirectorySeparatorChar, '/'),
+                Path = $"/avatars/{newFileName}",
                 Type = imageFormat?.ToString() ?? string.Empty,
             };
 
-            var repositoryresult = await _sysFileRepo.Create(fileData);
-            result.Data = new
-            {
-                FilePath = Path.Combine(_env.WebRootPath, newpath.Replace(Path.DirectorySeparatorChar, '/'))
-            };
+            var createdResult = await _sysFileRepo.Create(fileData);
 
-            return result;
-        }
-
-        public async Task<ResponseResult> GetAllByType(string fileType, int pageSize, int pageNumber)
-        {
-            ResponseResult result = new ResponseResult();
-            Pagination data = await _sysFileRepo.GetAllPagination(pageNumber, pageSize, x => x.Type == fileType, x => x.Id);
-            foreach (var entity in data.Records)
+            if (!createdResult.Success)
             {
-                GetAllEntry(entity);
+                throw new BadRequestException($"Failed to create file {fileData.Name}");
             }
-            foreach (var record in data.Records)
-            {
-                record.Path = CombineUrlWithDomain(record.Path);
-            }
-            data.Records = data.Records.Select(r => _mapper.Map<SysFile, SysFileGetAllVModel>(r));
-            result.Data = data;
-            result.Success = true;
-            return result;
-        }
-
-        private string CombineUrlWithDomain(string path)
-        {
-            string domain = GetBaseUrl();
-            return new Uri(new Uri(domain), path).ToString();
         }
     }
 }

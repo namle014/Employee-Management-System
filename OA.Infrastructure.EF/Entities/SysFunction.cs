@@ -11,12 +11,12 @@ namespace OA.Infrastructure.EF.Entities
         public string Name { get; set; } = null!;
         public long? ParentId { get; set; }
         public int? Sort { get; set; }
-        public string PathTo { get; set; } = string.Empty;
-        public string PathIcon { get; set; } = string.Empty;
-        public string JsonFunctionHasApisForView { get; set; } = string.Empty;
-        public string JsonFunctionHasApisForCreate { get; set; } = string.Empty;
-        public string JsonFunctionHasApisForEdit { get; set; } = string.Empty;
-        public string JsonFunctionHasApisForPrint { get; set; } = string.Empty;
-        public string JsonFunctionHasApisForDelete { get; set; } = string.Empty;
+        public string? PathTo { get; set; }
+        public string? PathIcon { get; set; }
+        public string? JsonFunctionHasApisForView { get; set; }
+        public string? JsonFunctionHasApisForCreate { get; set; }
+        public string? JsonFunctionHasApisForEdit { get; set; }
+        public string? JsonFunctionHasApisForPrint { get; set; }
+        public string? JsonFunctionHasApisForDelete { get; set; }
     }
 }

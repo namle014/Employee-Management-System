@@ -25,76 +25,36 @@ namespace OA.WebAPI.AdminControllers
             _logger = logger;
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetAllByType([FromQuery] string fileType, [FromQuery] int pageSize = CommonConstants.ConfigNumber.pageSizeDefault, [FromQuery] int pageNumber = 1)
-        {
-            ObjectResult objecrResult;
-            if (string.IsNullOrWhiteSpace(fileType))
-            {
-                objecrResult = new BadRequestObjectResult(CommonConstants.Validate.inputInvalid);
-            }
-            else
-            {
-                ResponseResult response = await _sysFileService.GetAllByType(fileType, pageSize, pageNumber);
-                if (response.Success)
-                {
-                    objecrResult = new ObjectResult(response)
-                    {
-                        StatusCode = (int)HttpStatusCode.OK
-                    };
-                }
-                else
-                {
-                    objecrResult = new ObjectResult(response)
-                    {
-                        StatusCode = (int)HttpStatusCode.InternalServerError
-                    };
-                    _logger.LogWarning(CommonConstants.LoggingEvents.CreateItem,
-                        string.Format(MsgConstants.ErrorMessages.ErrorCreate));
-                }
-            }
-            return objecrResult;
-        }
 
         [HttpPost]
         public async Task<IActionResult> UploadImageBase64([FromBody] SysFileCreateBase64VModel model)
         {
-            ObjectResult result;
             if (!ModelState.IsValid)
             {
-                result = new BadRequestObjectResult(ModelState);
+                return new BadRequestObjectResult(ModelState);
             }
-            else
-            {
-                var responseResult = await _sysFileService.CreateBase64(model);
-                result = new ObjectResult(responseResult);
-            }
-            return result;
+
+            await _sysFileService.CreateBase64(model);
+            return NoContent();
         }
 
         [HttpPost]
-        public async Task FileChunks([FromForm] FileChunk fileChunk)
+        public async Task<IActionResult> FileChunks([FromForm] FileChunk fileChunk)
         {
             if (string.IsNullOrWhiteSpace(fileChunk.FileName))
             {
                 throw new BadRequestException(CommonConstants.Validate.inputInvalid);
             }
-            else
-            {
-                await _sysFileService.FileChunks(fileChunk);
-            }
+
+            await _sysFileService.FileChunks(fileChunk);
+            return NoContent();
         }
 
         [HttpGet]
         public async Task<IActionResult> GetAll([FromQuery] FilterSysFileVModel model)
         {
-            var response = await _sysFileService.GetAll(model);
-            var result = new ObjectResult(response);
-            if (!response.Success)
-            {
-                _logger.LogWarning(CommonConstants.LoggingEvents.GetItem, MsgConstants.ErrorMessages.ErrorGetById, _nameController);
-            }
-            return result;
+            var result = await _sysFileService.GetAll(model);
+            return Ok(result);
         }
 
         [HttpPost]
@@ -105,29 +65,15 @@ namespace OA.WebAPI.AdminControllers
                 return new BadRequestObjectResult(CommonConstants.Validate.inputInvalid);
             }
 
-            var response = await _sysFileService.UploadAvatar(fileChunk);
-            var result = new ObjectResult(response);
-
-            if (response.Success)
-            {
-                return result;
-            }
-            else
-            {
-                _logger.LogWarning(CommonConstants.LoggingEvents.CreateItem, string.Format(MsgConstants.ErrorMessages.ErrorCreate));
-                return new BadRequestObjectResult(response);
-            }
+            await _sysFileService.UploadAvatar(fileChunk);
+            return NoContent();
         }
 
-        [HttpDelete(CommonConstants.Routes.Url)]
+        [HttpDelete]
         public async Task<IActionResult> RemoveByUrl([FromQuery] string url)
         {
-            if (string.IsNullOrEmpty(url))
-            {
-                return new BadRequestObjectResult(CommonConstants.Validate.inputInvalid);
-            }
-            var response = await _sysFileService.RemoveByUrl(url);
-            return new ObjectResult(response);
+            await _sysFileService.RemoveByUrl(url);
+            return NoContent();
         }
     }
 }

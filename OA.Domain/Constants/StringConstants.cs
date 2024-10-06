@@ -18,6 +18,7 @@
             public const string SysStatisticalAccess = "SysStatisticalAccess";
             public const string SysFunction = "SysFunction";
             public const string SysMenu = "SysMenu";
+            public const string Salary = "Salary";
         }
     }
 }

@@ -24,6 +24,7 @@ namespace OA.Infrastructure.EF.Context
         public virtual DbSet<SysApi> SysApis { get; set; } = null!;
         public virtual DbSet<SysConfiguration> SysConfigurations { get; set; } = null!;
         public virtual DbSet<Salary> Salary { get; set; } = null!;
+        public virtual DbSet<Benefit> Benefit { get; set; } = null!;
         #endregion --DBSET--
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

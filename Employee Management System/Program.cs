@@ -97,6 +97,7 @@ builder.Services.AddScoped<IJwtFactory, JwtFactory>();
 builder.Services.AddScoped<ISysFileService, SysFileService>();
 builder.Services.AddScoped<ISysFunctionService, SysFunctionService>();
 builder.Services.AddScoped<ISysConfigurationService, SysConfigurationService>();
+builder.Services.AddScoped<ISalaryService, SalaryService>();
 builder.Services.AddScoped<IBenefitService, BenefitService>();
 
 // Configure Identity

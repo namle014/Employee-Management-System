@@ -23,6 +23,7 @@ namespace OA.Infrastructure.EF.Context
         public virtual DbSet<SysFunction> SysFunctions { get; set; } = null!;
         public virtual DbSet<SysApi> SysApis { get; set; } = null!;
         public virtual DbSet<SysConfiguration> SysConfigurations { get; set; } = null!;
+        public virtual DbSet<Salary> Salary { get; set; } = null!;
         public virtual DbSet<Benefit> Benefit { get; set; } = null!;
         #endregion --DBSET--
 

@@ -3,31 +3,28 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using OA.Core.Constants;
 using OA.Core.Services;
+using OA.Core.VModels;
 using OA.Infrastructure.EF.Entities;
 using System.Threading.Tasks;
 namespace OA.WebApi.Controllers
 {
     //[Authorize(Policy = CommonConstants.Authorize.CustomAuthorization)]
-    public abstract class BaseController<TController, TEntity, TCreateVModel, TUpdateVModel, TGetByIdVModel, TGetAllVModel> : ControllerBase
-        where TController : ControllerBase
-        where TEntity : BaseEntity
+    [Route(CommonConstants.Routes.BaseRouteAdmin)]
+    [ApiController]
+    public class TimekeepingController : ControllerBase
     {
-        private readonly IBaseService<TEntity, TCreateVModel, TUpdateVModel, TGetByIdVModel, TGetAllVModel> _service;
+        private readonly ITimekeepingService _service;
         private readonly ILogger _logger;
-        protected static string? _nameController;
-        protected BaseController(IBaseService<TEntity, TCreateVModel, TUpdateVModel, TGetByIdVModel, TGetAllVModel> service, ILogger<TController> logger)
+        protected static string? _nameController = "Timekeeping";
+
+        public TimekeepingController(ITimekeepingService service, ILogger<TimekeepingController> logger)
         {
             _service = service;
             _logger = logger;
-            _nameController = GetControllerName(typeof(TController).Name);
-        }
-        private string GetControllerName(string input)
-        {
-            return input.Substring(0, input.Length - 10).ToLower();
         }
 
         [HttpGet]
-        public virtual async Task<IActionResult> GetById(int id)
+        public async Task<IActionResult> GetById(int id)
         {
             if (id <= 0)
             {
@@ -38,8 +35,16 @@ namespace OA.WebApi.Controllers
             return Ok(response);
         }
 
+        [HttpGet]
+        public async Task<IActionResult> Search([FromQuery] FilterTimekeepingVModel model)
+        {
+            var response = await _service.Search(model);
+
+            return Ok(response);
+        }
+
         [HttpPost]
-        public virtual async Task<IActionResult> Create([FromBody] TCreateVModel model)
+        public async Task<IActionResult> Create([FromBody] TimekeepingCreateVModel model)
         {
             if (!ModelState.IsValid)
             {
@@ -52,7 +57,7 @@ namespace OA.WebApi.Controllers
         }
 
         [HttpPut]
-        public virtual async Task<IActionResult> Update([FromBody] TUpdateVModel model)
+        public async Task<IActionResult> Update([FromBody] TimekeepingUpdateVModel model)
         {
             if (!ModelState.IsValid || (model as dynamic)?.Id <= 0)
             {
@@ -65,7 +70,7 @@ namespace OA.WebApi.Controllers
         }
 
         [HttpPut(CommonConstants.Routes.Id)]
-        public virtual async Task<IActionResult> ChangeStatus(int id)
+        public async Task<IActionResult> ChangeStatus(int id)
         {
             if (id <= 0)
             {

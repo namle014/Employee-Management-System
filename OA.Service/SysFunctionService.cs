@@ -53,7 +53,7 @@ namespace OA.Service
                                 x.CreatedDate.Value.Day == model.CreatedDate.Value.Day)) &&
                         (string.IsNullOrEmpty(keyword) ||
                                 x.Name.ToLower().Contains(keyword) ||
-                                (x.CreatedBy != null && x.CreatedBy.ToLower().Contains(keyword))
+                                x.CreatedBy != null && x.CreatedBy.ToLower().Contains(keyword)
                         ));
 
             if (!model.IsDescending)
@@ -75,7 +75,6 @@ namespace OA.Service
 
             var pagedRecords = mappedRecords.Skip((model.PageNumber - 1) * model.PageSize).Take(model.PageSize).ToList();
 
-            result.Data.Records = pagedRecords;
             result.Data.TotalRecords = records.ToList().Count;
 
             return result;

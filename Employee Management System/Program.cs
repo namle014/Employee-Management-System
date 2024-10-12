@@ -33,6 +33,15 @@ builder.Services.Configure<FormOptions>(options =>
     options.MultipartBodyLengthLimit = 104857600; // 100 MB
 });
 
+// Configure CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowSpecificOrigin",
+        builder => builder.WithOrigins("http://localhost:3000") // Thay thế bằng URL frontend của bạn
+                          .AllowAnyHeader()
+                          .AllowAnyMethod());
+});
+
 // Configure Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -45,7 +54,6 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 void RegisterJWT(IServiceCollection services)
 {
     var jwtAppSettingOptions = builder.Configuration.GetSection(nameof(JwtIssuerOptions));
-
 
     services.Configure<UploadConfigurations>(builder.Configuration.GetSection(nameof(UploadConfigurations)));
 
@@ -99,6 +107,7 @@ builder.Services.AddScoped<ISysFunctionService, SysFunctionService>();
 builder.Services.AddScoped<ISysConfigurationService, SysConfigurationService>();
 builder.Services.AddScoped<ISalaryService, SalaryService>();
 builder.Services.AddScoped<IBenefitService, BenefitService>();
+builder.Services.AddScoped<ITimekeepingService, TimekeepingService>();
 
 // Configure Identity
 var identityBuilder = builder.Services.AddIdentityCore<AspNetUser>(opt =>
@@ -137,6 +146,9 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles(); // Thêm dòng này để phục vụ file tĩnh từ wwwroot
+
+app.UseCors("AllowSpecificOrigin"); // Thêm dòng này để sử dụng cấu hình CORS
+
 app.UseAuthentication(); // Ensure authentication middleware is used
 app.UseAuthorization();
 

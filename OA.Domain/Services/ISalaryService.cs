@@ -15,5 +15,6 @@ namespace OA.Core.Services
         Task Create(SalaryCreateVModel model);
         Task Update(SalaryUpdateVModel model);
         Task<ResponseResult> GetById(string id);
+        Task<ResponseResult> GetAll();
     }
 }

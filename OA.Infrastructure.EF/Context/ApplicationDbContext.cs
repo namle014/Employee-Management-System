@@ -25,6 +25,7 @@ namespace OA.Infrastructure.EF.Context
         public virtual DbSet<SysConfiguration> SysConfigurations { get; set; } = null!;
         public virtual DbSet<Salary> Salary { get; set; } = null!;
         public virtual DbSet<Benefit> Benefit { get; set; } = null!;
+        public virtual DbSet<Timekeeping> Timekeeping { get; set; } = null!;
         #endregion --DBSET--
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

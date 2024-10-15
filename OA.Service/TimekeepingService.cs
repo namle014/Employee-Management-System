@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using OA.Core.Constants;
 using OA.Core.Models;
@@ -15,13 +16,15 @@ namespace OA.Service
     {
         private readonly ApplicationDbContext _dbContext;
         private DbSet<Timekeeping> _timekeepings;
+        private readonly UserManager<AspNetUser> _userManager;
         private readonly IMapper _mapper;
         string _nameService = "Timekeeping";
 
-        public TimekeepingService(ApplicationDbContext dbContext, IMapper mapper, IHttpContextAccessor contextAccessor) : base(contextAccessor)
+        public TimekeepingService(ApplicationDbContext dbContext, UserManager<AspNetUser> userManager, IMapper mapper, IHttpContextAccessor contextAccessor) : base(contextAccessor)
         {
             _dbContext = dbContext ?? throw new ArgumentNullException("context");
             _timekeepings = dbContext.Set<Timekeeping>();
+            _userManager = userManager;
             _mapper = mapper;
         }
 
@@ -53,7 +56,22 @@ namespace OA.Service
 
             var timekeepingList = await query.ToListAsync();
 
-            result.Data = timekeepingList;
+            var timekeepingListMapped = new List<TimekeepingGetAllVModel>();
+
+            foreach (var timekeeping in timekeepingList)
+            {
+                var user = await _userManager.FindByIdAsync(timekeeping.UserId);
+                if (user == null)
+                {
+                    throw new NotFoundException(string.Format(MsgConstants.WarningMessages.NotFound, $"User of timekeepingId = {timekeeping.Id}"));
+                }
+
+                var entityMapped = _mapper.Map<Timekeeping, TimekeepingGetAllVModel>(timekeeping);
+                entityMapped.FullName = user.FullName;
+                timekeepingListMapped.Add(entityMapped);
+            }
+
+            result.Data = timekeepingListMapped;
 
             return result;
         }
@@ -69,7 +87,16 @@ namespace OA.Service
                 throw new NotFoundException(MsgConstants.WarningMessages.NotFoundData);
             }
 
-            result.Data = _mapper.Map<Timekeeping, TimekeepingGetByIdVModel>(entity);
+            var user = await _userManager.FindByIdAsync(entity.UserId);
+            if (user == null)
+            {
+                throw new NotFoundException(string.Format(MsgConstants.WarningMessages.NotFound, "User"));
+            }
+
+            var entityMapped = _mapper.Map<Timekeeping, TimekeepingGetByIdVModel>(entity);
+            entityMapped.FullName = user.FullName;
+
+            result.Data = entityMapped;
 
             return result;
         }

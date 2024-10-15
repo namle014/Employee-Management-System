@@ -24,7 +24,7 @@ namespace OA.Core.VModels
 
     public class TimekeepingGetByIdVModel : TimekeepingUpdateVModel
     {
-
+        public string FullName { get; set; } = string.Empty;
     }
 
     public class TimekeepingGetAllVModel : TimekeepingGetByIdVModel

@@ -35,6 +35,10 @@ namespace OA.Core.VModels
     {
 
     }
+    public class SalaryFilterVModel
+    {
+
+    }
     //public class UserVModel
     //{
     //    public string FirstName { get; set; } 

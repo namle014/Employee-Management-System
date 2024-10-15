@@ -7,12 +7,20 @@ using OA.WebApi.Controllers;
 
 namespace Employee_Management_System.Controllers
 {
+    [Route(CommonConstants.Routes.BaseRouteAdmin)]
+    [ApiController]
+
     public class SalaryController : Controller
     {
         private readonly ISalaryService _salaryService;
         private readonly ILogger _logger;
         private static string _nameController = StringConstants.ControllerName.Salary;
 
+        public SalaryController(ISalaryService salaryService, ILogger<SalaryController> logger)
+        {
+            _salaryService=salaryService;
+            _logger=logger;
+        }
 
         [HttpGet]
         public async Task<IActionResult> GetById(string id)

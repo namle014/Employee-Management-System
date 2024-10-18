@@ -55,8 +55,7 @@ namespace OA.Domain.VModels
     }
     public class UserVModel
     {
-        public string FirstName { get; set; } = string.Empty;
-        public string LastName { get; set; } = string.Empty;
+        public string? FullName { get; set; } = string.Empty;
         [Required]
         [RegularExpression("^[a-zA-Z0-9]*$")]
         public string UserName { get; set; } = string.Empty;
@@ -72,6 +71,7 @@ namespace OA.Domain.VModels
         public string Address { get; set; } = string.Empty;
         public string Note { get; set; } = string.Empty;
         public DateTime? Birthday { get; set; }
+        public int DepartmentId { get; set; }
     }
 
     public class UserCreateVModel : UserVModel
@@ -91,6 +91,7 @@ namespace OA.Domain.VModels
     public class UserGetAllVModel : UserUpdateVModel
     {
         public List<string>? Roles { get; set; }
+        public string DepartmentName { get; set; } = string.Empty;
         public string? AvatarPath { get; set; }
     }
 

@@ -350,6 +350,7 @@ namespace OA.Service
                 Name = fileChunk.FileName,
                 Path = $"/avatars/{newFileName}",
                 Type = imageFormat?.ToString() ?? string.Empty,
+                IsActive = true,
             };
 
             var createdResult = await _sysFileRepo.Create(fileData);

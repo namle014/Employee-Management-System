@@ -46,20 +46,20 @@ namespace OA.Service
             return result;
         }
 
-        public ResponseResult GetAll(int pageNumber, int pageSize)
+        public Task<ResponseResult> GetAll(FiltersGetAllByQueryStringRoleVModel model)
         {
             var result = new ResponseResult();
             var query = _roleManager.Roles.AsQueryable().ToList()
                         .OrderByDescending(x => x.CreatedDate);
             var data = new Pagination
             {
-                Records = query.Skip((pageNumber - 1) * pageSize).Take(pageSize),
+                Records = query.Skip((model.PageNumber - 1) * model.PageSize).Take(model.PageSize),
                 TotalRecords = query.Count()
             };
             data.Records = data.Records.Select(r => Utilities.ConvertModel<AspNetRoleGetAllVModel>(r));
             result.Data = data;
 
-            return result;
+            return Task.FromResult(result);
         }
 
         public async Task CheckValidRoleName(string roleName)
@@ -180,37 +180,10 @@ namespace OA.Service
             }
         }
 
-        public ResponseResult GetAllByQueryString(FiltersGetAllByQueryStringRoleVModel model)
-        {
-            var result = new ResponseResult();
-
-            var parameters = new List<DbParameter>
-            {
-                _dbConnectSQL.GetParameter("@Keyword", model.Keyword), //search
-                _dbConnectSQL.GetParameter("@CreatedDate", model.CreatedDate),
-                _dbConnectSQL.GetParameter("@Status", model.Status),
-                _dbConnectSQL.GetParameter("@OrderBy", model.OrderBy),
-                _dbConnectSQL.GetParameter("@OrderDirection", model.OrderDirection), //ASC/DESC
-                _dbConnectSQL.GetParameter("@PageSize", model.PageSize),
-                _dbConnectSQL.GetParameter("@PageNumber", model.PageNumber),
-            };
-
-            //Override value of old result.Data
-            result.Data = new Pagination();
-            //
-            var dtRoles = _dbConnectSQL.ExecuteDataSet(CommonConstants.StoreProceduresName.SearchAspNetRole, parameters);
-            var records = _dbConnectSQL.ConvertToListDynamic(dtRoles.Tables[0]);
-            var recordsTotal = _dbConnectSQL.ConvertToListDynamic(dtRoles.Tables[1]);
-            result.Data.Records = records;
-            result.Data.TotalRecords = Utilities.GetValueOfTotalRecords(recordsTotal);
-
-            return result;
-        }
-
         public virtual async Task<ExportStream> ExportFile(FiltersGetAllByQueryStringRoleVModel model, ExportFileVModel exportModel)
         {
             model.IsExport = true;
-            var result = GetAllByQueryString(model);
+            var result = await GetAll(model);
 
             var records = _mapper.Map<IEnumerable<AspNetRoleExport>>(result.Data?.Records);
             var exportData = ImportExportHelper<AspNetRoleExport>.ExportFile(exportModel, records);

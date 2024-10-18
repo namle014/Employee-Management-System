@@ -26,6 +26,7 @@ namespace OA.Service
         private readonly UserManager<AspNetUser> _userManager;
         private readonly RoleManager<AspNetRole> _roleManager;
         private readonly IBaseRepository<SysFile> _sysFileRepo;
+        private readonly IBaseRepository<Department> _departmentService;
         private readonly ISysConfigurationService _configService;
         private readonly IJwtFactory _jwtFactory;
         private readonly IAuthMessageSender _authMessageSender;
@@ -39,7 +40,7 @@ namespace OA.Service
         public AspNetUserService(RoleManager<AspNetRole> roleManager, UserManager<AspNetUser> userManager,
                 ISysConfigurationService configService, IJwtFactory jwtFactory,
                 IAuthMessageSender authMessageSender, IHttpContextAccessor contextAccessor,
-                IMapper mapper, IBaseRepository<SysFile> sysFileRepo,
+                IMapper mapper, IBaseRepository<SysFile> sysFileRepo, IBaseRepository<Department> departmentService,
                 ApplicationDbContext dbContext) : base(contextAccessor)
         {
             _userManager = userManager;
@@ -50,6 +51,7 @@ namespace OA.Service
             _mapper = mapper;
             _contextAccessor = contextAccessor;
             _dbContext = dbContext;
+            _departmentService = departmentService;
             _sysFileRepo = sysFileRepo;
         }
         #region --USERS BASIC--
@@ -102,7 +104,8 @@ namespace OA.Service
 
                     var userViewModel = _mapper.Map<AspNetUser, UserGetAllVModel>(user);
                     userViewModel.Roles = roles.ToList();
-                    userViewModel.AvatarPath = user.AvatarFileId != null ? (await _sysFileRepo.GetById((int)user.AvatarFileId))?.Path : null;
+                    userViewModel.AvatarPath = user.AvatarFileId != null ? "https://localhost:44381/" + (await _sysFileRepo.GetById((int)user.AvatarFileId))?.Path : null;
+                    userViewModel.DepartmentName = (await _departmentService.GetById(user.DepartmentId))?.Name ?? "";
                     userViewModels.Add(userViewModel);
                 }
 
@@ -111,8 +114,7 @@ namespace OA.Service
                 var records = userViewModels
                     .Where(r => string.IsNullOrEmpty(keyword) ||
                     (r.UserName?.ToLower()?.Contains(keyword.ToLower()) == true)
-                    || (r.FirstName?.ToLower()?.Contains(keyword.ToLower()) == true)
-                    || (r.LastName?.ToLower()?.Contains(keyword.ToLower()) == true)
+                    || (r.FullName?.ToLower()?.Contains(keyword.ToLower()) == true)
                     || (r.PhoneNumber?.ToLower()?.Contains(keyword.ToLower()) == true)
                     || (r.Email?.ToLower()?.Contains(keyword.ToLower()) == true)
                     || (r.Roles != null && r.Roles.Any(role => role.ToLower().Contains(keyword))));

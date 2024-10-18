@@ -24,6 +24,7 @@ namespace OA.Infrastructure.EF.Entities
         public string CitizenNumber { get; set; } = string.Empty;
         public DateTime StartDateWork { get; set; }
         public bool WorkStatus { get; set; }
+        public int DepartmentId { get; set; }
 
         //[ForeignKey("AvatarFileId")]
         //public virtual SysFile? AvatarFile { get; set; }

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json.Serialization;
 using OA.Core.Configurations;
@@ -146,6 +147,15 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles(); // Thêm dòng này để phục vụ file tĩnh từ wwwroot
+
+// Nếu bạn muốn chỉ định một thư mục con đặc biệt (avatars)
+app.UseStaticFiles(); // Cho phép phục vụ file tĩnh
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/avatars")),
+    RequestPath = "/avatars"
+});
+
 
 app.UseCors("AllowSpecificOrigin"); // Thêm dòng này để sử dụng cấu hình CORS
 

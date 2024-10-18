@@ -33,17 +33,11 @@ namespace OA.WebApi.AdminControllers
         /// </summary>
         /// <param name="model"> Keyword=admin;OrderBy=Name;OrderDirection=ASC/DESC;</param>
         /// <returns></returns>
-        [HttpGet]
-        public IActionResult GetAllByQueryString(FiltersGetAllByQueryStringRoleVModel model)
-        {
-            var response = _roleService.GetAllByQueryString(model);
-            return Ok(response);
-        }
 
         [HttpGet]
-        private IActionResult GetAll(int pageSize = CommonConstants.ConfigNumber.pageSizeDefault, int pageNumber = 1)
+        public async Task<IActionResult> GetAll(FiltersGetAllByQueryStringRoleVModel model)
         {
-            var response = _roleService.GetAll(pageNumber, pageSize);
+            var response = await _roleService.GetAll(model);
             return Ok(response);
         }
 

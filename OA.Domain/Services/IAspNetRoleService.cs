@@ -7,8 +7,7 @@ namespace OA.Core.Services
 {
     public interface IAspNetRoleService
     {
-        ResponseResult GetAll(int pageNumber, int pageSize);
-        ResponseResult GetAllByQueryString(FiltersGetAllByQueryStringRoleVModel model);
+        Task<ResponseResult> GetAll(FiltersGetAllByQueryStringRoleVModel model);
         Task<ResponseResult> GetById(string id);
         Task CheckValidRoleName(string roleName);
         Task<ResponseResult> GetJsonHasFunctionByRoleId(string id);

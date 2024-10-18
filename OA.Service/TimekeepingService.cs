@@ -19,13 +19,23 @@ namespace OA.Service
         private readonly UserManager<AspNetUser> _userManager;
         private readonly IMapper _mapper;
         string _nameService = "Timekeeping";
+        private DbSet<Department> _departments;
 
         public TimekeepingService(ApplicationDbContext dbContext, UserManager<AspNetUser> userManager, IMapper mapper, IHttpContextAccessor contextAccessor) : base(contextAccessor)
         {
             _dbContext = dbContext ?? throw new ArgumentNullException("context");
             _timekeepings = dbContext.Set<Timekeeping>();
+            _departments = dbContext.Set<Department>();
             _userManager = userManager;
             _mapper = mapper;
+        }
+
+        public async Task<ResponseResult> GetAllDepartments()
+        {
+            var result = new ResponseResult();
+            var data = _departments.AsQueryable();
+            result.Data = await data.ToListAsync();
+            return result;
         }
 
         public async Task<ResponseResult> Search(FilterTimekeepingVModel model)
@@ -56,19 +66,24 @@ namespace OA.Service
 
             var timekeepingList = await query.ToListAsync();
 
+            var timekeepingGrouped = timekeepingList.GroupBy(t => t.UserId);
+
             var timekeepingListMapped = new List<TimekeepingGetAllVModel>();
 
-            foreach (var timekeeping in timekeepingList)
+            foreach (var group in timekeepingGrouped)
             {
-                var user = await _userManager.FindByIdAsync(timekeeping.UserId);
+                var user = await _userManager.FindByIdAsync(group.Key);
                 if (user == null)
                 {
-                    throw new NotFoundException(string.Format(MsgConstants.WarningMessages.NotFound, $"User of timekeepingId = {timekeeping.Id}"));
+                    throw new NotFoundException(string.Format(MsgConstants.WarningMessages.NotFound, $"UserId = {group.Key}"));
                 }
 
-                var entityMapped = _mapper.Map<Timekeeping, TimekeepingGetAllVModel>(timekeeping);
-                entityMapped.FullName = user.FullName;
-                timekeepingListMapped.Add(entityMapped);
+                foreach (var timekeeping in group)
+                {
+                    var entityMapped = _mapper.Map<Timekeeping, TimekeepingGetAllVModel>(timekeeping);
+                    entityMapped.FullName = user.FullName;
+                    timekeepingListMapped.Add(entityMapped);
+                }
             }
 
             result.Data = timekeepingListMapped;

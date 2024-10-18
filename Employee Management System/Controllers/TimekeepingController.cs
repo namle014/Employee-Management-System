@@ -43,6 +43,14 @@ namespace OA.WebApi.Controllers
             return Ok(response);
         }
 
+        [HttpGet]
+        public async Task<IActionResult> GetAllDepartments()
+        {
+            var response = await _service.GetAllDepartments();
+
+            return Ok(response);
+        }
+
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] TimekeepingCreateVModel model)
         {

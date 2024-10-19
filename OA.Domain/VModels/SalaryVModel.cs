@@ -9,13 +9,14 @@ namespace OA.Core.VModels
 {
     public class SalaryCreateVModel
     {
-        public String UserId { get; set; } = string.Empty;
+        public string UserId { get; set; } = string.Empty;
         public DateTime Date { get; set; }
-        public double PITax { get; set; }
+        public decimal PITax { get; set; }
+        public decimal TotalSalary {  get; set; }
     }
     public class SalaryUpdateVModel
     {
-        public String Id { get; set; } = string.Empty;
+        public string Id { get; set; } = string.Empty;
     }
     public class SalaryGetAllVModel : SalaryUpdateVModel
     {

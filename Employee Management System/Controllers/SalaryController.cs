@@ -36,5 +36,22 @@ namespace Employee_Management_System.Controllers
             }
             return Ok(response);
         }
+
+        [HttpGet]
+        public async Task<IActionResult> GetAll()
+        {
+            var response = await _salaryService.GetAll();
+            return Ok(response);
+        }
+        [HttpPost]
+        public async Task<IActionResult> Create([FromBody] SalaryCreateVModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return new BadRequestObjectResult(ModelState);
+            }
+            await _salaryService.Create(model);
+            return Created();
+        }
     }
 }

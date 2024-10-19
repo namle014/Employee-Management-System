@@ -18,8 +18,8 @@ namespace OA.Infrastructure.EF.Entities
 
         public DateTime Date { get; set; }
 
-        public double PITax { get; set; }
+        public decimal PITax { get; set; }
 
-        public double TotalSalary {  get; set; }
+        public decimal TotalSalary {  get; set; }
     }
 }

@@ -43,6 +43,7 @@ namespace OA.Service
         public virtual async Task Create(TCreateVModel model)
         {
             var entityCreated = _mapper.Map<TCreateVModel, TEntity>(model);
+            entityCreated.Id = 3;
             var createdResult = await _repository.Create(entityCreated);
             if (!createdResult.Success)
             {

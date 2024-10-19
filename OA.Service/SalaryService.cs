@@ -15,6 +15,8 @@ using OA.Core.Models;
 using OA.Service.Helpers;
 using OA.Core.Constants;
 using OA.Infrastructure.SQL;
+using Microsoft.EntityFrameworkCore;
+using OA.Infrastructure.EF.Context;
 
 
 namespace OA.Service
@@ -22,20 +24,37 @@ namespace OA.Service
 
     public class SalaryService : GlobalVariables, ISalaryService
     {
-        private static BaseConnection _dbConnectSQL = BaseConnection.Instance();
-        public SalaryService(IHttpContextAccessor contextAccessor) : base(contextAccessor)
-        {
+        private readonly ApplicationDbContext _dbContext;
+        private DbSet<Salary> _salary;
+        private readonly IMapper _mapper;
+        private string _nameService = "Salary";
 
+        public SalaryService(ApplicationDbContext dbContext, IMapper mapper, IHttpContextAccessor contextAccessor) : base(contextAccessor)
+        {
+            _dbContext = dbContext ?? throw new ArgumentNullException("context");
+            _salary = dbContext.Set<Salary>();
+            _mapper = mapper;
         }
 
-        public Task Create(SalaryCreateVModel model)
+        public async Task Create(SalaryCreateVModel model)
         {
-            throw new NotImplementedException();
+            var entity = _mapper.Map<SalaryCreateVModel, Salary>(model);
+            _salary.Add(entity);
+
+            bool success = await _dbContext.SaveChangesAsync() > 0;
+            if (!success)
+            {
+                throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorCreate, _nameService));
+            }
         }
 
-        public Task<ResponseResult> GetAll()
+        public async Task<ResponseResult> GetAll()
         {
-            throw new NotImplementedException();
+            var result = new ResponseResult();
+            var query = _salary.AsQueryable();
+            var salaryList = await query.ToListAsync();
+            result.Data = salaryList;
+            return result;
         }
 
         public async Task<ResponseResult> GetById(string id)

@@ -98,7 +98,7 @@ builder.Services.AddScoped<ISysFileService, SysFileService>();
 builder.Services.AddScoped<ISysFunctionService, SysFunctionService>();
 builder.Services.AddScoped<ISysConfigurationService, SysConfigurationService>();
 builder.Services.AddScoped<IBenefitService, BenefitService>();
-
+builder.Services.AddScoped<IEmploymentContractService, EmploymentContractService>(); 
 // Configure Identity
 var identityBuilder = builder.Services.AddIdentityCore<AspNetUser>(opt =>
 {

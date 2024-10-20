@@ -108,6 +108,7 @@ builder.Services.AddScoped<ISysFunctionService, SysFunctionService>();
 builder.Services.AddScoped<ISysConfigurationService, SysConfigurationService>();
 builder.Services.AddScoped<ISalaryService, SalaryService>();
 builder.Services.AddScoped<IBenefitService, BenefitService>();
+builder.Services.AddScoped<IInsuranceService, InsuranceService>();
 builder.Services.AddScoped<ITimekeepingService, TimekeepingService>();
 
 // Configure Identity

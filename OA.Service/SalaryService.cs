@@ -39,6 +39,13 @@ namespace OA.Service
         public async Task Create(SalaryCreateVModel model)
         {
             var entity = _mapper.Map<SalaryCreateVModel, Salary>(model);
+            var existingSalary = _salary.FirstOrDefaultAsync(s => s.Id == entity.Id);
+            if (existingSalary != null)
+            {
+                throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorCreate, _nameService));
+            }
+            entity.CreatedDate = DateTime.Now;
+            entity.CreatedBy = GlobalUserName;
             _salary.Add(entity);
 
             bool success = await _dbContext.SaveChangesAsync() > 0;

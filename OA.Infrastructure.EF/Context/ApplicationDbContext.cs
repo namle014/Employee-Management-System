@@ -27,6 +27,7 @@ namespace OA.Infrastructure.EF.Context
         public virtual DbSet<Benefit> Benefit { get; set; } = null!;
         public virtual DbSet<Department> Department { get; set; } = null!;
         public virtual DbSet<Timekeeping> Timekeeping { get; set; } = null!;
+        public virtual DbSet<Insurance> Insurance { get; set; } = null!;
         #endregion --DBSET--
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

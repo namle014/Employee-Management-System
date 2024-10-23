@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.Net.Http.Headers;
 using Newtonsoft.Json.Serialization;
 using OA.Core.Configurations;
 using OA.Core.Models;
@@ -147,16 +148,29 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseStaticFiles(); // Thêm dòng này để phục vụ file tĩnh từ wwwroot
 
-// Nếu bạn muốn chỉ định một thư mục con đặc biệt (avatars)
-app.UseStaticFiles(); // Cho phép phục vụ file tĩnh
 app.UseStaticFiles(new StaticFileOptions
 {
-    FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/avatars")),
-    RequestPath = "/avatars"
+    FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot")),
+    RequestPath = "", // Đường dẫn request mặc định
+    OnPrepareResponse = ctx =>
+    {
+        if (ctx.File.PhysicalPath != null && ctx.File.PhysicalPath.Contains("avatars"))
+        {
+            const int durationInSeconds = 31536000; // 1 năm
+            ctx.Context.Response.Headers[HeaderNames.CacheControl] = $"public,max-age={durationInSeconds}";
+            ctx.Context.Response.Headers[HeaderNames.Expires] = DateTime.UtcNow.AddSeconds(durationInSeconds).ToString("R");
+        }
+        //  Thêm điều kiện cho các file khác nếu cần
+        // else 
+        // {
+        //     ctx.Context.Response.Headers[HeaderNames.CacheControl] = "no-store"; // hoặc "no-cache"
+        // }
+    }
 });
 
+
+// Xóa dòng `app.UseStaticFiles();`  ở phía trên
 
 app.UseCors("AllowSpecificOrigin"); // Thêm dòng này để sử dụng cấu hình CORS
 

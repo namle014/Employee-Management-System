@@ -36,7 +36,7 @@ namespace OA.Core.VModels
     {
 
     }
-    public class SalaryFilterVModel
+    public class FilterSalaryVModel
     {
 
     }

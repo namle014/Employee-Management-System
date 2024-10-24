@@ -15,7 +15,7 @@ namespace OA.WebApi.Controllers
     {
         private readonly IInsuranceService _service;
         private readonly ILogger _logger;
-        protected static string? _nameController = "Timekeeping";
+        protected static string? _nameController = "Insurance";
 
         public InsuranceController(IInsuranceService service, ILogger<InsuranceController> logger)
         {
@@ -53,7 +53,9 @@ namespace OA.WebApi.Controllers
 
             await _service.Create(model);
 
-            return Created();
+            //return Created();
+            return StatusCode(StatusCodes.Status201Created); // Trả về status code 201 khi thành công
+
         }
 
         [HttpPut]

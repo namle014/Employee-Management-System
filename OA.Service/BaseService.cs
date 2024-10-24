@@ -76,6 +76,10 @@ namespace OA.Service
                 var entity = await _repository.GetById((model as dynamic)?.Id);
                 entity = _mapper.Map(model, entity);
                 result = await _repository.Update(entity);
+                if (!result.Success)
+                {
+                    throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorUpdate, "Object"));
+                }
             }
             return result;
         }

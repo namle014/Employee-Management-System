@@ -109,6 +109,7 @@ builder.Services.AddScoped<ISysConfigurationService, SysConfigurationService>();
 builder.Services.AddScoped<ISalaryService, SalaryService>();
 builder.Services.AddScoped<IBenefitService, BenefitService>();
 builder.Services.AddScoped<ITimekeepingService, TimekeepingService>();
+builder.Services.AddScoped<IHolidayService, HolidayService>();
 
 // Configure Identity
 var identityBuilder = builder.Services.AddIdentityCore<AspNetUser>(opt =>

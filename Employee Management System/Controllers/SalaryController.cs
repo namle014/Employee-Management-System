@@ -5,7 +5,7 @@ using OA.Core.VModels;
 using OA.Infrastructure.EF.Entities;
 using OA.WebApi.Controllers;
 
-namespace Employee_Management_System.Controllers
+namespace OA.WebApi.Controllers
 {
     [Route(CommonConstants.Routes.BaseRouteAdmin)]
     [ApiController]
@@ -41,6 +41,12 @@ namespace Employee_Management_System.Controllers
         public async Task<IActionResult> GetAll()
         {
             var response = await _salaryService.GetAll();
+            return Ok(response);
+        }
+        [HttpGet]
+        public async Task<IActionResult> Search([FromQuery] FilterSalaryVModel model)
+        {
+            var response = await _salaryService.Search(model);
             return Ok(response);
         }
         [HttpPost]

@@ -39,10 +39,30 @@ namespace OA.Service
         public async Task Create(SalaryCreateVModel model)
         {
             var entity = _mapper.Map<SalaryCreateVModel, Salary>(model);
-            var existingSalary = _salary.FirstOrDefaultAsync(s => s.Id == entity.Id);
-            if (existingSalary != null)
+            var idList = await _salary.Select(id => id.Id).ToListAsync();
+
+            var highestId = idList.Select(id => new
             {
-                throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorCreate, _nameService));
+                originalId = id,
+                numPart = int.TryParse(id.Substring(2),out int number)? number: -1 //nv001
+            })
+            .OrderByDescending(x => x.numPart).Select(x => x.originalId).FirstOrDefault();
+            
+            if (highestId != null)
+            {
+                if (highestId.Length > 2 && highestId.StartsWith("nv"))
+                {
+                    var newIdNumber = int.Parse(highestId.Substring(2)) + 1; 
+                    entity.Id = "nv" + newIdNumber.ToString("D3"); 
+                }
+                else
+                {
+                    throw new InvalidOperationException("Invalid ID format in the database.");
+                }
+            }
+            else
+            {
+                entity.Id = "nv001";
             }
             entity.CreatedDate = DateTime.Now;
             entity.CreatedBy = GlobalUserName;
@@ -69,12 +89,24 @@ namespace OA.Service
             var result = new ResponseResult();
             try
             {
-                
+                var entity = await _salary.FirstOrDefaultAsync(s => s.Id == id);
+                if(entity == null)
+                {
+                    throw new NotFoundException(MsgConstants.WarningMessages.NotFoundData);
+                }
+
+                result.Data = entity;
             }
             catch (Exception ex)
             {
                 throw new BadRequestException(Utilities.MakeExceptionMessage(ex));
             }
+            return result;
+        }
+
+        public async Task<ResponseResult> Search(FilterSalaryVModel model)
+        {
+            var result = new ResponseResult();
             return result;
         }
 

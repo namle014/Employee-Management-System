@@ -40,9 +40,9 @@ namespace OA.WebAPI.AdminControllers
 
 
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetById(int id)
+        public async Task<IActionResult> GetById(String id)
         {
-            if (id <= 0)
+            if ((string.IsNullOrEmpty(id)))
             {
                 return BadRequest(string.Format(MsgConstants.Error404Messages.FieldIsInvalid, "Id"));
             }
@@ -65,7 +65,7 @@ namespace OA.WebAPI.AdminControllers
         [HttpPut]
         public async Task<IActionResult> Update([FromBody] EmploymentContractUpdateVModel model)
         {
-            if (!ModelState.IsValid || model.Id <= 0)
+            if (!ModelState.IsValid || (string.IsNullOrEmpty(model.Id)))
             {
                 return BadRequest(ModelState);
             }
@@ -75,9 +75,9 @@ namespace OA.WebAPI.AdminControllers
         }
 
         [HttpPut("{id}/status")]
-        public async Task<IActionResult> ChangeStatus(int id)
+        public async Task<IActionResult> ChangeStatus(string id)
         {
-            if (id <= 0)
+            if ((string.IsNullOrEmpty(id)))
             {
                 return BadRequest(string.Format(MsgConstants.Error404Messages.FieldIsInvalid, "Id"));
             }
@@ -87,9 +87,9 @@ namespace OA.WebAPI.AdminControllers
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> Remove(int id)
+        public async Task<IActionResult> Remove(String id)
         {
-            if (id <= 0)
+            if ((string.IsNullOrEmpty(id)))
             {
                 return BadRequest(string.Format(MsgConstants.Error404Messages.FieldIsInvalid, "Id"));
             }

@@ -76,7 +76,7 @@ namespace OA.Service
         }
 
 
-        public async Task<ResponseResult> GetById(int id)
+        public async Task<ResponseResult> GetById(String id)
         {
             var result = new ResponseResult();
             var entity = await _context.EmploymentContract.FindAsync(id);
@@ -96,8 +96,9 @@ namespace OA.Service
         {
             var entityCreated = _mapper.Map<EmploymentContractCreateVModel, EmploymentContract>(model);
             await _context.EmploymentContract.AddAsync(entityCreated);
-            var maxId = await _context.EmploymentContract.MaxAsync(x => (int?)x.Id) ?? 0; 
-            entityCreated.Id = maxId + 1;
+            var maxId = await _context.EmploymentContract.MaxAsync(x => (string)x.Id) ?? "EC-000";
+            int numberPart = int.Parse(maxId.Substring(3)) + 1; 
+            entityCreated.Id = $"EC-{numberPart:D3}"; 
             var saveResult = await _context.SaveChangesAsync(); 
             if (saveResult <= 0)
             {
@@ -125,7 +126,7 @@ namespace OA.Service
             }
         }
 
-        public async Task ChangeStatus(int id)
+        public async Task ChangeStatus(String id)
         {
             var entity = await _context.EmploymentContract.FindAsync(id); 
             if (entity != null)
@@ -144,7 +145,7 @@ namespace OA.Service
             }
         }
 
-        public async Task Remove(int id)
+        public async Task Remove(String id)
         {
             var entity = await _context.EmploymentContract.FindAsync(id); 
             if (entity != null)

@@ -9,11 +9,11 @@ namespace OA.Core.Services
     {
         Task<ResponseResult> Search(FilterEmploymentContractVModel model);
         Task<ExportStream> ExportFile(FilterEmploymentContractVModel model, ExportFileVModel exportModel);
-        Task<ResponseResult> GetById(int id);
+        Task<ResponseResult> GetById(String id);
         Task Create(EmploymentContractCreateVModel model);
         Task Update(EmploymentContractUpdateVModel model);
-        Task ChangeStatus(int id);
-        Task Remove(int id);
+        Task ChangeStatus(String id);
+        Task Remove(String id);
         
     }
 }

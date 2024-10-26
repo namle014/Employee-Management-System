@@ -8,7 +8,7 @@ namespace OA.Infrastructure.EF.Entities
 {
     public class EmploymentContract
     {
-        public int Id { get; set; }
+        public String Id { get; set; } = string.Empty;
         public bool IsActive { get; set; }
         public string? CreatedBy { get; set; }
         public DateTime? CreatedDate { get; set; }

@@ -19,7 +19,7 @@ namespace OA.Domain.VModels
 
     public class EmploymentContractUpdateVModel : EmploymentContractCreateVModel
     {
-        public int Id { get; set; }
+        public String Id { get; set; } = string.Empty;
     }
     public class EmploymentContractGetAllVModel : EmploymentContractUpdateVModel
     {

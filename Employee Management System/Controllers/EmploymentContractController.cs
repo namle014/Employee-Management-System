@@ -11,32 +11,33 @@ namespace OA.WebAPI.AdminControllers
 {
     [Route(CommonConstants.Routes.BaseRouteAdmin)]
     [ApiController]
-    public class TimeOffController : ControllerBase
+    public class EmploymentContractController : ControllerBase
     {
-        private readonly ITimeOffService _timeOffService;
-        private readonly ILogger<TimeOffController> _logger;
+        private readonly IEmploymentContractService _EmploymentContractService;
+        private readonly ILogger<EmploymentContractController> _logger;
 
-        public TimeOffController(ITimeOffService timeOffService, ILogger<TimeOffController> logger)
+        public EmploymentContractController(IEmploymentContractService EmploymentContractService, ILogger<EmploymentContractController> logger)
         {
-            _timeOffService = timeOffService;
+            _EmploymentContractService = EmploymentContractService;
             _logger = logger;
         }
 
 
         [HttpGet("search")]
-        public async Task<IActionResult> Search([FromQuery] FilterTimeOffVModel model)
+        public async Task<IActionResult> Search([FromQuery] FilterEmploymentContractVModel model)
         {
-            var response = await _timeOffService.Search(model);
+            var response = await _EmploymentContractService.Search(model);
             return Ok(response);
         }
 
         [HttpGet("export")]
-        public async Task<IActionResult> ExportFile([FromQuery] FilterTimeOffVModel model, [FromQuery] ExportFileVModel exportModel)
+        public async Task<IActionResult> ExportFile([FromQuery] FilterEmploymentContractVModel model, [FromQuery] ExportFileVModel exportModel)
         {
             exportModel.Type = exportModel.Type.ToUpper();
-            var content = await _timeOffService.ExportFile(model, exportModel);
+            var content = await _EmploymentContractService.ExportFile(model, exportModel);
             return File(content.Stream, content.ContentType, content.FileName);
         }
+
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
@@ -45,31 +46,31 @@ namespace OA.WebAPI.AdminControllers
             {
                 return BadRequest(string.Format(MsgConstants.Error404Messages.FieldIsInvalid, "Id"));
             }
-            var response = await _timeOffService.GetById(id);
+            var response = await _EmploymentContractService.GetById(id);
             return Ok(response);
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] TimeOffCreateVModel model)
+        public async Task<IActionResult> Create([FromBody] EmploymentContractCreateVModel model)
         {
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
 
-            await _timeOffService.Create(model);
+            await _EmploymentContractService.Create(model);
             return Created(string.Empty, null);
         }
 
         [HttpPut]
-        public async Task<IActionResult> Update([FromBody] TimeOffUpdateVModel model)
+        public async Task<IActionResult> Update([FromBody] EmploymentContractUpdateVModel model)
         {
             if (!ModelState.IsValid || model.Id <= 0)
             {
                 return BadRequest(ModelState);
             }
 
-            await _timeOffService.Update(model);
+            await _EmploymentContractService.Update(model);
             return NoContent();
         }
 
@@ -81,7 +82,7 @@ namespace OA.WebAPI.AdminControllers
                 return BadRequest(string.Format(MsgConstants.Error404Messages.FieldIsInvalid, "Id"));
             }
 
-            await _timeOffService.ChangeStatus(id);
+            await _EmploymentContractService.ChangeStatus(id);
             return NoContent();
         }
 
@@ -93,10 +94,10 @@ namespace OA.WebAPI.AdminControllers
                 return BadRequest(string.Format(MsgConstants.Error404Messages.FieldIsInvalid, "Id"));
             }
 
-            await _timeOffService.Remove(id);
+            await _EmploymentContractService.Remove(id);
             return NoContent();
         }
 
-      
+       
     }
 }

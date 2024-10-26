@@ -113,6 +113,7 @@ builder.Services.AddScoped<IInsuranceService, InsuranceService>();
 builder.Services.AddScoped<ITimekeepingService, TimekeepingService>();
 builder.Services.AddScoped<IHolidayService, HolidayService>();
 builder.Services.AddScoped<ITimeOffService, TimeOffService>();
+builder.Services.AddScoped<IEmploymentContractService, EmploymentContractService>();
 
 // Configure Identity
 var identityBuilder = builder.Services.AddIdentityCore<AspNetUser>(opt =>

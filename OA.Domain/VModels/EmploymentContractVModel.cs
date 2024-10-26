@@ -6,26 +6,29 @@ using System.Runtime.Serialization;
 
 namespace OA.Domain.VModels
 {
-    public class TimeOffCreateVModel
+    public class EmploymentContractCreateVModel
     {
-        public string? Reason { get; set; }
         public string UserId { get; set; } = string.Empty;
-        public DateTime Date { get; set; }
+        public string ContractName { get; set; } = string.Empty;
+        public DateTime StartDate { get; set; }
+        public DateTime EndDate { get; set; }
+        public decimal BasicSalary { get; set; }
+        public string? Clause { get; set; }
         public bool IsActive { get; set; }
     }
 
-    public class TimeOffUpdateVModel : TimeOffCreateVModel
+    public class EmploymentContractUpdateVModel : EmploymentContractCreateVModel
     {
         public int Id { get; set; }
     }
-    public class TimeOffGetAllVModel : TimeOffUpdateVModel
+    public class EmploymentContractGetAllVModel : EmploymentContractUpdateVModel
     {
         public DateTime? CreatedDate { get; set; }
         public string? CreatedBy { get; set; } = string.Empty;
         public DateTime? UpdatedDate { get; set; }
         public string? UpdatedBy { get; set; }
     }
-    public class TimeOffGetByIdVModel : TimeOffUpdateVModel
+    public class EmploymentContractGetByIdVModel : EmploymentContractUpdateVModel
     {
         public DateTime? CreatedDate { get; set; }
         public string? CreatedBy { get; set; }
@@ -34,16 +37,25 @@ namespace OA.Domain.VModels
     }
 
     [DataContract]
-    public class TimeOffExportVModel
+    public class EmploymentContractExportVModel
     {
-        [DataMember(Name = @"Reason")]
-        public string Reason { get; set; } = string.Empty;
-
         [DataMember(Name = @"UserId")]
         public string UserId { get; set; } = string.Empty;
 
-        [DataMember(Name = @"Date")]
-        public DateTime Date { get; set; }
+        [DataMember(Name = @"ContractName")]
+        public string ContractName { get; set; } = string.Empty;
+
+        [DataMember(Name = @"StartDate")]
+        public DateTime StartDate { get; set; }
+
+        [DataMember(Name = @"EndDate")]
+        public DateTime EndDate { get; set; }
+
+        [DataMember(Name = @"BasicSalary")]
+        public decimal BasicSalary { get; set; }
+
+        [DataMember(Name = @"Clause")]
+        public string Clause { get; set; } = string.Empty;
 
         [DataMember(Name = @"CreatedDate")]
         public DateTime CreatedDate { get; set; }
@@ -52,7 +64,7 @@ namespace OA.Domain.VModels
         public string CreatedBy { get; set; } = string.Empty;
     }
 
-    public class FilterTimeOffVModel
+    public class FilterEmploymentContractVModel
     {
         public bool? IsActive { get; set; }
         public DateTime? CreatedDate { get; set; }

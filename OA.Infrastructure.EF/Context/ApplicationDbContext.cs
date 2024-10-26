@@ -30,6 +30,7 @@ namespace OA.Infrastructure.EF.Context
         public virtual DbSet<Holiday> Holiday { get; set; } = null!;
         public virtual DbSet<Insurance> Insurance { get; set; } = null!;
         public virtual DbSet<TimeOff> TimeOff { get; set; } = null!;
+        public virtual DbSet<EmploymentContract> EmploymentContract { get; set; }
         #endregion --DBSET--
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

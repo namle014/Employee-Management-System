@@ -1,105 +1,167 @@
 ﻿using AutoMapper;
-using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using OA.Core.Constants;
 using OA.Core.Models;
-using OA.Core.Repositories;
-using OA.Core.Services;
 using OA.Core.VModels;
-using OA.Domain.Services;
 using OA.Domain.VModels;
 using OA.Infrastructure.EF.Entities;
-using OA.Repository;
+using OA.Infrastructure.EF.Context;
 using OA.Service.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Threading.Tasks;
-using static System.Runtime.InteropServices.JavaScript.JSType;
+using OA.Core.Services;
 
 namespace OA.Service
 {
-    public class TimeOffService : BaseService<TimeOff, TimeOffCreateVModel, TimeOffUpdateVModel, TimeOffGetByIdVModel, TimeOffGetAllVModel, TimeOffExportVModel>, ITimeOffService
+    public class TimeOffService : ITimeOffService
     {
-        private readonly IBaseRepository<TimeOff> _TimeOffRepo;
+        private readonly ApplicationDbContext _context; 
         private readonly IMapper _mapper;
 
-
-        public TimeOffService(IBaseRepository<TimeOff> TimeOffRepo, IMapper mapper) : base(TimeOffRepo, mapper)
+        public TimeOffService(ApplicationDbContext context, IMapper mapper)
         {
-            _TimeOffRepo = TimeOffRepo;
+            _context = context;
             _mapper = mapper;
         }
 
         public async Task<ResponseResult> Search(FilterTimeOffVModel model)
         {
-
             var result = new ResponseResult();
-
             string? keyword = model.Keyword?.ToLower();
-            var records = await _TimeOffRepo.
-                        Where(x =>
-                            (model.IsActive == null || model.IsActive == x.IsActive) &&
-                            (model.CreatedDate == null ||
-                                    (x.CreatedDate.HasValue &&
-                                    x.CreatedDate.Value.Year == model.CreatedDate.Value.Year &&
-                                    x.CreatedDate.Value.Month == model.CreatedDate.Value.Month &&
-                                    x.CreatedDate.Value.Day == model.CreatedDate.Value.Day)) &&
-                            (string.IsNullOrEmpty(keyword) ||
-                                    (x.UserId.ToLower().Contains(keyword) == true) ||
-                                    (x.Reason.ToLower().Contains(keyword) == true) ||
-                                    (x.CreatedBy != null && x.CreatedBy.ToLower().Contains(keyword))
-                        ));
 
-            if (!model.IsDescending)
+            var recordsQuery = _context.TimeOff.AsQueryable();
+
+            
+            if (model.IsActive != null)
             {
-                records = string.IsNullOrEmpty(model.SortBy)
-                    ? records.OrderBy(r => r.Id).ToList()
-                    : records.OrderBy(r => r.GetType().GetProperty(model.SortBy)?.GetValue(r, null)).ToList();
+                recordsQuery = recordsQuery.Where(x => x.IsActive == model.IsActive);
             }
-            else
+            if (model.CreatedDate != null)
             {
-                records = string.IsNullOrEmpty(model.SortBy)
-                    ? records.OrderByDescending(r => r.Id).ToList()
-                    : records.OrderByDescending(r => r.GetType().GetProperty(model.SortBy)?.GetValue(r, null)).ToList();
+                recordsQuery = recordsQuery.Where(x => x.CreatedDate.HasValue &&
+                                                      x.CreatedDate.Value.Date == model.CreatedDate.Value.Date);
+            }
+            if (!string.IsNullOrEmpty(keyword))
+            {
+                recordsQuery = recordsQuery.Where(x =>
+                    x.UserId.ToLower().Contains(keyword) ||
+                    (x.Reason != null && x.Reason.ToLower().Contains(keyword)) ||
+                    (x.CreatedBy != null && x.CreatedBy.ToLower().Contains(keyword))
+                );
             }
 
-            result.Data = new Pagination();
+            var records = model.IsDescending
+                ? await recordsQuery.OrderByDescending(r => r.Id).ToListAsync()
+                : await recordsQuery.OrderBy(r => r.Id).ToListAsync();
 
-            if (!model.IsExport)
+            result.Data = new Pagination()
             {
-                var list = new List<TimeOffGetAllVModel>();
-                foreach (var entity in records)
-                {
-                    var vmodel = _mapper.Map<TimeOffGetAllVModel>(entity);
-                    list.Add(vmodel);
-                }
-                var pagedRecords = list.Skip((model.PageNumber - 1) * model.PageSize).Take(model.PageSize).ToList();
-
-                result.Data.Records = pagedRecords;
-                result.Data.TotalRecords = list.Count;
-            }
-            else
-            {
-                var pagedRecords = records.Skip((model.PageNumber - 1) * model.PageSize).Take(model.PageSize).ToList();
-
-                result.Data.Records = pagedRecords;
-                result.Data.TotalRecords = records.ToList().Count;
-            }
+                Records = records.Skip((model.PageNumber - 1) * model.PageSize).Take(model.PageSize).ToList(),
+                TotalRecords = records.Count()
+            };
 
             return result;
         }
 
         public async Task<ExportStream> ExportFile(FilterTimeOffVModel model, ExportFileVModel exportModel)
         {
-
             model.IsExport = true;
             var result = await Search(model);
 
-            var records = _mapper.Map<IEnumerable<TimeOffExportVModel>>(result.Data?.Records);
+            var records = _mapper.Map<IEnumerable<TimeOffExportVModel>>(result.Data.Records);
             var exportData = ImportExportHelper<TimeOffExportVModel>.ExportFile(exportModel, records);
             return exportData;
         }
 
+
+        public async Task<ResponseResult> GetById(int id)
+        {
+            var result = new ResponseResult();
+            var entity = await _context.TimeOff.FindAsync(id);
+            if (entity != null)
+            {
+                result.Data = _mapper.Map<TimeOff>(entity);
+            }
+            else
+            {
+                throw new NotFoundException(MsgConstants.WarningMessages.NotFoundData);
+            }
+            return result;
+        }
+
+        
+        public async Task Create(TimeOffCreateVModel model)
+        {
+            var entityCreated = _mapper.Map<TimeOffCreateVModel, TimeOff>(model);
+            await _context.TimeOff.AddAsync(entityCreated);
+            var maxId = await _context.TimeOff.MaxAsync(x => (int?)x.Id) ?? 0; 
+            entityCreated.Id = maxId + 1;
+            var saveResult = await _context.SaveChangesAsync(); 
+            if (saveResult <= 0)
+            {
+                throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorCreate, "TimeOff"));
+            }
+        }
+
+
+        public async Task Update(TimeOffUpdateVModel model)
+        {
+            var entity = await _context.TimeOff.FindAsync(model.Id);
+            if (entity != null)
+            {
+                entity = _mapper.Map(model, entity);
+                _context.TimeOff.Update(entity); 
+                var saveResult = await _context.SaveChangesAsync();
+                if (saveResult <= 0)
+                {
+                    throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorUpdate, "TimeOff"));
+                }
+            }
+            else
+            {
+                throw new NotFoundException(MsgConstants.WarningMessages.NotFoundData);
+            }
+        }
+
+        public async Task ChangeStatus(int id)
+        {
+            var entity = await _context.TimeOff.FindAsync(id); 
+            if (entity != null)
+            {
+                entity.IsActive = !entity.IsActive;
+                _context.TimeOff.Update(entity); 
+                var saveResult = await _context.SaveChangesAsync();
+                if (saveResult <= 0)
+                {
+                    throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorUpdate, "TimeOff"));
+                }
+            }
+            else
+            {
+                throw new NotFoundException(MsgConstants.WarningMessages.NotFoundData);
+            }
+        }
+
+        public async Task Remove(int id)
+        {
+            var entity = await _context.TimeOff.FindAsync(id); 
+            if (entity != null)
+            {
+                _context.TimeOff.Remove(entity); 
+                var saveResult = await _context.SaveChangesAsync();
+                if (saveResult <= 0)
+                {
+                    throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorRemove, "TimeOff"));
+                }
+            }
+            else
+            {
+                throw new NotFoundException(MsgConstants.WarningMessages.NotFoundData);
+            }
+        }
+
+       
     }
 }

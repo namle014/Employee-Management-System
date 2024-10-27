@@ -13,5 +13,6 @@ namespace OA.Core.Services
         Task Create(HolidayCreateVModel model);
         Task Update(HolidayUpdateVModel model);
         Task<ResponseResult> GetAll();
+        Task Remove(int id);
     }
 }

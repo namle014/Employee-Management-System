@@ -19,7 +19,7 @@ namespace OA.Service
         private DbSet<Insurance> _insurance;
         private readonly UserManager<AspNetUser> _userManager;
         private readonly IMapper _mapper;
-        string _nameService = "Timekeeping";
+       // string _nameService = "Insurance";
 
         public InsuranceService(ApplicationDbContext dbContext, UserManager<AspNetUser> userManager, IMapper mapper, IHttpContextAccessor contextAccessor) : base(contextAccessor)
         {
@@ -39,9 +39,15 @@ namespace OA.Service
             throw new NotImplementedException();
         }
 
-        public Task Create(InsuranceCreateVModel model)
+        public async Task Create(InsuranceCreateVModel model)
         {
-            throw new NotImplementedException();
+            var insurance = _mapper.Map<Insurance>(model);
+
+            insurance.CreatedDate = DateTime.UtcNow; // Gán giá trị CreatedDate
+            _dbContext.Insurance.Add(insurance);    // Thêm insurance vào DbSet
+
+            await _dbContext.SaveChangesAsync();
+           // return Task.CompletedTask;// Lưu thay đổi vào database
         }
 
         public Task Update(InsuranceUpdateVModel model)

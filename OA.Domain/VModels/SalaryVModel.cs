@@ -17,6 +17,7 @@ namespace OA.Core.VModels
     public class SalaryUpdateVModel
     {
         public string Id { get; set; } = string.Empty;
+        public decimal TotalSalary { get; set; }
     }
     public class SalaryGetAllVModel : SalaryUpdateVModel
     {

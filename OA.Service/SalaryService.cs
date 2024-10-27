@@ -66,6 +66,7 @@ namespace OA.Service
             }
             entity.CreatedDate = DateTime.Now;
             entity.CreatedBy = GlobalUserName;
+            entity.IsActive = true;
             _salary.Add(entity);
 
             bool success = await _dbContext.SaveChangesAsync() > 0;
@@ -114,13 +115,45 @@ namespace OA.Service
         {
             try
             {
+                var entity = await _salary.FindAsync(model.Id);
+                if(entity == null)
+                {
+                    throw new NotFoundException(MsgConstants.WarningMessages.NotFoundData);
+                }
 
+                //_mapper.Map(model, entity);
+                entity.TotalSalary = model.TotalSalary;
+                entity.UpdatedDate = DateTime.Now;
+                entity.UpdatedBy = GlobalUserName;
+                _salary.Update(entity);
+
+                bool success = await _dbContext.SaveChangesAsync() > 0;
+                
+                if (!success)
+                {
+                    throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorUpdate, _nameService));
+                }
             }
             catch (Exception ex)
             {
                 throw new BadRequestException(Utilities.MakeExceptionMessage(ex));
             }
-            throw new NotImplementedException();
+        }
+
+        public async Task Remove(string id)
+        {
+            var entity = await _salary.FindAsync(id);
+            if(entity == null)
+            {
+                throw new NotFoundException(MsgConstants.WarningMessages.NotFoundData);
+            }
+            _salary.Remove(entity);
+
+            bool success = await _dbContext.SaveChangesAsync() > 0;
+            if (!success)
+            {
+                throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorRemove, _nameService));
+            }
         }
     }
 }

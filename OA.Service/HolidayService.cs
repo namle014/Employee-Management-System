@@ -35,6 +35,9 @@ namespace OA.Service
         public async Task Create(HolidayCreateVModel model)
         {
             var entity = _mapper.Map<HolidayCreateVModel, Holiday>(model);
+            entity.CreatedDate = DateTime.Now;
+            entity.CreatedBy = GlobalUserName;
+            entity.IsActive = true;
             _holiday.Add(entity);
             bool success = await _dbContext.SaveChangesAsync() > 0;
             if (!success)
@@ -52,9 +55,39 @@ namespace OA.Service
             return result;
         }
 
-        public Task Update(HolidayUpdateVModel model)
+        public async Task Remove(int id)
         {
-            throw new NotImplementedException();
+            var entity = await _holiday.FindAsync(id);
+            if(entity == null)
+            {
+                throw new NotFoundException(MsgConstants.WarningMessages.NotFoundData);
+            }
+            _holiday.Remove(entity);
+            bool success = await _dbContext.SaveChangesAsync() > 0;
+            if (!success)
+            {
+                throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorRemove, _nameService));
+            }
+        }
+
+        public async Task Update(HolidayUpdateVModel model)
+        {
+            var entity = await _holiday.FindAsync(model.Id);
+            if (entity == null)
+            {
+                throw new NotFoundException(MsgConstants.WarningMessages.NotFoundData);
+            }
+
+            _mapper.Map(model, entity);
+
+            entity.UpdatedDate = DateTime.Now;
+            entity.UpdatedBy = GlobalUserName;
+
+            bool success = await _dbContext.SaveChangesAsync() > 0;
+            if (!success)
+            {
+                throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorUpdate, _nameService));
+            }
         }
     }
 }

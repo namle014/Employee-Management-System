@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -16,6 +17,9 @@ namespace OA.Infrastructure.EF.Entities
         public DateTime? UpdatedDate { get; set; }
         public string Name { get; set; } = string.Empty;
         public int InsuranceTypeId { get; set; }
-        public double InsuranceContribution { get; set; }
+        public decimal InsuranceContribution { get; set; }
+        [ForeignKey("InsuranceTypeId")] // Chỉ rõ cột khóa ngoại
+        public virtual required InsuranceType InsuranceType { get; set; } // Bỏ từ khóa `required` nếu chưa dùng .NET 7+
+
     }
 }

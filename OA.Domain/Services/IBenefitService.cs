@@ -12,7 +12,7 @@ namespace OA.Core.Services
     {
         Task<ResponseResult> GetById(int id);
         Task<ResponseResult> Search(FilterBenefitVModel model);
-        Task Create(BenefitVModel model);
+        Task Create(BenefitCreateVModel model);
         Task Update(BenefitUpdateVModel model);
         Task ChangeStatus(int id);
         Task Remove(int id);

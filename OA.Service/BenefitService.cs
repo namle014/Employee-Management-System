@@ -40,7 +40,7 @@ namespace OA.Service
             throw new NotImplementedException();
         }
 
-        public async Task Create(BenefitVModel model)
+        public async Task Create(BenefitCreateVModel model)
         {
             var benefit = _mapper.Map<Benefit>(model);
 

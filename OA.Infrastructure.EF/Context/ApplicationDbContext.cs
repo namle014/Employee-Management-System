@@ -29,12 +29,18 @@ namespace OA.Infrastructure.EF.Context
         public virtual DbSet<Timekeeping> Timekeeping { get; set; } = null!;
         public virtual DbSet<Holiday> Holiday { get; set; } = null!;
         public virtual DbSet<Insurance> Insurance { get; set; } = null!;
+        public virtual DbSet<InsuranceType> InsuranceTypes { get; set; }
         public virtual DbSet<TimeOff> TimeOff { get; set; } = null!;
+
         #endregion --DBSET--
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+            modelBuilder.Entity<Insurance>()
+            .HasOne(i => i.InsuranceType)
+            .WithMany(it => it.Insurances)
+            .HasForeignKey(i => i.InsuranceTypeId);
         }
     }
 }

@@ -12,7 +12,7 @@ namespace OA.WebAPI.Mappings
         public BenefitMapping()
         {
             //Insert
-            CreateMap<BenefitVModel, Benefit>();
+            CreateMap<BenefitCreateVModel, Benefit>();
             // Update
             CreateMap<BenefitUpdateVModel, Benefit>();
             //Get All 

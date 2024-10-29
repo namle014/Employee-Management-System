@@ -51,7 +51,7 @@ namespace OA.WebAPI.AdminControllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] BenefitVModel model)
+        public async Task<IActionResult> Create([FromBody] BenefitCreateVModel model)
         {
             if (!ModelState.IsValid)
             {

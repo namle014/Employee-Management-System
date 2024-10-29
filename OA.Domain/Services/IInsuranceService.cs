@@ -14,8 +14,8 @@ namespace OA.Core.Services
         Task<ResponseResult> Search(FilterInsuranceVModel model);
         Task Create(InsuranceCreateVModel model);
         Task Update(InsuranceUpdateVModel model);
-        Task ChangeStatus(int id);
-        Task Remove(int id);
+        Task ChangeStatus(string id);
+        Task Remove(string id);
         Task<ResponseResult> GetAll();
     }
 }

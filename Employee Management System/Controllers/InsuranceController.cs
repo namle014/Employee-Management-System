@@ -72,9 +72,9 @@ namespace OA.WebApi.Controllers
         }
 
         [HttpPut(CommonConstants.Routes.Id)]
-        public async Task<IActionResult> ChangeStatus(int id)
+        public async Task<IActionResult> ChangeStatus(string id)
         {
-            if (id <= 0)
+            if (id == null)
             {
                 return new BadRequestObjectResult(string.Format(MsgConstants.Error404Messages.FieldIsInvalid, StringConstants.Validate.Id));
             }
@@ -85,9 +85,9 @@ namespace OA.WebApi.Controllers
         }
 
         [HttpDelete(CommonConstants.Routes.Id)]
-        public virtual async Task<IActionResult> Remove(int id)
+        public virtual async Task<IActionResult> Remove(string id)
         {
-            if (id <= 0)
+            if (id == null)
             {
                 return new BadRequestObjectResult(string.Format(MsgConstants.Error404Messages.FieldIsInvalid, StringConstants.Validate.Id));
             }

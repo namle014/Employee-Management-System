@@ -52,7 +52,7 @@ namespace OA.Service
             if (entity.InsuranceType != null)
             {
                 entityMapped.InsuranceTypeId = entity.InsuranceType.Id; 
-                entityMapped.FullName = entity.InsuranceType.Name; 
+                entityMapped.Name = entity.InsuranceType.Name; 
             }
 
             result.Data = entityMapped;

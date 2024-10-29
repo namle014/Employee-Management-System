@@ -5,6 +5,7 @@ using OA.Core.Constants;
 using OA.Core.Services;
 using OA.Core.VModels;
 using OA.Infrastructure.EF.Entities;
+using OA.Service;
 using System.Threading.Tasks;
 namespace OA.WebApi.Controllers
 {
@@ -94,6 +95,12 @@ namespace OA.WebApi.Controllers
             await _service.Remove(id);
 
             return NoContent();
+        }
+        [HttpGet]
+        public async Task<IActionResult> GetAll()
+        {
+            var response = await _service.GetAll();
+            return Ok(response);
         }
     }
 }

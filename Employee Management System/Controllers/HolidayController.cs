@@ -2,6 +2,7 @@
 using OA.Core.Constants;
 using OA.Core.Services;
 using OA.Core.VModels;
+using OA.Infrastructure.EF.Entities;
 
 namespace OA.WebApi.Controllers 
 {
@@ -31,6 +32,27 @@ namespace OA.WebApi.Controllers
             }
             await _holidayService.Create(model);
             return Created();
+        }
+        [HttpPut]
+        public async Task<IActionResult> Update([FromBody] HolidayUpdateVModel model)
+        {
+            if (!ModelState.IsValid || (model as dynamic)?.Id <= 0)
+            {
+                return new BadRequestObjectResult(ModelState);
+            }
+            await _holidayService.Update(model);
+            return NoContent();
+        }
+        [HttpDelete(CommonConstants.Routes.Id)]
+        public async Task<IActionResult> Remove(int id)
+        {
+            if(id <= 0)
+            {
+                return new BadRequestObjectResult(string.Format(MsgConstants.Error404Messages.FieldIsInvalid, StringConstants.Validate.Id));
+            }
+
+            await _holidayService.Remove(id);
+            return NoContent();
         }
     }
 }

@@ -15,23 +15,23 @@ using OA.Core.Services;
 
 namespace OA.Service
 {
-    public class TimeOffService : ITimeOffService
+    public class EmploymentContractService : IEmploymentContractService
     {
         private readonly ApplicationDbContext _context; 
         private readonly IMapper _mapper;
 
-        public TimeOffService(ApplicationDbContext context, IMapper mapper)
+        public EmploymentContractService(ApplicationDbContext context, IMapper mapper)
         {
             _context = context;
             _mapper = mapper;
         }
 
-        public async Task<ResponseResult> Search(FilterTimeOffVModel model)
+        public async Task<ResponseResult> Search(FilterEmploymentContractVModel model)
         {
             var result = new ResponseResult();
             string? keyword = model.Keyword?.ToLower();
 
-            var recordsQuery = _context.TimeOff.AsQueryable();
+            var recordsQuery = _context.EmploymentContract.AsQueryable();
 
             
             if (model.IsActive != null)
@@ -47,7 +47,7 @@ namespace OA.Service
             {
                 recordsQuery = recordsQuery.Where(x =>
                     x.UserId.ToLower().Contains(keyword) ||
-                    (x.Reason != null && x.Reason.ToLower().Contains(keyword)) ||
+                    (x.ContractName != null && x.ContractName.ToLower().Contains(keyword)) ||
                     (x.CreatedBy != null && x.CreatedBy.ToLower().Contains(keyword))
                 );
             }
@@ -65,24 +65,24 @@ namespace OA.Service
             return result;
         }
 
-        public async Task<ExportStream> ExportFile(FilterTimeOffVModel model, ExportFileVModel exportModel)
+        public async Task<ExportStream> ExportFile(FilterEmploymentContractVModel model, ExportFileVModel exportModel)
         {
             model.IsExport = true;
             var result = await Search(model);
 
-            var records = _mapper.Map<IEnumerable<TimeOffExportVModel>>(result.Data.Records);
-            var exportData = ImportExportHelper<TimeOffExportVModel>.ExportFile(exportModel, records);
+            var records = _mapper.Map<IEnumerable<EmploymentContractExportVModel>>(result.Data.Records);
+            var exportData = ImportExportHelper<EmploymentContractExportVModel>.ExportFile(exportModel, records);
             return exportData;
         }
 
 
-        public async Task<ResponseResult> GetById(int id)
+        public async Task<ResponseResult> GetById(String id)
         {
             var result = new ResponseResult();
-            var entity = await _context.TimeOff.FindAsync(id);
+            var entity = await _context.EmploymentContract.FindAsync(id);
             if (entity != null)
             {
-                result.Data = _mapper.Map<TimeOff>(entity);
+                result.Data = _mapper.Map<EmploymentContract>(entity);
             }
             else
             {
@@ -92,31 +92,32 @@ namespace OA.Service
         }
 
         
-        public async Task Create(TimeOffCreateVModel model)
+        public async Task Create(EmploymentContractCreateVModel model)
         {
-            var entityCreated = _mapper.Map<TimeOffCreateVModel, TimeOff>(model);
-            await _context.TimeOff.AddAsync(entityCreated);
-            var maxId = await _context.TimeOff.MaxAsync(x => (int?)x.Id) ?? 0; 
-            entityCreated.Id = maxId + 1;
+            var entityCreated = _mapper.Map<EmploymentContractCreateVModel, EmploymentContract>(model);
+            await _context.EmploymentContract.AddAsync(entityCreated);
+            var maxId = await _context.EmploymentContract.MaxAsync(x => (string)x.Id) ?? "EC-000";
+            int numberPart = int.Parse(maxId.Substring(3)) + 1; 
+            entityCreated.Id = $"EC-{numberPart:D3}"; 
             var saveResult = await _context.SaveChangesAsync(); 
             if (saveResult <= 0)
             {
-                throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorCreate, "TimeOff"));
+                throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorCreate, "EmploymentContract"));
             }
         }
 
 
-        public async Task Update(TimeOffUpdateVModel model)
+        public async Task Update(EmploymentContractUpdateVModel model)
         {
-            var entity = await _context.TimeOff.FindAsync(model.Id);
+            var entity = await _context.EmploymentContract.FindAsync(model.Id);
             if (entity != null)
             {
                 entity = _mapper.Map(model, entity);
-                _context.TimeOff.Update(entity); 
+                _context.EmploymentContract.Update(entity); 
                 var saveResult = await _context.SaveChangesAsync();
                 if (saveResult <= 0)
                 {
-                    throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorUpdate, "TimeOff"));
+                    throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorUpdate, "EmploymentContract"));
                 }
             }
             else
@@ -125,17 +126,17 @@ namespace OA.Service
             }
         }
 
-        public async Task ChangeStatus(int id)
+        public async Task ChangeStatus(String id)
         {
-            var entity = await _context.TimeOff.FindAsync(id); 
+            var entity = await _context.EmploymentContract.FindAsync(id); 
             if (entity != null)
             {
                 entity.IsActive = !entity.IsActive;
-                _context.TimeOff.Update(entity); 
+                _context.EmploymentContract.Update(entity); 
                 var saveResult = await _context.SaveChangesAsync();
                 if (saveResult <= 0)
                 {
-                    throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorUpdate, "TimeOff"));
+                    throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorUpdate, "EmploymentContract"));
                 }
             }
             else
@@ -144,16 +145,16 @@ namespace OA.Service
             }
         }
 
-        public async Task Remove(int id)
+        public async Task Remove(String id)
         {
-            var entity = await _context.TimeOff.FindAsync(id); 
+            var entity = await _context.EmploymentContract.FindAsync(id); 
             if (entity != null)
             {
-                _context.TimeOff.Remove(entity); 
+                _context.EmploymentContract.Remove(entity); 
                 var saveResult = await _context.SaveChangesAsync();
                 if (saveResult <= 0)
                 {
-                    throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorRemove, "TimeOff"));
+                    throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorRemove, "EmploymentContract"));
                 }
             }
             else

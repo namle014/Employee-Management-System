@@ -1,16 +1,19 @@
-﻿using OA.Core.Models;
-using OA.Core.Services;
+﻿using System.Threading.Tasks;
+using OA.Core.Models;
 using OA.Core.VModels;
 using OA.Domain.VModels;
-using OA.Infrastructure.EF.Entities;
-using System.Threading.Tasks;
 
-namespace OA.Domain.Services
+namespace OA.Core.Services
 {
-    public interface ITimeOffService : IBaseService<TimeOff, TimeOffCreateVModel, TimeOffUpdateVModel, TimeOffGetByIdVModel, TimeOffGetAllVModel>
+    public interface ITimeOffService
     {
         Task<ResponseResult> Search(FilterTimeOffVModel model);
         Task<ExportStream> ExportFile(FilterTimeOffVModel model, ExportFileVModel exportModel);
-
+        Task<ResponseResult> GetById(int id);
+        Task Create(TimeOffCreateVModel model);
+        Task Update(TimeOffUpdateVModel model);
+        Task ChangeStatus(int id);
+        Task Remove(int id);
+        
     }
 }

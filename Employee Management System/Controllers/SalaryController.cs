@@ -59,5 +59,25 @@ namespace OA.WebApi.Controllers
             await _salaryService.Create(model);
             return Created();
         }
+        [HttpPut]
+        public async Task<IActionResult> Update([FromBody] SalaryUpdateVModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return new BadRequestObjectResult(ModelState);
+            }
+            await _salaryService.Update(model);
+            return NoContent();
+        }
+        [HttpDelete(CommonConstants.Routes.Id)]
+        public async Task<IActionResult> Remove(string id)
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                return new BadRequestObjectResult(string.Format(MsgConstants.Error404Messages.FieldIsInvalid, "id"));
+            }
+            await _salaryService.Remove(id);
+            return NoContent();
+        }
     }
 }

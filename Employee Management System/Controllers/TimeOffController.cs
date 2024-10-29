@@ -1,46 +1,102 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using OA.Core.Constants;
-using OA.Core.VModels;
-using OA.Domain.Services;
-using OA.Domain.VModels;
-using OA.Infrastructure.EF.Entities;
 using OA.Service;
-using OA.Service.Helpers;
-using OA.WebApi.Controllers;
-using System;
+using OA.Domain.VModels;
 using System.Threading.Tasks;
+using OA.Core.VModels;
+using OA.Core.Services;
 
 namespace OA.WebAPI.AdminControllers
 {
     [Route(CommonConstants.Routes.BaseRouteAdmin)]
     [ApiController]
-    public class TimeOffController : BaseController<TimeOffController, TimeOff, TimeOffCreateVModel, TimeOffUpdateVModel, TimeOffGetByIdVModel, TimeOffGetAllVModel>
+    public class TimeOffController : ControllerBase
     {
-        private readonly ITimeOffService _TimeOffService;
+        private readonly ITimeOffService _timeOffService;
         private readonly ILogger<TimeOffController> _logger;
 
-        public TimeOffController(ITimeOffService TimeOffService, ILogger<TimeOffController> logger) : base(TimeOffService, logger)
+        public TimeOffController(ITimeOffService timeOffService, ILogger<TimeOffController> logger)
         {
-            _TimeOffService = TimeOffService;
+            _timeOffService = timeOffService;
             _logger = logger;
         }
 
-        [HttpGet]
+
+        [HttpGet("search")]
         public async Task<IActionResult> Search([FromQuery] FilterTimeOffVModel model)
         {
-            var response = await _TimeOffService.Search(model);
+            var response = await _timeOffService.Search(model);
             return Ok(response);
         }
 
-        [HttpGet]
+        [HttpGet("export")]
         public async Task<IActionResult> ExportFile([FromQuery] FilterTimeOffVModel model, [FromQuery] ExportFileVModel exportModel)
         {
-            exportModel.Type.ToUpper();
-            var content = await _TimeOffService.ExportFile(model, exportModel);
+            exportModel.Type = exportModel.Type.ToUpper();
+            var content = await _timeOffService.ExportFile(model, exportModel);
             return File(content.Stream, content.ContentType, content.FileName);
         }
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetById(int id)
+        {
+            if (id <= 0)
+            {
+                return BadRequest(string.Format(MsgConstants.Error404Messages.FieldIsInvalid, "Id"));
+            }
+            var response = await _timeOffService.GetById(id);
+            return Ok(response);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Create([FromBody] TimeOffCreateVModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            await _timeOffService.Create(model);
+            return Created(string.Empty, null);
+        }
+
+        [HttpPut]
+        public async Task<IActionResult> Update([FromBody] TimeOffUpdateVModel model)
+        {
+            if (!ModelState.IsValid || model.Id <= 0)
+            {
+                return BadRequest(ModelState);
+            }
+
+            await _timeOffService.Update(model);
+            return NoContent();
+        }
+
+        [HttpPut("{id}/status")]
+        public async Task<IActionResult> ChangeStatus(int id)
+        {
+            if (id <= 0)
+            {
+                return BadRequest(string.Format(MsgConstants.Error404Messages.FieldIsInvalid, "Id"));
+            }
+
+            await _timeOffService.ChangeStatus(id);
+            return NoContent();
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Remove(int id)
+        {
+            if (id <= 0)
+            {
+                return BadRequest(string.Format(MsgConstants.Error404Messages.FieldIsInvalid, "Id"));
+            }
+
+            await _timeOffService.Remove(id);
+            return NoContent();
+        }
+
+      
     }
 }

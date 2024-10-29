@@ -10,9 +10,8 @@ using System.Threading.Tasks;
 
 namespace OA.Core.VModels
 {
-    public class BenefitVModel
+    public class BenefitCreateVModel
     {
-        public int Id { get; set; }
         //public string? CreatedBy { get; set; }
         //public DateTime? CreatedDate { get; set; }
         //public string? UpdatedBy { get; set; }
@@ -20,20 +19,23 @@ namespace OA.Core.VModels
         public string Name { get; set; } = string.Empty;
         public int BenefitTypeId { get; set; }
         public double BenefitContribution { get; set; }
-        public bool IsActive { get; set; }
     }
-    public class BenefitUpdateVModel : BenefitVModel
+    public class BenefitUpdateVModel : BenefitCreateVModel
     {
+        public int Id { get; set; }
+        public bool IsActive { get; set; }
+
+
     }
 
-    public class BenefitGetAllVModel : BenefitVModel
+    public class BenefitGetAllVModel : BenefitCreateVModel
     {
         //public DateTime? CreatedDate { get; set; }
         //public string? CreatedBy { get; set; } = string.Empty;
         //public DateTime? UpdatedDate { get; set; }
         //public string? UpdatedBy { get; set; }
     }
-    public class BenefitGetByIdVModel : BenefitVModel
+    public class BenefitGetByIdVModel : BenefitCreateVModel
     {
         //public DateTime? CreatedDate { get; set; }
         //public string? CreatedBy { get; set; }

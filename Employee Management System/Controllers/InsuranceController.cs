@@ -24,9 +24,9 @@ namespace OA.WebApi.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetById(int id)
+        public async Task<IActionResult> GetById(string id)
         {
-            if (id <= 0)
+            if (id == null)
             {
                 return new BadRequestObjectResult(string.Format(MsgConstants.Error404Messages.FieldIsInvalid, "Id"));
             }
@@ -61,11 +61,10 @@ namespace OA.WebApi.Controllers
         [HttpPut]
         public async Task<IActionResult> Update([FromBody] InsuranceUpdateVModel model)
         {
-            if (!ModelState.IsValid || (model as dynamic)?.Id <= 0)
-            {
-                return new BadRequestObjectResult(ModelState);
-            }
-
+            //if (!ModelState.IsValid || (model as dynamic)?.Id <= 0)
+            //{
+            //    return new BadRequestObjectResult(ModelState);
+            //}
             await _service.Update(model);
 
             return NoContent();

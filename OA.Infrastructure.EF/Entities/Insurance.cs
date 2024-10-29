@@ -18,8 +18,8 @@ namespace OA.Infrastructure.EF.Entities
         public string Name { get; set; } = string.Empty;
         public int InsuranceTypeId { get; set; }
         public decimal InsuranceContribution { get; set; }
-        [ForeignKey("InsuranceTypeId")] // Chỉ rõ cột khóa ngoại
-        public virtual required InsuranceType InsuranceType { get; set; } // Bỏ từ khóa `required` nếu chưa dùng .NET 7+
+        [ForeignKey("InsuranceTypeId")] 
+        public virtual required InsuranceType InsuranceType { get; set; } 
 
     }
 }

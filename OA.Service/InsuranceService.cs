@@ -98,14 +98,47 @@ namespace OA.Service
         }
 
 
-        public Task ChangeStatus(int id)
+        public async Task ChangeStatus(string id)
         {
-            throw new NotImplementedException();
+            var entity = await _insurance.FindAsync(id);
+            if (entity == null)
+            {
+                throw new NotFoundException(MsgConstants.WarningMessages.NotFoundData);
+            }
+
+            entity.IsActive = !entity.IsActive;
+
+            bool success = await _dbContext.SaveChangesAsync() > 0;
+
+            if (!success)
+            {
+                throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorUpdate, _nameService));
+            }
         }
 
-        public Task Remove(int id)
+        public async Task Remove(string id)
         {
-            throw new NotImplementedException();
+            var entity = await _insurance.FindAsync(id);
+            if (entity == null)
+            {
+                throw new NotFoundException(MsgConstants.WarningMessages.NotFoundData);
+            }
+
+            _insurance.Remove(entity);
+
+            bool success = await _dbContext.SaveChangesAsync() > 0;
+            if (!success)
+            {
+                throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorRemove, _nameService));
+            }
+        }
+
+        public async Task<ResponseResult> GetAll()
+        {
+            var result = new ResponseResult();
+            var data = _insurance.AsQueryable();
+            result.Data = await data.ToListAsync();
+            return result;
         }
 
         public async Task<string> SetIdMax(InsuranceCreateVModel model)
@@ -116,7 +149,7 @@ namespace OA.Service
             var highestId = idList.Select(id => new
             {
                 originalId = id,
-                numPart = int.TryParse(id.Substring(2), out int number) ? number : -1 //nv001
+                numPart = int.TryParse(id.Substring(2), out int number) ? number : -1 
             })
             .OrderByDescending(x => x.numPart).Select(x => x.originalId).FirstOrDefault();
 
@@ -141,13 +174,6 @@ namespace OA.Service
             }
         }
 
-        public async Task<ResponseResult> GetAll()
-        {
-            //throw new NotImplementedException();
-            var result = new ResponseResult();
-            var data = _insurance.AsQueryable();
-            result.Data = await data.ToListAsync();
-            return result;
-        }
+        
     }
 }

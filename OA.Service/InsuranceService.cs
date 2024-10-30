@@ -52,7 +52,7 @@ namespace OA.Service
             if (entity.InsuranceType != null)
             {
                 entityMapped.InsuranceTypeId = entity.InsuranceType.Id; 
-                entityMapped.Name = entity.InsuranceType.Name; 
+                entityMapped.NameOfInsuranceType = entity.InsuranceType.Name; 
             }
 
             result.Data = entityMapped;
@@ -61,9 +61,60 @@ namespace OA.Service
         }
 
 
-        public Task<ResponseResult> Search(FilterInsuranceVModel model)
+        public async Task<ResponseResult> Search(FilterInsuranceVModel model)
         {
-            throw new NotImplementedException();
+            var result = new ResponseResult();
+            var query = _insurance.AsQueryable();
+
+            if (!string.IsNullOrEmpty(model.Id))
+            {
+                query = query.Where(t => t.Id.StartsWith(model.Id));
+            }
+
+            if (model.StartDate.HasValue)
+            {
+                query = query.Where(t =>
+                    (t.UpdatedDate.HasValue ? t.UpdatedDate.Value : t.CreatedDate) >= model.StartDate.Value);
+            }
+
+            if (model.EndDate.HasValue)
+            {
+                query = query.Where(t =>
+                    (t.UpdatedDate.HasValue ? t.UpdatedDate.Value : t.CreatedDate) <= model.EndDate.Value);
+            }
+
+            if (model.IsActive.HasValue)
+            {
+                query = query.Where(t => t.IsActive == model.IsActive.Value);
+            }
+
+            var insuranceList = await query.ToListAsync();
+            var insuranceGrouped = insuranceList.GroupBy(t => t.Id);
+
+            var insuranceListMapped = new List<InsuranceGetAllVModel>();
+
+            foreach (var group in insuranceGrouped)
+            {
+                foreach (var insurance in group)
+                {
+                    var entity = await _insurance
+                .Include(i => i.InsuranceType)
+                .FirstOrDefaultAsync(i => i.Id == insurance.Id);
+                    if (entity == null)
+                    {
+                        throw new NotFoundException(MsgConstants.WarningMessages.NotFoundData);
+                    }
+
+                    var entityMapped = _mapper.Map<Insurance, InsuranceGetAllVModel>(entity);
+                    
+                    entityMapped.NameOfInsuranceType = entity.InsuranceType.Name; 
+                    insuranceListMapped.Add(entityMapped);
+                }
+            }
+
+            result.Data = insuranceListMapped;
+
+            return result;
         }
 
         public async Task Create(InsuranceCreateVModel model)

@@ -24,21 +24,27 @@ namespace OA.Core.VModels
 
     }
 
-    public class InsuranceGetByIdVModel : InsuranceCreateVModel
+    public class InsuranceGetByIdVModel : InsuranceUpdateVModel
     {
-        public string FullName { get; set; } = string.Empty;
+        public string NameOfInsuranceType { get; set; } = string.Empty;
+        public DateTime? CreatedDate { get; set; }
+        public DateTime? UpdatedDate { get; set; }
 
     }
 
-    public class InsuranceGetAllVModel : InsuranceCreateVModel
+    public class InsuranceGetAllVModel : InsuranceGetByIdVModel
     {
-        public DateTime? CreatedDate { get; set; }
-        public DateTime? UpdatedDate { get; set; }
+
     }
 
     public class FilterInsuranceVModel
     {
-      
+        public string Id { get; set; } = string.Empty;
+        public string NameofInsuranceType { get; set; } = string.Empty;
+        public decimal InsuranceContribution { get; set; }
+        public DateTime? StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
+        public bool? IsActive { get; set; }
     }
 
     [DataContract]

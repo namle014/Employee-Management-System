@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking.Internal;
 using OA.Core.Constants;
 using OA.Core.Models;
 using OA.Core.Services;
@@ -21,7 +20,6 @@ namespace OA.Service
         private string _nameService = "Insurance";
         private readonly UserManager<AspNetUser> _userManager;
         private readonly IMapper _mapper;
-       // string _nameService = "Insurance";
 
         public InsuranceService(ApplicationDbContext dbContext, UserManager<AspNetUser> userManager, IMapper mapper, IHttpContextAccessor contextAccessor) : base(contextAccessor)
         {
@@ -34,9 +32,6 @@ namespace OA.Service
         public async Task<ResponseResult> GetById(string id)
         {
             var result = new ResponseResult();
-       //     var insurances = _dbContext.Insurance
-       //.Include(i => i.InsuranceType) 
-       //.ToList();
 
             var entity = await _insurance
                 .Include(i => i.InsuranceType) 
@@ -87,6 +82,15 @@ namespace OA.Service
             {
                 query = query.Where(t => t.IsActive == model.IsActive.Value);
             }
+
+            if(!CheckIsNullOrEmpty(model.Keyword))
+            {
+                string keyword = model.Keyword.ToLower();
+                query = query.Where(t => (t.Name.ToLower().Contains(keyword) == true) || 
+                                         (t.CreatedBy != null && t.CreatedBy.ToLower().Contains(keyword)) ||
+                                         (t.UpdatedBy != null && t.UpdatedBy.ToLower().Contains(keyword)));
+            }
+
 
             var insuranceList = await query.ToListAsync();
             var insuranceGrouped = insuranceList.GroupBy(t => t.Id);
@@ -225,6 +229,11 @@ namespace OA.Service
             }
         }
 
+        public virtual bool CheckIsNullOrEmpty(string value)
+        {
+            if(string.IsNullOrEmpty(value)) return true;
+            return false;
+        }
         
     }
 }

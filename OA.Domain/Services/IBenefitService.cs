@@ -10,11 +10,12 @@ namespace OA.Core.Services
 {
     public interface IBenefitService
     {
-        Task<ResponseResult> GetById(int id);
+        Task<ResponseResult> GetById(string id);
         Task<ResponseResult> Search(FilterBenefitVModel model);
         Task Create(BenefitCreateVModel model);
         Task Update(BenefitUpdateVModel model);
-        Task ChangeStatus(int id);
-        Task Remove(int id);
+        Task ChangeStatus(string id);
+        Task Remove(string id);
+        Task<ResponseResult> GetAll();
     }
 }

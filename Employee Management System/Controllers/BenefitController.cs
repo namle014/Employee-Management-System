@@ -31,9 +31,9 @@ namespace OA.WebAPI.AdminControllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetById(int id)
+        public async Task<IActionResult> GetById(string id)
         {
-            if (id <= 0)
+            if (id == null)
             {
                 return new BadRequestObjectResult(string.Format(MsgConstants.Error404Messages.FieldIsInvalid, "Id"));
             }
@@ -68,10 +68,10 @@ namespace OA.WebAPI.AdminControllers
         [HttpPut]
         public async Task<IActionResult> Update([FromBody] BenefitUpdateVModel model)
         {
-            if (!ModelState.IsValid || (model as dynamic)?.Id <= 0)
-            {
-                return new BadRequestObjectResult(ModelState);
-            }
+            //if (!ModelState.IsValid || (model as dynamic)?.Id <= 0)
+            //{
+            //    return new BadRequestObjectResult(ModelState);
+            //}
 
             await _service.Update(model);
 
@@ -79,9 +79,9 @@ namespace OA.WebAPI.AdminControllers
         }
 
         [HttpPut(CommonConstants.Routes.Id)]
-        public async Task<IActionResult> ChangeStatus(int id)
+        public async Task<IActionResult> ChangeStatus(string id)
         {
-            if (id <= 0)
+            if (id == null)
             {
                 return new BadRequestObjectResult(string.Format(MsgConstants.Error404Messages.FieldIsInvalid, StringConstants.Validate.Id));
             }
@@ -92,9 +92,9 @@ namespace OA.WebAPI.AdminControllers
         }
 
         [HttpDelete(CommonConstants.Routes.Id)]
-        public virtual async Task<IActionResult> Remove(int id)
+        public virtual async Task<IActionResult> Remove(string id)
         {
-            if (id <= 0)
+            if (id == null)
             {
                 return new BadRequestObjectResult(string.Format(MsgConstants.Error404Messages.FieldIsInvalid, StringConstants.Validate.Id));
             }

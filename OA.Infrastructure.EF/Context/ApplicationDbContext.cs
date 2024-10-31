@@ -41,6 +41,11 @@ namespace OA.Infrastructure.EF.Context
             .HasOne(i => i.InsuranceType)
             .WithMany(it => it.Insurances)
             .HasForeignKey(i => i.InsuranceTypeId);
+
+            modelBuilder.Entity<Benefit>()
+                .HasOne(i => i.BenefitType)
+                .WithMany(it => it.Benefits)
+                .HasForeignKey(i => i.BenefitTypeId);
         }
     }
 }

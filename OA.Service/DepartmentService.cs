@@ -20,23 +20,23 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace OA.Service
 {
-    public class RewardService : BaseService<Reward, RewardCreateVModel, RewardUpdateVModel, RewardGetByIdVModel, RewardGetAllVModel, RewardExportVModel>, IRewardService 
+    public class DepartmentService : BaseService<Department, DepartmentCreateVModel, DepartmentUpdateVModel, DepartmentGetByIdVModel, DepartmentGetAllVModel, DepartmentExportVModel>, IDepartmentService
     {
-        private readonly IBaseRepository<Reward> _rewardRepo;
+        private readonly IBaseRepository<Department> _departmentRepo;
         private readonly IMapper _mapper;
 
-        public RewardService(IBaseRepository<Reward> rewardRepo, IMapper mapper) : base(rewardRepo, mapper)
+        public DepartmentService(IBaseRepository<Department> departmentRepo, IMapper mapper) : base(departmentRepo, mapper)
         {
-            _rewardRepo = rewardRepo;
+            _departmentRepo = departmentRepo;
             _mapper = mapper;
         }
 
-        public async Task<ResponseResult> Search(RewardFilterVModel model)
+        public async Task<ResponseResult> Search(DepartmentFilterVModel model)
         {
             var result = new ResponseResult();
 
             string? keyword = model.Keyword?.ToLower();
-            var records = await _rewardRepo.
+            var records = await _departmentRepo.
                         Where(x =>
                             (model.IsActive == null || model.IsActive == x.IsActive) &&
                             (model.CreatedDate == null ||
@@ -45,10 +45,8 @@ namespace OA.Service
                                     x.CreatedDate.Value.Month == model.CreatedDate.Value.Month &&
                                     x.CreatedDate.Value.Day == model.CreatedDate.Value.Day)) &&
                             (string.IsNullOrEmpty(keyword) ||
-                                    (x.UserId.ToLower().Contains(keyword) == true) ||
-                                    (x.Note != null && x.Note.ToLower().Contains(keyword)) ||
-                                    (x.Reason != null && x.Reason.ToLower().Contains(keyword))||
-                                    (x.CreatedBy != null && x.CreatedBy.ToLower().Contains(keyword))||
+                                    (x.Name != null && x.Name.ToLower().Contains(keyword))||
+                                    (x.CreatedBy != null && x.CreatedBy.ToLower().Contains(keyword)) ||
                                     (x.UpdatedBy != null && x.UpdatedBy.ToLower().Contains(keyword))));
 
             if (!model.IsDescending)
@@ -68,10 +66,10 @@ namespace OA.Service
 
             if (!model.IsExport)
             {
-                var list = new List<RewardGetAllVModel>();
+                var list = new List<DepartmentGetAllVModel>();
                 foreach (var entity in records)
                 {
-                    var vmodel = _mapper.Map<RewardGetAllVModel>(entity);
+                    var vmodel = _mapper.Map<DepartmentGetAllVModel>(entity);
                     list.Add(vmodel);
                 }
                 var pagedRecords = list.Skip((model.PageNumber - 1) * model.PageSize).Take(model.PageSize).ToList();
@@ -90,26 +88,26 @@ namespace OA.Service
             return result;
         }
 
-        public async Task<ExportStream> ExportFile(RewardFilterVModel model, ExportFileVModel exportModel)
+        public async Task<ExportStream> ExportFile(DepartmentFilterVModel model, ExportFileVModel exportModel)
         {
             model.IsExport = true;
             var result = await Search(model);
 
-            var records = _mapper.Map<IEnumerable<RewardExportVModel>>(result.Data?.Records);
-            var exportData = ImportExportHelper<RewardExportVModel>.ExportFile(exportModel, records);
+            var records = _mapper.Map<IEnumerable<DepartmentExportVModel>>(result.Data?.Records);
+            var exportData = ImportExportHelper<DepartmentExportVModel>.ExportFile(exportModel, records);
             return exportData;
         }
-        public override async Task Create(RewardCreateVModel model)
-        {
-            var rewardCreate =  _mapper.Map<RewardCreateVModel, Reward>(model);
-            rewardCreate.Date = DateTime.Now;
-            var createdResult = await _rewardRepo.Create(rewardCreate);
-            //await base.Create(model);
+        //public override async Task Create(RewardCreateVModel model)
+        //{
+        //    var rewardCreate =  _mapper.Map<RewardCreateVModel, Reward>(model);
+        //    rewardCreate.Date = DateTime.Now;
+        //    var createdResult = await _departmentRepo.Create(rewardCreate);
+        //    //await base.Create(model);
 
-            if (!createdResult.Success)
-            {
-                throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorCreate, "Object"));
-            }
-        }
+        //    if (!createdResult.Success)
+        //    {
+        //        throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorCreate, "Object"));
+        //    }
+        //}
     }
 }

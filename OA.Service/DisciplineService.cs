@@ -47,7 +47,9 @@ namespace OA.Service
                             (string.IsNullOrEmpty(keyword) ||
                                     (x.UserId.ToLower().Contains(keyword) == true) ||
                                     (x.Note != null && x.Note.ToLower().Contains(keyword)) ||
-                                    (x.Reason != null && x.Reason.ToLower().Contains(keyword))));
+                                    (x.Reason != null && x.Reason.ToLower().Contains(keyword)) ||
+                                    (x.CreatedBy != null && x.CreatedBy.ToLower().Contains(keyword)) ||
+                                    (x.UpdatedBy != null && x.UpdatedBy.ToLower().Contains(keyword))));
 
             if (!model.IsDescending)
             {

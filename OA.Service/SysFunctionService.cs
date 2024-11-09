@@ -75,6 +75,7 @@ namespace OA.Service
 
             var pagedRecords = mappedRecords.Skip((model.PageNumber - 1) * model.PageSize).Take(model.PageSize).ToList();
 
+            result.Data.Records = mappedRecords;
             result.Data.TotalRecords = records.ToList().Count;
 
             return result;

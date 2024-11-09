@@ -232,19 +232,17 @@ namespace OA.Service
 
                         if (user != null)
                         {
+                            var addRole = await AddRoleToUser(user, _roleDefault);
+                            var updateRole = new UpdateRoleModel();
+                            updateRole.UserId = user.Id;
+                            updateRole.AssignRoles = model.Roles;
+                            await UpdateRoleForUser(updateRole);
                             var sendMail = await SendMail(user.Email ?? string.Empty, user.Id);
                             if (sendMail.Success == false)
                             {
                                 throw new BadRequestException(MsgConstants.ErrorMessages.SendEmailFailed);
                             }
                             //var sendPhone = await _authMessageSender.SendSmsAsync(user.PhoneNumber, "Your account at BlueSkyTech has been created");
-
-                            var addRole = await AddRoleToUser(user, _roleDefault);
-                            var updateRole = new UpdateRoleModel();
-                            updateRole.UserId = user.Id;
-                            updateRole.AssignRoles = model.Roles;
-                            await UpdateRoleForUser(updateRole);
-
                             await transaction.CommitAsync();
                         }
                         else

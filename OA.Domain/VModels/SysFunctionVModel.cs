@@ -34,7 +34,7 @@ namespace OA.Domain.VModels
         public string? JsonFunctionHasApisForDelete { get; set; }
     }
 
-    public class SysFunctionGetAllVModel : SysFunctionGetByIdVModel
+    public class SysFunctionGetAllVModel : SysFunctionUpdateVModel
     {
         public SysFunctionIsAllowVModel Function { get; set; } = new SysFunctionIsAllowVModel();
     }

@@ -127,6 +127,10 @@ builder.Services.AddScoped<IEmploymentContractService, EmploymentContractService
 builder.Services.AddScoped<INotificationsService, NotificationsService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<HtmlSanitizer>();
+builder.Services.AddScoped<IRewardService, RewardService>();
+builder.Services.AddScoped<IDisciplineService, DisciplineService>();
+builder.Services.AddScoped<IDepartmentService, DepartmentService>();
+builder.Services.AddScoped<IWorkingRulesService, WorkingRulesService>();
 
 // Configure Identity
 var identityBuilder = builder.Services.AddIdentityCore<AspNetUser>(opt =>

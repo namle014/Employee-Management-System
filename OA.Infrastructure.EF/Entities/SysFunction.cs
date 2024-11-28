@@ -13,10 +13,5 @@ namespace OA.Infrastructure.EF.Entities
         public int? Sort { get; set; }
         public string? PathTo { get; set; }
         public string? PathIcon { get; set; }
-        public string? JsonFunctionHasApisForView { get; set; }
-        public string? JsonFunctionHasApisForCreate { get; set; }
-        public string? JsonFunctionHasApisForEdit { get; set; }
-        public string? JsonFunctionHasApisForPrint { get; set; }
-        public string? JsonFunctionHasApisForDelete { get; set; }
     }
 }

@@ -13,5 +13,6 @@ namespace OA.Infrastructure.EF.Entities
         public int NotificationId { get; set; }
         public bool IsRead { get; set; } = false;
         public bool IsActive { get; set; } = true;
+        public bool IsNew { get; set; } = true;
     }
 }

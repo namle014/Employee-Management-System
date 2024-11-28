@@ -97,10 +97,10 @@ namespace OA.Service
                 {
                     var roles = await _userManager.GetRolesAsync(user);
 
-                    if (!isAdministrator && roles.Contains(CommonConstants.Authorize.Administrator))
-                    {
-                        continue;
-                    }
+                    //if (!isAdministrator && roles.Contains(CommonConstants.Authorize.Administrator))
+                    //{
+                    //    continue;
+                    //}
 
                     var userViewModel = _mapper.Map<AspNetUser, UserGetAllVModel>(user);
                     userViewModel.Roles = roles.ToList();

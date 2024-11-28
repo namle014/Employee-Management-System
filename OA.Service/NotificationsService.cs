@@ -2,9 +2,11 @@
 using Aspose.Pdf;
 using Aspose.Pdf.Operators;
 using AutoMapper;
+using Employee_Management_System.Hubs;
 using Ganss.Xss;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using OA.Core.Constants;
 using OA.Core.Models;
@@ -31,9 +33,11 @@ namespace OA.Service
         private readonly IMapper _mapper;
         string _nameService = "Notifications";
         private readonly HtmlSanitizer _sanitizer;
+        private readonly IHubContext<NotificationHub> _hubContext;
 
         public NotificationsService(ApplicationDbContext dbContext, UserManager<AspNetUser> userManager, HtmlSanitizer sanitizer,
-                                    IMapper mapper, IHttpContextAccessor contextAccessor) : base(contextAccessor)
+                                    IHubContext<NotificationHub> hubContext, IMapper mapper,
+                                    IHttpContextAccessor contextAccessor) : base(contextAccessor)
         {
             _dbContext = dbContext ?? throw new ArgumentNullException("context");
             _notifications = dbContext.Set<Notifications>();
@@ -43,7 +47,7 @@ namespace OA.Service
             _sanitizer = sanitizer;
             _userManager = userManager;
             _mapper = mapper;
-
+            _hubContext = hubContext;
 
             _sanitizer.AllowedTags.Clear();
 
@@ -191,6 +195,7 @@ namespace OA.Service
 
             var list = await query
                 .OrderByDescending(x => x.SentTime)
+                .ThenByDescending(x => x.Id)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
@@ -288,6 +293,8 @@ namespace OA.Service
 
                 var notificationId = entityCreate.Id;
 
+                var listSendUser = new List<NotificationsGetAllForUserVModel>();
+
                 if (model.ListUser != null)
                 {
                     var listUserNoti = model.ListUser.Select(id => new UserNotifications
@@ -297,9 +304,30 @@ namespace OA.Service
                     }).ToList();
 
                     await _userNotifications.AddRangeAsync(listUserNoti);
+
+                    success = await _dbContext.SaveChangesAsync() > 0;
+                    if (!success)
+                    {
+                        throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorCreate, _nameService));
+                    }
+
+                    foreach (var userNoti in listUserNoti)
+                    {
+                        listSendUser.Add(new NotificationsGetAllForUserVModel()
+                        {
+                            Id = userNoti.Id,
+                            UserId = userNoti.UserId,
+                            Title = entityCreate.Title,
+                            Content = entityCreate.Content,
+                            SentTime = entityCreate.SentTime,
+                            Type = entityCreate.Type,
+                            IsRead = false,
+                            NotificationId = notificationId,
+                        });
+                    }
                 }
 
-                if (model.ListFile != null)
+                if (model.ListFile != null && model.ListFile.Count() > 0)
                 {
                     var listNotificationFiles = model.ListFile.Select(id => new NotificationFiles
                     {
@@ -308,12 +336,17 @@ namespace OA.Service
                     }).ToList();
 
                     await _notificationFiles.AddRangeAsync(listNotificationFiles);
+
+                    success = await _dbContext.SaveChangesAsync() > 0;
+                    if (!success)
+                    {
+                        throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorCreate, _nameService));
+                    }
                 }
 
-                success = await _dbContext.SaveChangesAsync() > 0;
-                if (!success)
+                foreach (var sendUser in listSendUser)
                 {
-                    throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorCreate, _nameService));
+                    await _hubContext.Clients.User(sendUser.UserId).SendAsync("ReceiveNotifications", sendUser);
                 }
 
                 await transaction.CommitAsync();
@@ -322,6 +355,49 @@ namespace OA.Service
             {
                 await transaction.RollbackAsync();
                 throw new BadRequestException(ex.Message);
+            }
+        }
+
+        public async Task<ResponseResult> GetCountIsNew(UserNotificationsUpdateIsNewVModel model)
+        {
+            var user = await _userManager.FindByIdAsync(model.UserId);
+            if (user == null)
+            {
+                throw new NotFoundException(MsgConstants.WarningMessages.NotFoundData);
+            }
+
+            var userNotifications = _userNotifications
+                                        .Where(x => x.IsNew == true && x.UserId == model.UserId)
+                                        .ToList();
+
+            var result = new ResponseResult();
+            result.Data = userNotifications.Count;
+
+            return result;
+        }
+
+        public async Task UpdateIsNew(UserNotificationsUpdateIsNewVModel model)
+        {
+            var user = await _userManager.FindByIdAsync(model.UserId);
+            if (user == null)
+            {
+                throw new NotFoundException(MsgConstants.WarningMessages.NotFoundData);
+            }
+
+            var userNotifications = _userNotifications
+                                        .Where(x => x.IsNew == true && x.UserId == model.UserId)
+                                        .ToList();
+
+            if (userNotifications.Count > 0)
+            {
+                userNotifications.ForEach(x => x.IsNew = false);
+
+                var success = await _dbContext.SaveChangesAsync() > 0;
+
+                if (!success)
+                {
+                    throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorUpdate, "IsNew"));
+                }
             }
         }
 

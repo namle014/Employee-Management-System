@@ -8,17 +8,14 @@ namespace OA.Domain.VModels
     public class SysConfigurationCreateVModel
     {
         [Required]
-        [RegularExpression(@"^[a-zA-Z0-9]*$")]
         public string Value { get; set; } = string.Empty;
         [Required]
-        [RegularExpression(@"^[a-zA-Z0-9]*$")]
         [MaxLength(250)]
         public string Key { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         [Required]
-        [MaxLength(50)]
+        [MaxLength(200)]
         public string Type { get; set; } = string.Empty;
-        public bool IsActive { get; set; }
     }
 
     public class SysConfigurationUpdateVModel : SysConfigurationCreateVModel
@@ -39,9 +36,14 @@ namespace OA.Domain.VModels
 
     }
 
+    public class SysConfigurationChangeStatusManyVModel
+    {
+        public List<int> Ids { get; set; } = new List<int>();
+    }
+
     public class FilterSysConfigurationVModel
     {
-        public bool? IsActive { get; set; }
+        public bool IsActive { get; set; } = true;
         public DateTime? CreatedDate { get; set; }
         [Range(1, int.MaxValue)]
         public int PageSize { get; set; } = CommonConstants.ConfigNumber.pageSizeDefault;

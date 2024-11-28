@@ -37,32 +37,32 @@ namespace OA.WebAPI.AdminControllers
             return Ok(response);
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetJsonAPIFunctionbyId([FromQuery] int id, [FromQuery] string type)
-        {
-            if (id <= 0)
-            {
-                return new BadRequestObjectResult(string.Format(MsgConstants.Error404Messages.FieldIsInvalid, StringConstants.Validate.Id));
-            }
-            var response = await _sysFunctionService.GetJsonAPIFunctionId(id, type);
-            if (!response.Success)
-            {
-                _logger.LogWarning(CommonConstants.LoggingEvents.GetItem, MsgConstants.ErrorMessages.ErrorGetById, _nameController);
-            }
-            return Ok(response);
-        }
+        //[HttpGet]
+        //public async Task<IActionResult> GetJsonAPIFunctionbyId([FromQuery] int id, [FromQuery] string type)
+        //{
+        //    if (id <= 0)
+        //    {
+        //        return new BadRequestObjectResult(string.Format(MsgConstants.Error404Messages.FieldIsInvalid, StringConstants.Validate.Id));
+        //    }
+        //    var response = await _sysFunctionService.GetJsonAPIFunctionId(id, type);
+        //    if (!response.Success)
+        //    {
+        //        _logger.LogWarning(CommonConstants.LoggingEvents.GetItem, MsgConstants.ErrorMessages.ErrorGetById, _nameController);
+        //    }
+        //    return Ok(response);
+        //}
 
-        [HttpPut]
-        public async Task<IActionResult> UpdateJsonAPIFunctions([FromBody] UpadateJsonAPIFunctionIdVModel model)
-        {
-            if (model == null)
-            {
-                return new BadRequestObjectResult(String.Format(MsgConstants.ErrorMessages.ErrorUpdate, _nameController));
-            }
+        //[HttpPut]
+        //public async Task<IActionResult> UpdateJsonAPIFunctions([FromBody] UpadateJsonAPIFunctionIdVModel model)
+        //{
+        //    if (model == null)
+        //    {
+        //        return new BadRequestObjectResult(String.Format(MsgConstants.ErrorMessages.ErrorUpdate, _nameController));
+        //    }
 
-            await _sysFunctionService.UpadateJsonAPIFunctionId(model);
+        //    await _sysFunctionService.UpadateJsonAPIFunctionId(model);
 
-            return NoContent();
-        }
+        //    return NoContent();
+        //}
     }
 }

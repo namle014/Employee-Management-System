@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace OA.Core.VModels
@@ -20,6 +21,11 @@ namespace OA.Core.VModels
     public class NotificationsUpdateVModel : NotificationsCreateVModel
     {
         public int Id { get; set; }
+    }
+
+    public class UserNotificationsUpdateIsNewVModel
+    {
+        public string UserId { get; set; } = string.Empty;
     }
 
     public class NotificationsUpdateReadVModel
@@ -55,13 +61,21 @@ namespace OA.Core.VModels
 
     public class NotificationsGetAllForUserVModel
     {
+        [JsonPropertyName("Id")]
         public int Id { get; set; }
+        [JsonPropertyName("UserId")]
         public string UserId { get; set; } = string.Empty;
+        [JsonPropertyName("Title")]
         public string Title { get; set; } = string.Empty;
+        [JsonPropertyName("Content")]
         public string Content { get; set; } = string.Empty;
+        [JsonPropertyName("SentTime")]
         public DateTime SentTime { get; set; }
+        [JsonPropertyName("Type")]
         public string? Type { get; set; }
+        [JsonPropertyName("IsRead")]
         public bool IsRead { get; set; }
+        [JsonPropertyName("NotificationId")]
         public int NotificationId { get; set; }
     }
 

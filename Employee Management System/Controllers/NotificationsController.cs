@@ -1,5 +1,7 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using Employee_Management_System.Hubs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 using OA.Core.Constants;
 using OA.Core.Services;
@@ -31,6 +33,14 @@ namespace OA.WebApi.Controllers
                 return new BadRequestObjectResult(string.Format(MsgConstants.Error404Messages.FieldIsInvalid, "Id"));
             }
             var response = await _service.GetById(id);
+
+            return Ok(response);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetCountIsNew([FromQuery] UserNotificationsUpdateIsNewVModel model)
+        {
+            var response = await _service.GetCountIsNew(model);
 
             return Ok(response);
         }
@@ -76,6 +86,20 @@ namespace OA.WebApi.Controllers
 
             return NoContent();
         }
+
+        [HttpPut]
+        public async Task<IActionResult> UpdateIsNew([FromBody] UserNotificationsUpdateIsNewVModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return new BadRequestObjectResult(ModelState);
+            }
+
+            await _service.UpdateIsNew(model);
+
+            return NoContent();
+        }
+
 
         [HttpPut(CommonConstants.Routes.Id)]
         public async Task<IActionResult> ChangeStatus(int id)

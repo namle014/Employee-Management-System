@@ -40,6 +40,13 @@ namespace OA.WebApi.AdminControllers
             return Ok(result);
         }
 
+        [HttpPut]
+        public async Task<IActionResult> ChangeStatusMany(SysConfigurationChangeStatusManyVModel model)
+        {
+            await _sysConfigService.ChangeStatusMany(model);
+            return NoContent();
+        }
+
         [HttpGet]
         public async Task<IActionResult> ExportFile([FromQuery] FilterSysConfigurationVModel model, [FromQuery] ExportFileVModel exportModel)
         {

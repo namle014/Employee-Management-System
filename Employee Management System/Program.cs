@@ -1,8 +1,10 @@
-﻿using Ganss.Xss;
+﻿using Employee_Management_System.Hubs;
+using Ganss.Xss;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.Data;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
@@ -31,6 +33,8 @@ builder.Services.AddControllers()
     .AddNewtonsoftJson(x => x.SerializerSettings.ContractResolver = new DefaultContractResolver())
     .AddJsonOptions(opts => opts.JsonSerializerOptions.PropertyNamingPolicy = null);
 
+builder.Services.AddSignalR();
+
 // Configure FormOptions to set the max file size
 builder.Services.Configure<FormOptions>(options =>
 {
@@ -43,7 +47,8 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowSpecificOrigin",
         builder => builder.WithOrigins("http://localhost:3000") // Thay thế bằng URL frontend của bạn
                           .AllowAnyHeader()
-                          .AllowAnyMethod());
+                          .AllowAnyMethod()
+                          .AllowCredentials());
 });
 
 // Configure Swagger
@@ -108,6 +113,8 @@ RegisterJWT(builder.Services);
 // Add other services
 builder.Services.AddAutoMapper(typeof(Program));
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+builder.Services.AddSingleton<IUserIdProvider, CustomUserIdProvider>();
+builder.Services.AddSingleton<IUserConnectionService, UserConnectionService>();
 builder.Services.AddScoped<IAuthMessageSender, AuthMessageSender>();
 builder.Services.AddScoped(typeof(IBaseRepository<>), typeof(BaseRepository<>));
 builder.Services.AddScoped<ISysApiService, SysApiService>();
@@ -187,6 +194,7 @@ app.UseCors("AllowSpecificOrigin"); // Thêm dòng này để sử dụng cấu 
 app.UseAuthentication(); // Ensure authentication middleware is used
 app.UseAuthorization();
 
+app.MapHub<NotificationHub>("/notificationHub");
 app.MapControllers();
 
 app.Run();

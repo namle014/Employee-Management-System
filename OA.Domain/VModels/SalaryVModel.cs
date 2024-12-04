@@ -19,19 +19,15 @@ namespace OA.Core.VModels
         public string Id { get; set; } = string.Empty;
         public decimal TotalSalary { get; set; }
     }
-    public class SalaryGetAllVModel : SalaryUpdateVModel
+    public class SalaryGetAllVModel : SalaryCreateVModel
     {
-        public DateTime? CreatedDate { get; set; }
-        public string? CreatedBy { get; set; } = string.Empty;
-        public DateTime? UpdatedDate { get; set; }
-        public string? UpdatedBy { get; set; }
+        public string Id { get; set; } = string.Empty;
+        public string FullName { get; set; } = string.Empty;
+        public bool IsActive { get; set; }
     }
-    public class SalaryGetByIdVModel : SalaryUpdateVModel
+    public class SalaryGetByIdVModel : SalaryGetAllVModel
     {
-        public DateTime? CreatedDate { get; set; }
-        public string? CreatedBy { get; set; } = string.Empty;
-        public DateTime? UpdatedDate { get; set; }
-        public string? UpdatedBy { get; set; }
+        
     }
     public class SalaryExportVModel
     {
@@ -39,7 +35,11 @@ namespace OA.Core.VModels
     }
     public class FilterSalaryVModel
     {
+        public string FullName {  get; set; } = string.Empty ;
+        public int? Month { get; set; }
+        public int? Year { get; set; }
 
+        public bool? IsActive { get; set; }
     }
     //public class UserVModel
     //{

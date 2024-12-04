@@ -18,5 +18,6 @@ namespace OA.Core.Services
         Task<ResponseResult> GetAll();
         Task<ResponseResult> Search(FilterSalaryVModel model);
         Task Remove(string id);
+        Task ChangeStatus(string id);
     }
 }

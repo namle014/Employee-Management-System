@@ -17,6 +17,8 @@ using OA.Core.Constants;
 using OA.Infrastructure.SQL;
 using Microsoft.EntityFrameworkCore;
 using OA.Infrastructure.EF.Context;
+using Microsoft.AspNetCore.Identity;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 
 namespace OA.Service
@@ -28,12 +30,14 @@ namespace OA.Service
         private DbSet<Salary> _salary;
         private readonly IMapper _mapper;
         private string _nameService = "Salary";
+        private readonly UserManager<AspNetUser> _userManager;
 
-        public SalaryService(ApplicationDbContext dbContext, IMapper mapper, IHttpContextAccessor contextAccessor) : base(contextAccessor)
+        public SalaryService(ApplicationDbContext dbContext, IMapper mapper, IHttpContextAccessor contextAccessor, UserManager<AspNetUser> userManager) : base(contextAccessor)
         {
             _dbContext = dbContext ?? throw new ArgumentNullException("context");
             _salary = dbContext.Set<Salary>();
             _mapper = mapper;
+            _userManager = userManager;
         }
 
         public async Task Create(SalaryCreateVModel model)
@@ -66,7 +70,7 @@ namespace OA.Service
             }
             entity.CreatedDate = DateTime.Now;
             entity.CreatedBy = GlobalUserName;
-            entity.IsActive = true;
+            entity.IsActive = false;
             _salary.Add(entity);
 
             bool success = await _dbContext.SaveChangesAsync() > 0;
@@ -81,7 +85,21 @@ namespace OA.Service
             var result = new ResponseResult();
             var query = _salary.AsQueryable();
             var salaryList = await query.ToListAsync();
-            result.Data = salaryList;
+            var salaryGrouped = salaryList.GroupBy(x => x.UserId);
+            var salaryListMapped = new List<SalaryGetAllVModel>();
+            foreach (var group in salaryGrouped)
+            {
+                var user = await _userManager.FindByIdAsync(group.Key);
+                if (user == null)
+                {
+                    throw new NotFoundException(string.Format(MsgConstants.WarningMessages.NotFound, $"UserId = {group.Key}"));
+                }
+                foreach (var item in group) {
+                    var entityMapped = _mapper.Map<Salary, SalaryGetAllVModel>(item);
+                    entityMapped.FullName = user.FullName;
+                    salaryListMapped.Add(entityMapped); }
+            }
+            result.Data = salaryListMapped;
             return result;
         }
 
@@ -108,6 +126,38 @@ namespace OA.Service
         public async Task<ResponseResult> Search(FilterSalaryVModel model)
         {
             var result = new ResponseResult();
+
+            var query = _salary.AsQueryable();
+
+            
+            var userName = model.FullName;
+            query = (from salary in _dbContext.Salary
+                        join user in _dbContext.AspNetUsers on salary.UserId equals user.Id
+            where (string.IsNullOrEmpty(model.FullName) || user.FullName.Contains(userName)) 
+            && (!model.Month.HasValue || !model.Year.HasValue || (salary.CreatedDate.HasValue && salary.CreatedDate.Value.Month == model.Month && salary.CreatedDate.Value.Year == model.Year))
+            && (!model.IsActive.HasValue || salary.IsActive == model.IsActive)
+            select salary);
+           
+
+            var salaryList = await query.ToListAsync();
+            var salaryGrouped = salaryList.GroupBy(x => x.UserId);
+            var salaryListMapped = new List<SalaryGetAllVModel>();
+            foreach(var group in salaryGrouped)
+            {
+                var user = await _userManager.FindByIdAsync(group.Key);
+                if(user == null)
+                {
+                    throw new NotFoundException(string.Format(MsgConstants.WarningMessages.NotFound, $"UserId = {group.Key}"));
+                }
+
+                foreach (var item in group)
+                {
+                    var entityMapped = _mapper.Map<Salary, SalaryGetAllVModel>(item);
+                    entityMapped.FullName = user.FullName;
+                    salaryListMapped.Add(entityMapped);
+                }
+            }
+            result.Data = salaryListMapped;
             return result;
         }
 
@@ -153,6 +203,35 @@ namespace OA.Service
             if (!success)
             {
                 throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorRemove, _nameService));
+            }
+        }
+
+        public async Task ChangeStatus(string id)
+        {
+            try
+            {
+                var entity = await _salary.FindAsync(id);
+                if (entity != null)
+                {
+                    entity.UpdatedDate = DateTime.Now;
+                    entity.UpdatedBy = GlobalUserName;
+                    entity.IsActive = true;
+
+                    _salary.Update(entity);
+                    var result = await _dbContext.SaveChangesAsync() > 0;
+                    if (!result)
+                    {
+                        throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorChangeStatus, _nameService));
+                    }
+                }
+                else
+                {
+                    throw new NotFoundException(MsgConstants.WarningMessages.NotFoundData);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new BadRequestException(Utilities.MakeExceptionMessage(ex));
             }
         }
     }

@@ -79,5 +79,15 @@ namespace OA.WebApi.Controllers
             await _salaryService.Remove(id);
             return NoContent();
         }
+        [HttpPut(CommonConstants.Routes.Id)]
+        public async Task<IActionResult> ChangeStatus(string id)
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                return new BadRequestObjectResult(string.Format(MsgConstants.Error404Messages.FieldIsInvalid, "id"));
+            }
+            await _salaryService.ChangeStatus(id);
+            return NoContent();
+        }
     }
 }

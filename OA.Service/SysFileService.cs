@@ -137,13 +137,11 @@ namespace OA.Service
             string fileExtension = Path.GetExtension(model.Name);
             string newFilePath = Path.Combine(fullPath, fileNameWithoutExtension + fileExtension);
 
-            // Handle duplicate file names
-            int count = 1;
             while (File.Exists(newFilePath))
             {
-                fileNameWithoutExtension = $"{Path.GetFileNameWithoutExtension(model.Name)}_{count}";
+                string uniqueId = Guid.NewGuid().ToString();
+                fileNameWithoutExtension = $"{Path.GetFileNameWithoutExtension(model.Name)}_{uniqueId}";
                 newFilePath = Path.Combine(fullPath, fileNameWithoutExtension + fileExtension);
-                count++;
             }
 
             try
@@ -194,32 +192,73 @@ namespace OA.Service
 
         public override async Task Update(SysFileUpdateVModel model)
         {
+            // Lấy entity hiện tại từ repository
             var entity = await _sysFileRepo.GetById(model.Id);
             if (entity == null)
             {
                 throw new NotFoundException(MsgConstants.WarningMessages.NotFoundData);
             }
 
-            // Tạo entity từ model
-            entity = _mapper.Map(model, entity);
-            var baseUrl = _jwtIssuerOptions.Audience?.TrimEnd('/'); // Chắc chắn Base URL kết thúc bằng '/'
-            var path = entity.Path;
-            if (!string.IsNullOrEmpty(path))
+            // Đảm bảo tên tệp được định dạng đúng
+            model.Name = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(model.Name);
+            model.Type = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(model.Type);
+            model.Type = _medias.Contains(model.Type) ? model.Type : CommonConstants.FileType.Other;
+
+            // Tạo cấu trúc thư mục dựa trên ngày hiện tại
+            string yyyy = DateTime.Now.ToString("yyyy");
+            string mm = DateTime.Now.ToString("MM");
+            string envPath = Path.Combine(_uploadConfigs.FileUrl, yyyy, mm);
+
+            // Đảm bảo thư mục tồn tại
+            string fullPath = Path.Combine(_env.WebRootPath, envPath);
+            if (!Directory.Exists(fullPath))
+                Directory.CreateDirectory(fullPath);
+
+            // Chuẩn bị đường dẫn tệp mới
+            string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(model.Name);
+            string fileExtension = Path.GetExtension(model.Name);
+            string newFilePath = Path.Combine(fullPath, fileNameWithoutExtension + fileExtension);
+
+            // Kiểm tra trùng lặp tên tệp
+            while (File.Exists(newFilePath))
             {
-                Uri? uri;
-                if (Uri.TryCreate(path, UriKind.Absolute, out uri))
+                string uniqueId = Guid.NewGuid().ToString();
+                fileNameWithoutExtension = $"{Path.GetFileNameWithoutExtension(model.Name)}_{uniqueId}";
+                newFilePath = Path.Combine(fullPath, fileNameWithoutExtension + fileExtension);
+            }
+
+            try
+            {
+                // Nếu tệp tạm thời không tồn tại thì ném ra ngoại lệ
+                string tempFilePath = Path.Combine(_tempPath, model.Name);
+                if (!File.Exists(tempFilePath))
                 {
-                    entity.Path = uri.PathAndQuery;
+                    throw new FileNotFoundException($"Temporary file not found: {tempFilePath}");
+                }
+
+                // Di chuyển tệp từ đường dẫn tạm thời đến đường dẫn mới
+                File.Move(tempFilePath, newFilePath);
+
+                // Cập nhật entity với thông tin từ model
+                entity = _mapper.Map(model, entity);
+
+                // Cập nhật đường dẫn cho entity
+                entity.Path = $"/{envPath}/{Path.GetFileName(newFilePath)}";
+                entity.UpdatedDate = DateTime.Now; // Cập nhật ngày chỉnh sửa
+
+                // Gọi repository để cập nhật
+                var updatedResult = await _sysFileRepo.Update(entity);
+                if (!updatedResult.Success)
+                {
+                    throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorUpdate, "File"));
                 }
             }
-
-            var updatedResult = await _sysFileRepo.Update(entity);
-
-            if (!updatedResult.Success)
+            catch (Exception ex)
             {
-                throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorUpdate, "File"));
+                throw new BadRequestException(Utilities.MakeExceptionMessage(ex));
             }
         }
+
 
         public async Task CreateBase64(SysFileCreateBase64VModel model)
         {

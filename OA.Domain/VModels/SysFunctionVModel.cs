@@ -27,14 +27,9 @@ namespace OA.Domain.VModels
         public string? CreatedBy { get; set; }
         public DateTime? UpdatedDate { get; set; }
         public string? UpdatedBy { get; set; }
-        public string? JsonFunctionHasApisForView { get; set; }
-        public string? JsonFunctionHasApisForCreate { get; set; }
-        public string? JsonFunctionHasApisForEdit { get; set; }
-        public string? JsonFunctionHasApisForPrint { get; set; }
-        public string? JsonFunctionHasApisForDelete { get; set; }
     }
 
-    public class SysFunctionGetAllVModel : SysFunctionGetByIdVModel
+    public class SysFunctionGetAllVModel : SysFunctionUpdateVModel
     {
         public SysFunctionIsAllowVModel Function { get; set; } = new SysFunctionIsAllowVModel();
     }

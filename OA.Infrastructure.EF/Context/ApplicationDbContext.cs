@@ -32,6 +32,9 @@ namespace OA.Infrastructure.EF.Context
         public virtual DbSet<InsuranceType> InsuranceTypes { get; set; }
         public virtual DbSet<TimeOff> TimeOff { get; set; } = null!;
         public virtual DbSet<EmploymentContract> EmploymentContract { get; set; }
+        public virtual DbSet<Notifications> Notifications { get; set; } = null!;
+        public virtual DbSet<UserNotifications> UserNotifications { get; set; } = null!;
+        public virtual DbSet<NotificationFiles> NotificationFiles { get; set; } = null!;
         public virtual DbSet<Reward> Reward { get; set; }
         public virtual DbSet<Discipline> Discipline { get; set; }
         public virtual DbSet<WorkingRules> WorkingRules { get; set; }

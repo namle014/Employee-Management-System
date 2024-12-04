@@ -75,6 +75,7 @@ namespace OA.Service
 
             var pagedRecords = mappedRecords.Skip((model.PageNumber - 1) * model.PageSize).Take(model.PageSize).ToList();
 
+            result.Data.Records = mappedRecords;
             result.Data.TotalRecords = records.ToList().Count;
 
             return result;
@@ -158,82 +159,82 @@ namespace OA.Service
             return newRecords;
         }
 
-        public async Task<ResponseResult> GetJsonAPIFunctionId(int id, string type)
-        {
-            var result = new ResponseResult();
+        //public async Task<ResponseResult> GetJsonAPIFunctionId(int id, string type)
+        //{
+        //    var result = new ResponseResult();
 
-            var entity = await _sysFunctionRepo.GetById(id);
-            if (entity != null)
-            {
-                dynamic objResult = new ExpandoObject();
-                objResult.Id = entity.Id;
-                objResult.Name = entity.Name;
+        //    var entity = await _sysFunctionRepo.GetById(id);
+        //    if (entity != null)
+        //    {
+        //        dynamic objResult = new ExpandoObject();
+        //        objResult.Id = entity.Id;
+        //        objResult.Name = entity.Name;
 
-                switch (type.ToUpper())
-                {
-                    case TypeAllowFunction.CREATE:
-                        objResult.JsonAPIFunctions = entity.JsonFunctionHasApisForCreate;
-                        break;
-                    case TypeAllowFunction.DELETE:
-                        objResult.JsonAPIFunctions = entity.JsonFunctionHasApisForDelete;
-                        break;
-                    case TypeAllowFunction.EDIT:
-                        objResult.JsonAPIFunctions = entity.JsonFunctionHasApisForEdit;
-                        break;
-                    case TypeAllowFunction.PRINT:
-                        objResult.JsonAPIFunctions = entity.JsonFunctionHasApisForPrint;
-                        break;
-                    case TypeAllowFunction.VIEW:
-                        objResult.JsonAPIFunctions = entity.JsonFunctionHasApisForView;
-                        break;
-                    default:
-                        throw new BadRequestException("Type not accept");
-                }
+        //        switch (type.ToUpper())
+        //        {
+        //            case TypeAllowFunction.CREATE:
+        //                objResult.JsonAPIFunctions = entity.JsonFunctionHasApisForCreate;
+        //                break;
+        //            case TypeAllowFunction.DELETE:
+        //                objResult.JsonAPIFunctions = entity.JsonFunctionHasApisForDelete;
+        //                break;
+        //            case TypeAllowFunction.EDIT:
+        //                objResult.JsonAPIFunctions = entity.JsonFunctionHasApisForEdit;
+        //                break;
+        //            case TypeAllowFunction.PRINT:
+        //                objResult.JsonAPIFunctions = entity.JsonFunctionHasApisForPrint;
+        //                break;
+        //            case TypeAllowFunction.VIEW:
+        //                objResult.JsonAPIFunctions = entity.JsonFunctionHasApisForView;
+        //                break;
+        //            default:
+        //                throw new BadRequestException("Type not accept");
+        //        }
 
-                result.Data = objResult;
-            }
-            else
-            {
-                throw new NotFoundException(MsgConstants.WarningMessages.NotFoundData);
-            }
-            return result;
-        }
+        //        result.Data = objResult;
+        //    }
+        //    else
+        //    {
+        //        throw new NotFoundException(MsgConstants.WarningMessages.NotFoundData);
+        //    }
+        //    return result;
+        //}
 
-        public async Task UpadateJsonAPIFunctionId(UpadateJsonAPIFunctionIdVModel model)
-        {
-            var entity = await _sysFunctionRepo.GetById(model.Id);
-            if (entity != null)
-            {
-                switch (model.Type.ToUpper())
-                {
-                    case TypeAllowFunction.CREATE:
-                        entity.JsonFunctionHasApisForCreate = model.JsonAPIFunction;
-                        break;
-                    case TypeAllowFunction.DELETE:
-                        entity.JsonFunctionHasApisForDelete = model.JsonAPIFunction;
-                        break;
-                    case TypeAllowFunction.EDIT:
-                        entity.JsonFunctionHasApisForEdit = model.JsonAPIFunction;
-                        break;
-                    case TypeAllowFunction.PRINT:
-                        entity.JsonFunctionHasApisForPrint = model.JsonAPIFunction;
-                        break;
-                    case TypeAllowFunction.VIEW:
-                        entity.JsonFunctionHasApisForView = model.JsonAPIFunction;
-                        break;
-                    default:
-                        throw new BadRequestException("Type not accept");
-                }
-                var identityResult = await _sysFunctionRepo.Update(entity);
-                if (!identityResult.Success)
-                {
-                    throw new BadRequestException("Update permission fail!");
-                }
-            }
-            else
-            {
-                throw new NotFoundException(MsgConstants.WarningMessages.NotFoundData);
-            }
-        }
+        //public async Task UpadateJsonAPIFunctionId(UpadateJsonAPIFunctionIdVModel model)
+        //{
+        //    var entity = await _sysFunctionRepo.GetById(model.Id);
+        //    if (entity != null)
+        //    {
+        //        switch (model.Type.ToUpper())
+        //        {
+        //            case TypeAllowFunction.CREATE:
+        //                entity.JsonFunctionHasApisForCreate = model.JsonAPIFunction;
+        //                break;
+        //            case TypeAllowFunction.DELETE:
+        //                entity.JsonFunctionHasApisForDelete = model.JsonAPIFunction;
+        //                break;
+        //            case TypeAllowFunction.EDIT:
+        //                entity.JsonFunctionHasApisForEdit = model.JsonAPIFunction;
+        //                break;
+        //            case TypeAllowFunction.PRINT:
+        //                entity.JsonFunctionHasApisForPrint = model.JsonAPIFunction;
+        //                break;
+        //            case TypeAllowFunction.VIEW:
+        //                entity.JsonFunctionHasApisForView = model.JsonAPIFunction;
+        //                break;
+        //            default:
+        //                throw new BadRequestException("Type not accept");
+        //        }
+        //        var identityResult = await _sysFunctionRepo.Update(entity);
+        //        if (!identityResult.Success)
+        //        {
+        //            throw new BadRequestException("Update permission fail!");
+        //        }
+        //    }
+        //    else
+        //    {
+        //        throw new NotFoundException(MsgConstants.WarningMessages.NotFoundData);
+        //    }
+        //}
     }
 }

@@ -1,7 +1,10 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Employee_Management_System.Hubs;
+using Ganss.Xss;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.Data;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
@@ -19,6 +22,7 @@ using OA.Infrastructure.EF.Entities;
 using OA.Repository;
 using OA.Service;
 using OA.Service.Helpers;
+using System.Security.Cryptography;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -28,6 +32,8 @@ builder.Services.AddControllers()
     .AddNewtonsoftJson(x => x.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore)
     .AddNewtonsoftJson(x => x.SerializerSettings.ContractResolver = new DefaultContractResolver())
     .AddJsonOptions(opts => opts.JsonSerializerOptions.PropertyNamingPolicy = null);
+
+builder.Services.AddSignalR();
 
 // Configure FormOptions to set the max file size
 builder.Services.Configure<FormOptions>(options =>
@@ -41,7 +47,8 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowSpecificOrigin",
         builder => builder.WithOrigins("http://localhost:3000") // Thay thế bằng URL frontend của bạn
                           .AllowAnyHeader()
-                          .AllowAnyMethod());
+                          .AllowAnyMethod()
+                          .AllowCredentials());
 });
 
 // Configure Swagger
@@ -55,6 +62,14 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // Configure JWT authentication
 void RegisterJWT(IServiceCollection services)
 {
+    byte[] keyBytes = new byte[32]; // 32 bytes = 256 bits
+    using (var rng = RandomNumberGenerator.Create())
+    {
+        rng.GetBytes(keyBytes);
+    }
+
+    string secretKey = Convert.ToBase64String(keyBytes); // Chuyển sang base64 để lưu trữ
+
     var jwtAppSettingOptions = builder.Configuration.GetSection(nameof(JwtIssuerOptions));
 
     services.Configure<UploadConfigurations>(builder.Configuration.GetSection(nameof(UploadConfigurations)));
@@ -63,7 +78,7 @@ void RegisterJWT(IServiceCollection services)
     {
         options.Issuer = jwtAppSettingOptions[nameof(JwtIssuerOptions.Issuer)];
         options.Audience = jwtAppSettingOptions[nameof(JwtIssuerOptions.Audience)];
-        options.SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes("your-signing-key")), SecurityAlgorithms.HmacSha256);
+        options.SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)), SecurityAlgorithms.HmacSha256);
     });
 
     var tokenValidationParameters = new TokenValidationParameters
@@ -73,7 +88,7 @@ void RegisterJWT(IServiceCollection services)
         ValidateAudience = true,
         ValidAudience = jwtAppSettingOptions[nameof(JwtIssuerOptions.Audience)],
         ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("your-signing-key")),
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
         RequireExpirationTime = false,
         ValidateLifetime = true,
         ClockSkew = TimeSpan.Zero
@@ -98,6 +113,8 @@ RegisterJWT(builder.Services);
 // Add other services
 builder.Services.AddAutoMapper(typeof(Program));
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+builder.Services.AddSingleton<IUserIdProvider, CustomUserIdProvider>();
+builder.Services.AddSingleton<IUserConnectionService, UserConnectionService>();
 builder.Services.AddScoped<IAuthMessageSender, AuthMessageSender>();
 builder.Services.AddScoped(typeof(IBaseRepository<>), typeof(BaseRepository<>));
 builder.Services.AddScoped<ISysApiService, SysApiService>();
@@ -114,6 +131,9 @@ builder.Services.AddScoped<ITimekeepingService, TimekeepingService>();
 builder.Services.AddScoped<IHolidayService, HolidayService>();
 builder.Services.AddScoped<ITimeOffService, TimeOffService>();
 builder.Services.AddScoped<IEmploymentContractService, EmploymentContractService>();
+builder.Services.AddScoped<INotificationsService, NotificationsService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<HtmlSanitizer>();
 builder.Services.AddScoped<IRewardService, RewardService>();
 builder.Services.AddScoped<IDisciplineService, DisciplineService>();
 builder.Services.AddScoped<IDepartmentService, DepartmentService>();
@@ -156,34 +176,25 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseStaticFiles(); // Cho phép phục vụ file tĩnh
 app.UseStaticFiles(new StaticFileOptions
 {
-    FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot")),
-    RequestPath = "", // Đường dẫn request mặc định
-    OnPrepareResponse = ctx =>
-    {
-        if (ctx.File.PhysicalPath != null && ctx.File.PhysicalPath.Contains("avatars"))
-        {
-            const int durationInSeconds = 31536000; // 1 năm
-            ctx.Context.Response.Headers[HeaderNames.CacheControl] = $"public,max-age={durationInSeconds}";
-            ctx.Context.Response.Headers[HeaderNames.Expires] = DateTime.UtcNow.AddSeconds(durationInSeconds).ToString("R");
-        }
-        //  Thêm điều kiện cho các file khác nếu cần
-        // else 
-        // {
-        //     ctx.Context.Response.Headers[HeaderNames.CacheControl] = "no-store"; // hoặc "no-cache"
-        // }
-    }
+    FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/avatars")),
+    RequestPath = "/avatars"
 });
 
-
-// Xóa dòng `app.UseStaticFiles();`  ở phía trên
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/Upload")),
+    RequestPath = "/Upload"
+});
 
 app.UseCors("AllowSpecificOrigin"); // Thêm dòng này để sử dụng cấu hình CORS
 
 app.UseAuthentication(); // Ensure authentication middleware is used
 app.UseAuthorization();
 
+app.MapHub<NotificationHub>("/notificationHub");
 app.MapControllers();
 
 app.Run();

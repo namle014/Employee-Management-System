@@ -278,6 +278,11 @@ namespace OA.Service
                 var entity = await _userManager.FindByIdAsync(model.Id);
                 if (entity != null)
                 {
+                    var addRole = await AddRoleToUser(entity, _roleDefault);
+                    var updateRole = new UpdateRoleModel();
+                    updateRole.UserId = entity.Id;
+                    updateRole.AssignRoles = model.Roles;
+                    await UpdateRoleForUser(updateRole);
                     var existedEmail = await _userManager.FindByEmailAsync(model.Email);
                     if (existedEmail == null || entity.Email == existedEmail.Email)
                     {

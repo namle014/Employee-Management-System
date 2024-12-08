@@ -87,11 +87,11 @@ namespace OA.Domain.VModels
     {
         public string Id { get; set; } = string.Empty;
         public bool? IsActive { get; set; }
+        public List<string>? Roles { get; set; }
     }
 
     public class UserGetAllVModel : UserUpdateVModel
-    {
-        public List<string>? Roles { get; set; }
+    {  
         public string DepartmentName { get; set; } = string.Empty;
         public string? AvatarPath { get; set; }
     }

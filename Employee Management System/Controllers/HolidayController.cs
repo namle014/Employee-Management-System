@@ -3,6 +3,7 @@ using OA.Core.Constants;
 using OA.Core.Services;
 using OA.Core.VModels;
 using OA.Infrastructure.EF.Entities;
+using OA.Service;
 
 namespace OA.WebApi.Controllers 
 {
@@ -12,15 +13,30 @@ namespace OA.WebApi.Controllers
     {
         public readonly IHolidayService _holidayService;
         public readonly ILogger _logger;
+        private static string _nameController = StringConstants.ControllerName.Holiday;
         public HolidayController(IHolidayService holidayService, ILogger<HolidayController> logger)
         {
             _holidayService = holidayService;
             _logger = logger;
         }
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAll([FromQuery ]HolidayFilterVModel model)
         {
-            var response = await _holidayService.GetAll();
+            var response = await _holidayService.GetAll(model);
+            return Ok(response);
+        }
+        [HttpGet]
+        public async Task<IActionResult> GetById(int id)
+        {
+            if (id <= 0)
+            {
+                return new BadRequestObjectResult(string.Format(MsgConstants.Error404Messages.FieldIsInvalid, "Id"));
+            }
+            var response = await _holidayService.GetById(id);
+            if (!response.Success)
+            {
+                _logger.LogWarning(CommonConstants.LoggingEvents.GetItem, MsgConstants.ErrorMessages.ErrorGetById, _nameController);
+            }
             return Ok(response);
         }
         [HttpPost]

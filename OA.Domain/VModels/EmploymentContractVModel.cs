@@ -15,6 +15,12 @@ namespace OA.Domain.VModels
         public decimal BasicSalary { get; set; }
         public string? Clause { get; set; }
         public bool IsActive { get; set; }
+        public int ProbationPeriod { get; set; }
+        public int WorkingHours { get; set; }
+        public string TerminationClause { get; set; } = string.Empty;
+        public int ContractFileId { get; set; }
+        public string? TypeContract { get; set; }
+        public string? ManagerId { get; set; }
     }
 
     public class EmploymentContractUpdateVModel : EmploymentContractCreateVModel

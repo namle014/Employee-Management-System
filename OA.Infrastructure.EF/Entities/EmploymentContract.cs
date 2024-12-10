@@ -20,5 +20,12 @@ namespace OA.Infrastructure.EF.Entities
         public DateTime EndDate { get; set; }
         public decimal BasicSalary { get; set; }
         public string? Clause { get; set; }
+        public int ProbationPeriod { get; set; }
+        public int WorkingHours { get; set; }
+        public string TerminationClause { get; set; } = string.Empty;
+        public int ContractFileId { get; set; }
+        public string? TypeContract { get; set; }
+        public string? ManagerId { get; set; }
+
     }
 }

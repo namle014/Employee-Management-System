@@ -9,14 +9,15 @@ namespace OA.Domain.VModels
 {
     public class SysFileCreateVModel
     {
-        public string Name { get; set; } = null!;
+        public string Name { get; set; } = string.Empty;
         public string Type { get; set; } = string.Empty;
+        public string UniqueFileName { get; set; } = string.Empty;
     }
 
     public class SysFileCreateBase64VModel
     {
         [Required]
-        public string Name { get; set; } = null!;
+        public string Name { get; set; } = string.Empty;
         [Required]
         public string Base64String { get; set; } = string.Empty;
     }
@@ -25,6 +26,9 @@ namespace OA.Domain.VModels
     {
         public string FileName { get; set; } = string.Empty;
         public IFormFile File { get; set; } = default!;
+        public int ChunkIndex { get; set; }
+        public int TotalChunks { get; set; }
+        public string UniqueFileName { get; set; } = string.Empty;
     }
 
     public class SysFileBase64ToFileVModel
@@ -35,8 +39,10 @@ namespace OA.Domain.VModels
         public string Base64 { get; set; } = string.Empty;
         public bool IsEnd { get; set; }
     }
-    public class SysFileUpdateVModel : SysFileCreateVModel
+    public class SysFileUpdateVModel
     {
+        public string Name { get; set; } = string.Empty;
+        public string Type { get; set; } = string.Empty;
         public int Id { get; set; }
     }
     public class SysFileGetAllVModel : SysFileUpdateVModel

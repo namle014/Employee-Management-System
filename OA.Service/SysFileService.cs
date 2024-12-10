@@ -115,7 +115,7 @@ namespace OA.Service
             return result;
         }
 
-        public override async Task Create(SysFileCreateVModel model)
+        public async Task<ResponseResult> CreateFile(SysFileCreateVModel model)
         {
             // Ensure the model name is formatted correctly
             model.Name = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(model.Name);
@@ -147,7 +147,7 @@ namespace OA.Service
             try
             {
                 // Move the file from the temporary path to the new path
-                string tempFilePath = Path.Combine(_tempPath, model.Name);
+                string tempFilePath = Path.Combine(_tempPath, model.UniqueFileName);
                 if (!File.Exists(tempFilePath))
                 {
                     throw new FileNotFoundException($"Temporary file not found: {tempFilePath}");
@@ -168,6 +168,11 @@ namespace OA.Service
                 {
                     throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorCreate, "File"));
                 }
+
+                var result = new ResponseResult();
+                result.Success = true;
+                result.Data = entity.Id;
+                return result;
             }
             catch (Exception ex)
             {
@@ -175,18 +180,56 @@ namespace OA.Service
             }
         }
 
-        public async Task FileChunks(FileChunk fileChunk)
+        public async Task<ResponseResult> FileChunks(FileChunk fileChunk)
         {
-            if (Directory.Exists(_tempPath) == false)
-                Directory.CreateDirectory(_tempPath);
-
-            string newpath = _tempPath + "/" + fileChunk.FileName;
-            using (FileStream fs = File.Create(newpath))
+            try
             {
-                byte[] bytes = new byte[_chunkSize];
-                int bytesRead = 0;
-                if ((bytesRead = await fileChunk.File.OpenReadStream().ReadAsync(bytes, 0, bytes.Length)) > 0)
-                    fs.Write(bytes, 0, bytesRead);
+                if (!Directory.Exists(_tempPath))
+                {
+                    Directory.CreateDirectory(_tempPath);
+                }
+
+                string chunkFileName = $"{fileChunk.UniqueFileName}.part_{fileChunk.ChunkIndex}";
+                string newPath = Path.Combine(_tempPath, chunkFileName);
+
+
+                using (FileStream fs = new FileStream(newPath, FileMode.Create, FileAccess.Write))
+                {
+                    await fileChunk.File.OpenReadStream().CopyToAsync(fs);
+                }
+
+                int totalChunks = fileChunk.TotalChunks;
+                string fileExtension = Path.GetExtension(fileChunk.FileName);
+                string[] chunkFiles = Directory.GetFiles(_tempPath, $"{fileChunk.UniqueFileName}.part_*");
+
+
+                if (chunkFiles.Length == totalChunks)
+                {
+                    // Combine all chunks into a single file
+                    string combinedFilePath = Path.Combine(_tempPath, $"{fileChunk.UniqueFileName}");
+
+                    using (var combinedStream = new FileStream(combinedFilePath, FileMode.Create))
+                    {
+                        for (int i = 0; i < totalChunks; i++)
+                        {
+                            string chunkPath = Path.Combine(_tempPath, $"{fileChunk.UniqueFileName}.part_{i}");
+                            using (var chunkStream = new FileStream(chunkPath, FileMode.Open))
+                            {
+                                await chunkStream.CopyToAsync(combinedStream);
+                            }
+                            File.Delete(chunkPath); // Delete chunk file
+                        }
+                    }
+                    // Return unique file name WITH extension if all chunks are uploaded
+                    return new ResponseResult() { Data = $"{fileChunk.UniqueFileName}" };
+                }
+                // Return unique file name WITHOUT extension if not all chunks uploaded yet.
+                return new ResponseResult() { Data = fileChunk.UniqueFileName };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during chunk upload");
+                throw; // Re-throw after logging
             }
         }
 

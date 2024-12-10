@@ -25,6 +25,30 @@ namespace OA.WebAPI.AdminControllers
             _logger = logger;
         }
 
+        [HttpPost]
+        public async Task<IActionResult> CreateFile([FromBody] SysFileCreateVModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return new BadRequestObjectResult(ModelState);
+            }
+            var result = await _sysFileService.CreateFile(model);
+            return Ok(result);
+        }
+
+        [HttpPost]
+        [ApiExplorerSettings(IgnoreApi = true)] // Ẩn API này khỏi Swagger
+        public override async Task<IActionResult> Create([FromBody] SysFileCreateVModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return new BadRequestObjectResult(ModelState);
+            }
+
+            await _sysFileService.Create(model);
+
+            return Created();
+        }
 
         [HttpPost]
         public async Task<IActionResult> UploadImageBase64([FromBody] SysFileCreateBase64VModel model)
@@ -46,8 +70,8 @@ namespace OA.WebAPI.AdminControllers
                 throw new BadRequestException(CommonConstants.Validate.inputInvalid);
             }
 
-            await _sysFileService.FileChunks(fileChunk);
-            return NoContent();
+            var result = await _sysFileService.FileChunks(fileChunk);
+            return Ok(result);
         }
 
         [HttpGet]

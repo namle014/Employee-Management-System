@@ -13,9 +13,11 @@ namespace OA.Core.VModels
         public string Content { get; set; } = string.Empty;
         public List<string>? ListUser { get; set; }
         public List<int>? ListFile { get; set; }
-        public DateTime SentTime { get; set; }
+        public List<string>? ListRole { get; set; }
+        public List<int>? ListDept { get; set; }
         public string Type { get; set; } = string.Empty;
         public string UserId { get; set; } = string.Empty;
+        public int TypeToNotify { get; set; }
     }
 
     public class NotificationsUpdateVModel : NotificationsCreateVModel

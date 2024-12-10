@@ -28,14 +28,19 @@ namespace OA.Service
         private DbSet<Notifications> _notifications;
         private DbSet<UserNotifications> _userNotifications;
         private DbSet<NotificationFiles> _notificationFiles;
+        private DbSet<NotificationDepartments> _notificationDepts;
+        private DbSet<NotificationRoles> _notificationRoles;
         private DbSet<SysFile> _sysFileRepo;
         private readonly UserManager<AspNetUser> _userManager;
         private readonly IMapper _mapper;
         string _nameService = "Notifications";
         private readonly HtmlSanitizer _sanitizer;
         private readonly IHubContext<NotificationHub> _hubContext;
+        private readonly RoleManager<AspNetRole> _roleManager;
+        private readonly IBaseRepository<Department> _deptRepo;
 
         public NotificationsService(ApplicationDbContext dbContext, UserManager<AspNetUser> userManager, HtmlSanitizer sanitizer,
+                                    RoleManager<AspNetRole> roleManager, IBaseRepository<Department> deptRepo,
                                     IHubContext<NotificationHub> hubContext, IMapper mapper,
                                     IHttpContextAccessor contextAccessor) : base(contextAccessor)
         {
@@ -43,8 +48,12 @@ namespace OA.Service
             _notifications = dbContext.Set<Notifications>();
             _userNotifications = dbContext.Set<UserNotifications>();
             _notificationFiles = dbContext.Set<NotificationFiles>();
+            _notificationDepts = dbContext.Set<NotificationDepartments>();
+            _notificationRoles = dbContext.Set<NotificationRoles>();
             _sysFileRepo = dbContext.Set<SysFile>();
             _sanitizer = sanitizer;
+            _roleManager = roleManager;
+            _deptRepo = deptRepo;
             _userManager = userManager;
             _mapper = mapper;
             _hubContext = hubContext;
@@ -283,6 +292,7 @@ namespace OA.Service
                 model.Content = sanitizedContent;
 
                 var entityCreate = _mapper.Map<Notifications>(model);
+                entityCreate.SentTime = DateTime.UtcNow.AddHours(7);
                 _notifications.Add(entityCreate);
 
                 var success = await _dbContext.SaveChangesAsync() > 0;
@@ -295,12 +305,52 @@ namespace OA.Service
 
                 var listSendUser = new List<NotificationsGetAllForUserVModel>();
 
-                if (model.ListUser != null)
+                if (model.TypeToNotify == 3)
                 {
-                    var listUserNoti = model.ListUser.Select(id => new UserNotifications
+                    if (model.ListUser != null && model.ListUser.Count() > 0)
+                    {
+                        var listUserNoti = model.ListUser.Select(id => new UserNotifications
+                        {
+                            NotificationId = notificationId,
+                            UserId = id
+                        }).ToList();
+
+                        await _userNotifications.AddRangeAsync(listUserNoti);
+
+                        success = await _dbContext.SaveChangesAsync() > 0;
+                        if (!success)
+                        {
+                            throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorCreate, _nameService));
+                        }
+
+                        foreach (var userNoti in listUserNoti)
+                        {
+                            listSendUser.Add(new NotificationsGetAllForUserVModel()
+                            {
+                                Id = userNoti.Id,
+                                UserId = userNoti.UserId,
+                                Title = entityCreate.Title,
+                                Content = entityCreate.Content,
+                                SentTime = entityCreate.SentTime,
+                                Type = entityCreate.Type,
+                                IsRead = false,
+                                NotificationId = notificationId,
+                            });
+                        }
+                    }
+                    else
+                    {
+                        throw new BadRequestException("Empty list user");
+                    }
+                }
+
+                if (model.TypeToNotify == 1)
+                {
+                    var users = _userManager.Users.AsQueryable();
+                    var listUserNoti = users.Select(user => new UserNotifications
                     {
                         NotificationId = notificationId,
-                        UserId = id
+                        UserId = user.Id
                     }).ToList();
 
                     await _userNotifications.AddRangeAsync(listUserNoti);
@@ -324,6 +374,88 @@ namespace OA.Service
                             IsRead = false,
                             NotificationId = notificationId,
                         });
+                    }
+                }
+
+                if (model.TypeToNotify == 2)
+                {
+                    var userIds = new HashSet<string>();
+                    if (model.ListDept != null && model.ListDept.Count() > 0)
+                    {
+                        var listNotificationDepts = model.ListDept.Select(id => new NotificationDepartments
+                        {
+                            NotificationId = notificationId,
+                            DepartmentId = id
+                        }).ToList();
+
+                        var usersInDepartments = await _dbContext.Users
+                                        .Where(u => model.ListDept.Contains((int)u.DepartmentId))
+                                        .Select(u => u.Id)
+                                        .ToListAsync();
+                        userIds.UnionWith(usersInDepartments);
+
+                        await _notificationDepts.AddRangeAsync(listNotificationDepts);
+
+                        success = await _dbContext.SaveChangesAsync() > 0;
+                        if (!success)
+                        {
+                            throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorCreate, _nameService));
+                        }
+                    }
+
+                    if (model.ListRole != null && model.ListRole.Count() > 0)
+                    {
+                        var usersInRoles = await _dbContext.UserRoles
+                                        .Where(ur => model.ListRole.Contains(ur.RoleId))
+                                        .Select(ur => ur.UserId)
+                                        .ToListAsync();
+                        userIds.IntersectWith(usersInRoles);
+
+                        var listNotificationRoles = model.ListRole.Select(id => new NotificationRoles
+                        {
+                            NotificationId = notificationId,
+                            RoleId = id
+                        }).ToList();
+
+                        await _notificationRoles.AddRangeAsync(listNotificationRoles);
+
+                        success = await _dbContext.SaveChangesAsync() > 0;
+                        if (!success)
+                        {
+                            throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorCreate, _nameService));
+                        }
+                    }
+
+                    var listUserNoti = userIds.Select(userId => new UserNotifications
+                    {
+                        NotificationId = notificationId,
+                        UserId = userId
+                    }).ToList();
+
+                    if (listUserNoti.Count() > 0)
+                    {
+                        await _userNotifications.AddRangeAsync(listUserNoti);
+
+                        success = await _dbContext.SaveChangesAsync() > 0;
+                        if (!success)
+                        {
+                            throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorCreate, _nameService));
+                        }
+
+                        foreach (var userNoti in listUserNoti)
+                        {
+                            listSendUser.Add(new NotificationsGetAllForUserVModel()
+                            {
+                                Id = userNoti.Id,
+                                UserId = userNoti.UserId,
+                                Title = entityCreate.Title,
+                                Content = entityCreate.Content,
+                                SentTime = entityCreate.SentTime,
+                                Type = entityCreate.Type,
+                                IsRead = false,
+                                NotificationId = notificationId,
+                            });
+                        }
                     }
                 }
 
@@ -412,14 +544,7 @@ namespace OA.Service
                     throw new NotFoundException(MsgConstants.WarningMessages.NotFoundData);
                 }
 
-                var user = await _userManager.FindByIdAsync(notification.UserId);
-                if (user == null)
-                {
-                    throw new NotFoundException(string.Format(MsgConstants.WarningMessages.NotFound, "User update"));
-                }
-
                 var trimmedContent = model.Content.Trim();
-
                 var decodedContent = HttpUtility.HtmlDecode(trimmedContent);
                 var sanitizedContent = _sanitizer.Sanitize(decodedContent);
 
@@ -433,45 +558,99 @@ namespace OA.Service
                 _mapper.Map(model, notification);
                 _notifications.Update(notification);
 
-                var success = await _dbContext.SaveChangesAsync() > 0;
-                if (!success)
-                {
-                    throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorUpdate, _nameService));
-                }
+                await _dbContext.SaveChangesAsync();
 
-                if (model.ListUser != null)
-                {
-                    var existingUserNoti = _userNotifications.Where(un => un.NotificationId == model.Id);
-                    _userNotifications.RemoveRange(existingUserNoti);
+                _dbContext.NotificationDepartments.RemoveRange(_dbContext.NotificationDepartments.Where(x => x.NotificationId == model.Id));
+                _dbContext.NotificationRoles.RemoveRange(_dbContext.NotificationRoles.Where(x => x.NotificationId == model.Id));
+                _dbContext.UserNotifications.RemoveRange(_dbContext.UserNotifications.Where(x => x.NotificationId == model.Id));
+                _dbContext.NotificationFiles.RemoveRange(_dbContext.NotificationFiles.Where(x => x.NotificationId == model.Id));
 
-                    var listUserNoti = model.ListUser.Select(id => new UserNotifications
+                await _dbContext.SaveChangesAsync();
+
+
+                if (model.TypeToNotify == 3)
+                {
+                    if (model.ListUser != null && model.ListUser.Any())
                     {
-                        NotificationId = model.Id,
-                        UserId = id
+                        var userNotifications = model.ListUser.Select(userId => new UserNotifications
+                        {
+                            NotificationId = notification.Id,
+                            UserId = userId
+                        }).ToList();
+
+                        await _dbContext.UserNotifications.AddRangeAsync(userNotifications);
+                    }
+                }
+                else if (model.TypeToNotify == 1)
+                {
+                    var allUsers = await _userManager.Users.ToListAsync();
+                    var userNotifications = allUsers.Select(user => new UserNotifications
+                    {
+                        NotificationId = notification.Id,
+                        UserId = user.Id
                     }).ToList();
 
-                    await _userNotifications.AddRangeAsync(listUserNoti);
+                    await _dbContext.UserNotifications.AddRangeAsync(userNotifications);
                 }
-
-                if (model.ListFile != null)
+                else if (model.TypeToNotify == 2)
                 {
-                    var existingNotificationFiles = _notificationFiles.Where(nf => nf.NotificationId == model.Id);
-                    _notificationFiles.RemoveRange(existingNotificationFiles);
+                    var userIds = new HashSet<string>();
 
-                    var listNotificationFiles = model.ListFile.Select(id => new NotificationFiles
+                    if (model.ListDept != null && model.ListDept.Any())
                     {
-                        NotificationId = model.Id,
-                        FileId = id
+                        var usersInDepartments = await _dbContext.Users
+                            .Where(u => model.ListDept.Contains((int)u.DepartmentId))
+                            .Select(u => u.Id)
+                            .ToListAsync();
+                        userIds.UnionWith(usersInDepartments);
+
+                        var departmentNotifications = model.ListDept.Select(departmentId => new NotificationDepartments
+                        {
+                            NotificationId = notification.Id,
+                            DepartmentId = departmentId
+                        }).ToList();
+                        await _dbContext.NotificationDepartments.AddRangeAsync(departmentNotifications);
+
+                    }
+
+                    if (model.ListRole != null && model.ListRole.Any())
+                    {
+                        var usersInRoles = await _dbContext.UserRoles
+                           .Where(ur => model.ListRole.Contains(ur.RoleId))
+                           .Select(ur => ur.UserId)
+                           .ToListAsync();
+                        userIds.IntersectWith(usersInRoles);
+
+                        var roleNotifications = model.ListRole.Select(roleId => new NotificationRoles
+                        {
+                            NotificationId = notification.Id,
+                            RoleId = roleId
+                        }).ToList();
+
+                        await _dbContext.NotificationRoles.AddRangeAsync(roleNotifications);
+                    }
+
+                    var userNotifications = userIds.Select(userId => new UserNotifications
+                    {
+                        NotificationId = notification.Id,
+                        UserId = userId
                     }).ToList();
 
-                    await _notificationFiles.AddRangeAsync(listNotificationFiles);
+                    await _dbContext.UserNotifications.AddRangeAsync(userNotifications);
                 }
 
-                success = await _dbContext.SaveChangesAsync() > 0;
-                if (!success)
+                if (model.ListFile != null && model.ListFile.Any())
                 {
-                    throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorUpdate, _nameService));
+                    var notificationFiles = model.ListFile.Select(fileId => new NotificationFiles
+                    {
+                        NotificationId = notification.Id,
+                        FileId = fileId
+                    }).ToList();
+
+                    await _dbContext.NotificationFiles.AddRangeAsync(notificationFiles);
                 }
+
+                await _dbContext.SaveChangesAsync();
 
                 await transaction.CommitAsync();
             }

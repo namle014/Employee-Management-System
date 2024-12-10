@@ -138,6 +138,7 @@ builder.Services.AddScoped<IRewardService, RewardService>();
 builder.Services.AddScoped<IDisciplineService, DisciplineService>();
 builder.Services.AddScoped<IDepartmentService, DepartmentService>();
 builder.Services.AddScoped<IWorkingRulesService, WorkingRulesService>();
+builder.Services.AddScoped<IWorkShiftService, WorkShiftService>();
 
 // Configure Identity
 var identityBuilder = builder.Services.AddIdentityCore<AspNetUser>(opt =>

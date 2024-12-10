@@ -16,5 +16,6 @@ namespace OA.Infrastructure.EF.Entities
         public string? Url { get; set; }
         public string? Type { get; set; }
         public string UserId { get; set; } = string.Empty;
+        public int TypeToNotify { get; set; }
     }
 }

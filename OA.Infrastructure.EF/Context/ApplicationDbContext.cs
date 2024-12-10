@@ -35,9 +35,12 @@ namespace OA.Infrastructure.EF.Context
         public virtual DbSet<Notifications> Notifications { get; set; } = null!;
         public virtual DbSet<UserNotifications> UserNotifications { get; set; } = null!;
         public virtual DbSet<NotificationFiles> NotificationFiles { get; set; } = null!;
+        public virtual DbSet<NotificationDepartments> NotificationDepartments { get; set; } = null!;
+        public virtual DbSet<NotificationRoles> NotificationRoles { get; set; } = null!;
         public virtual DbSet<Reward> Reward { get; set; }
         public virtual DbSet<Discipline> Discipline { get; set; }
         public virtual DbSet<WorkingRules> WorkingRules { get; set; }
+        public virtual DbSet<WorkShifts> WorkShifts { get; set; }
         #endregion --DBSET--
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

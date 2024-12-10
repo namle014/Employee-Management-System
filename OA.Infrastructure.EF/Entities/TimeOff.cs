@@ -16,5 +16,7 @@ namespace OA.Infrastructure.EF.Entities
         public string? Reason { get; set; }
         public string UserId { get; set; } = string.Empty;
         public DateTime Date { get; set; }
+        public bool IsAccepted { get; set; }
+        public string Content { get; set; } = string.Empty;
     }
 }

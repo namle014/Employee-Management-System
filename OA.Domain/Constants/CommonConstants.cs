@@ -135,6 +135,7 @@
         public struct StoreProceduresName
         {
             public static string SearchAspNetRole = "SearchAspNetRole";
+            public static string GetAllWorkShifts = "GetAllWorkShifts";
         }
         public struct TypeAllowFunction
         {

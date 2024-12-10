@@ -1,5 +1,7 @@
-﻿using System;
+﻿using OA.Core.Constants;
+using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -28,6 +30,19 @@ namespace OA.Core.VModels
     public class HolidayExportVModel
     {
 
+    }
+    public class HolidayFilterVModel
+    {
+        public bool IsActive { get; set; } = true;
+        public DateTime? CreatedDate { get; set; }
+        [Range(1, int.MaxValue)]
+        public int PageSize { get; set; } = CommonConstants.ConfigNumber.pageSizeDefault;
+        [Range(1, int.MaxValue)]
+        public int PageNumber { get; set; } = 1;
+        public string? SortBy { get; set; }
+        public bool IsExport { get; set; } = false;
+        public bool IsDescending { get; set; } = true;
+        public string? Keyword { get; set; }
     }
     public class HolidayVModel
     {

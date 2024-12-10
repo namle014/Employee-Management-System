@@ -46,12 +46,36 @@ namespace OA.Service
             }
         }
 
-        public async Task<ResponseResult> GetAll()
+        public async Task<ResponseResult> GetAll(HolidayFilterVModel model)
         {
             var result = new ResponseResult();
             var query = _holiday.AsQueryable();
             var holidayList = await query.ToListAsync();
-            result.Data = holidayList;
+            var pagedRecords = holidayList.Skip((model.PageNumber - 1) * model.PageSize).Take(model.PageSize).ToList();
+            result.Data = new Pagination();
+            result.Data.Records = pagedRecords;
+            result.Data.TotalRecords = holidayList.Count;
+
+            return result;
+        }
+
+        public async Task<ResponseResult> GetById(int id)
+        {
+            var result = new ResponseResult();
+            try
+            {
+                var entity = await _holiday.FirstOrDefaultAsync(s => s.Id == id);
+                if (entity == null)
+                {
+                    throw new NotFoundException(MsgConstants.WarningMessages.NotFoundData);
+                }
+
+                result.Data = entity;
+            }
+            catch (Exception ex)
+            {
+                throw new BadRequestException(Utilities.MakeExceptionMessage(ex));
+            }
             return result;
         }
 

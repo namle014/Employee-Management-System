@@ -20,7 +20,7 @@ namespace OA.WebApi.Controllers
             _logger = logger;
         }
         [HttpGet]
-        public async Task<IActionResult> GetAll([FromQuery ]HolidayFilterVModel model)
+        public async Task<IActionResult> GetAll([FromQuery] HolidayFilterVModel model)
         {
             var response = await _holidayService.GetAll(model);
             return Ok(response);
@@ -62,12 +62,23 @@ namespace OA.WebApi.Controllers
         [HttpDelete(CommonConstants.Routes.Id)]
         public async Task<IActionResult> Remove(int id)
         {
-            if(id <= 0)
+            if (id <= 0)
             {
                 return new BadRequestObjectResult(string.Format(MsgConstants.Error404Messages.FieldIsInvalid, StringConstants.Validate.Id));
             }
 
             await _holidayService.Remove(id);
+            return NoContent();
+        }
+
+        [HttpDelete]
+        public async Task<IActionResult> DeleteMany([FromBody] HolidayDeleteManyVModel model)
+        {
+            if (model == null || model.Ids == null || !model.Ids.Any())
+            {
+                return BadRequest("Danh sách ID cần xóa không được để trống.");
+            }
+            await _holidayService.DeleteMany(model);
             return NoContent();
         }
     }

@@ -13,6 +13,7 @@ namespace OA.Core.Services
         Task Create(HolidayCreateVModel model);
         Task Update(HolidayUpdateVModel model);
         Task<ResponseResult> GetAll(HolidayFilterVModel model);
+        Task DeleteMany(HolidayDeleteManyVModel model);
         Task Remove(int id);
         Task<ResponseResult> GetById(int id);
     }

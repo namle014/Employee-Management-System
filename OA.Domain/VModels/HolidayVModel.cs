@@ -47,4 +47,8 @@ namespace OA.Core.VModels
     public class HolidayVModel
     {
     }
+    public class HolidayDeleteManyVModel
+    {
+        public List<int> Ids { get; set; } = new List<int>();
+    }
 }

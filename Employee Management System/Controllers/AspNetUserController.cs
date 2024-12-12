@@ -32,6 +32,15 @@ namespace OA.WebApi.AdminControllers
             return Ok(response);
         }
 
+
+        [HttpGet]
+        public async Task<IActionResult> GetEmployeeCountByRole()
+        {
+            var response = await _userService.GetEmployeeCountByRole();
+            return Ok(response);
+        }
+
+
         [HttpGet]
         public async Task<IActionResult> GetById(string id)
         {

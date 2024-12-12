@@ -135,6 +135,44 @@ namespace OA.Service
             return result;
         }
 
+
+
+        public async Task<ResponseResult> GetEmployeeCountByRole()
+        {
+            var result = new ResponseResult();
+            try
+            {    
+                var users = await _userManager.Users.ToListAsync();          
+                var roleCounts = new Dictionary<string, int>();
+                foreach (var user in users)
+                {
+                    var roles = await _userManager.GetRolesAsync(user);
+                    foreach (var role in roles)
+                    {
+                    
+                        if (roleCounts.ContainsKey(role))
+                        {
+                            roleCounts[role]++;
+                        }
+                        else
+                        {
+                          
+                            roleCounts[role] = 1;
+                        }
+                    }
+                }
+                var roleCountList = roleCounts.Select(role => new { Role = role.Key, Count = role.Value }).ToList();
+
+                result.Data = roleCountList;
+            }
+            catch (Exception ex)
+            {
+                throw new BadRequestException(Utilities.MakeExceptionMessage(ex));
+            }
+            return result;
+        }
+
+
         public async Task<ResponseResult> GetById(string id)
         {
             var result = new ResponseResult();

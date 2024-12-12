@@ -30,6 +30,31 @@ namespace OA.WebAPI.AdminControllers
             return Ok(response);
         }
 
+
+        [HttpGet("expiring-soon")]
+        public async Task<IActionResult> GetContractsExpiringSoon([FromQuery] int? day)
+        {
+          
+            if (!day.HasValue || day.Value <= 0)
+            {
+                return BadRequest(string.Format(MsgConstants.Error404Messages.FieldIsInvalid, "day"));
+            }
+
+            var response = await _EmploymentContractService.GetContractsExpiringSoon(day.Value);
+
+            return Ok(response);
+        }
+
+
+        [HttpGet("count-by-type")]
+        public async Task<IActionResult> GetContractCountByType()
+        {
+            var response = await _EmploymentContractService.GetContractCountByType();
+            return Ok(response);
+        }
+
+
+
         [HttpGet("export")]
         public async Task<IActionResult> ExportFile([FromQuery] FilterEmploymentContractVModel model, [FromQuery] ExportFileVModel exportModel)
         {

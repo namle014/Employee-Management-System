@@ -65,6 +65,48 @@ namespace OA.Service
             return result;
         }
 
+
+        public async Task<ResponseResult> GetContractsExpiringSoon(int day)
+        {
+            var result = new ResponseResult();
+
+            var currentDate = DateTime.UtcNow;
+            var targetDate = currentDate.AddDays(day);
+
+            var contracts = await _context.EmploymentContract
+                .Where(x => x.EndDate >= currentDate && x.EndDate <= targetDate)
+                .OrderBy(x => x.EndDate)
+                .ToListAsync();
+
+            result.Data = new
+            {
+                Records = contracts.Select(contract => _mapper.Map<EmploymentContractGetAllVModel>(contract)).ToList(),
+                TotalRecords = contracts.Count
+            };
+
+            return result;
+        }
+
+
+        public async Task<ResponseResult> GetContractCountByType()
+        {
+            var result = new ResponseResult();
+            var contractCounts = await _context.EmploymentContract
+                .GroupBy(x => x.TypeContract)
+                .Select(g => new
+                {
+                    TypeContract = g.Key,
+                    Count = g.Count()
+                })
+                .ToListAsync();
+
+            result.Data = contractCounts;
+
+            return result;
+        }
+
+
+
         public async Task<ExportStream> ExportFile(FilterEmploymentContractVModel model, ExportFileVModel exportModel)
         {
             model.IsExport = true;

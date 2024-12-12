@@ -8,6 +8,8 @@ namespace OA.Core.Services
     public interface IEmploymentContractService
     {
         Task<ResponseResult> Search(FilterEmploymentContractVModel model);
+        Task<ResponseResult> GetContractsExpiringSoon(int daysBeforeExpiry);
+        Task<ResponseResult> GetContractCountByType();
         Task<ExportStream> ExportFile(FilterEmploymentContractVModel model, ExportFileVModel exportModel);
         Task<ResponseResult> GetById(String id);
         Task Create(EmploymentContractCreateVModel model);

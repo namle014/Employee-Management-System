@@ -106,6 +106,40 @@ namespace OA.Service
         }
 
 
+        public async Task<ResponseResult> GetEmployeeStatsByMonthAndYear(int year, int month)
+        {
+            var result = new ResponseResult();
+
+           
+            var contracts = await _context.EmploymentContract
+                .Where(c => c.StartDate.Year == year || c.EndDate.Year == year)
+                .ToListAsync();
+        
+            var startCount = contracts.Count(c => c.StartDate.Year == year && c.StartDate.Month == month);
+            var endCount = contracts.Count(c => c.EndDate.Year == year && c.EndDate.Month == month);
+       
+            var previousMonth = month == 1 ? 12 : month - 1;
+            var previousYear = month == 1 ? year - 1 : year;
+
+            var previousStartCount = contracts.Count(c => c.StartDate.Year == previousYear && c.StartDate.Month == previousMonth);
+            var previousEndCount = contracts.Count(c => c.EndDate.Year == previousYear && c.EndDate.Month == previousMonth);
+         
+            var startPercentChange = previousStartCount == 0 ? (int?)null : ((startCount - previousStartCount) * 100) / previousStartCount;
+            var endPercentChange = previousEndCount == 0 ? (int?)null : ((endCount - previousEndCount) * 100) / previousEndCount;
+          
+            result.Data = new
+            {
+                Year = year,
+                Month = month,
+                StartCount = startCount,
+                StartPercentChange = startPercentChange,
+                EndCount = endCount,
+                EndPercentChange = endPercentChange
+            };
+
+            return result;
+        }
+
 
         public async Task<ExportStream> ExportFile(FilterEmploymentContractVModel model, ExportFileVModel exportModel)
         {

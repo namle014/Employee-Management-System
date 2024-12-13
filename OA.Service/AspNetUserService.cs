@@ -67,9 +67,9 @@ namespace OA.Service
                                         (string.IsNullOrEmpty(model.PhoneNumber) || x.PhoneNumber == model.PhoneNumber) &&
                                         (string.IsNullOrEmpty(model.FullName) || x.FullName == model.FullName) &&
                                         (model.Birthday == null ||
-                                            (x.Birthday.Year == model.Birthday.Value.Year &&
-                                            x.Birthday.Month == model.Birthday.Value.Month &&
-                                            x.Birthday.Day == model.Birthday.Value.Day)) &&
+                                            (x.Birthday.Value.Year == model.Birthday.Value.Year &&
+                                            x.Birthday.Value.Month == model.Birthday.Value.Month &&
+                                            x.Birthday.Value.Day == model.Birthday.Value.Day)) &&
                                         (model.CreatedDate == null ||
                                             (x.CreatedDate.HasValue &&
                                             x.CreatedDate.Value.Year == model.CreatedDate.Value.Year &&
@@ -172,6 +172,117 @@ namespace OA.Service
             return result;
         }
 
+
+
+
+        public async Task<ResponseResult> GetEmployeeCountByDepartment()
+        {
+            var result = new ResponseResult();
+            try
+            {      
+                var users = await _userManager.Users.ToListAsync();
+             
+                var departmentCounts = new Dictionary<string, int>();
+
+                foreach (var user in users)                {
+                   
+                    var department = (await _departmentService.GetById(user.DepartmentId))?.Name ?? "Chưa xác định";
+                  
+                    if (departmentCounts.ContainsKey(department))
+                    {
+                        departmentCounts[department]++;
+                    }
+                    else
+                    {
+                        departmentCounts[department] = 1;
+                    }
+                }               
+                var departmentCountList = departmentCounts.Select(department => new { Department = department.Key, Count = department.Value }).ToList();              
+                result.Data = departmentCountList;
+            }
+            catch (Exception ex)
+            {
+                throw new BadRequestException(Utilities.MakeExceptionMessage(ex));
+            }
+            return result;
+        }
+
+
+        public async Task<ResponseResult> GetEmployeeCountByAge()
+        {
+            var result = new ResponseResult();
+            try
+            {
+              
+                var users = await _userManager.Users.ToListAsync();
+
+              
+                int lessThan32 = 0;
+                int between32And45 = 0;
+                int greaterThan45 = 0;
+
+              
+                foreach (var user in users)
+                {
+                    if (user.Birthday.HasValue)
+                    {
+                        var birthDate = user.Birthday.Value;
+                        var age = DateTime.Now.Year - birthDate.Year;
+
+                        
+                        if (DateTime.Now.DayOfYear < birthDate.DayOfYear)
+                        {
+                            age--;
+                        }
+
+                      
+                        if (age < 32)
+                        {
+                            lessThan32++;
+                        }
+                        else if (age >= 32 && age <= 45)
+                        {
+                            between32And45++;
+                        }
+                        else
+                        {
+                            greaterThan45++;
+                        }
+                    }
+                }
+
+             
+                int totalEmployees = lessThan32 + between32And45 + greaterThan45;
+
+             
+                var lessThan32Percentage = totalEmployees == 0 ? 0 : ((double)lessThan32 / totalEmployees) * 100;
+                var between32And45Percentage = totalEmployees == 0 ? 0 : ((double)between32And45 / totalEmployees) * 100;
+                var greaterThan45Percentage = totalEmployees == 0 ? 0 : ((double)greaterThan45 / totalEmployees) * 100;
+
+                
+                var totalPercentage = lessThan32Percentage + between32And45Percentage + greaterThan45Percentage;
+                if (totalPercentage < 100)
+                {
+                    greaterThan45Percentage += (100 - totalPercentage);
+                }
+
+              
+                result.Data = new
+                {
+                    LessThan32 = lessThan32,
+                    Between32And45 = between32And45,
+                    GreaterThan45 = greaterThan45,
+                    LessThan32Percentage = lessThan32Percentage,
+                    Between32And45Percentage = between32And45Percentage,
+                    GreaterThan45Percentage = greaterThan45Percentage
+                };
+            }
+            catch (Exception ex)
+            {
+                throw new BadRequestException(Utilities.MakeExceptionMessage(ex));
+            }
+            return result;
+        }
 
         public async Task<ResponseResult> GetById(string id)
         {

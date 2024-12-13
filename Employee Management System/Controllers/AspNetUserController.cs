@@ -42,6 +42,33 @@ namespace OA.WebApi.AdminControllers
 
 
         [HttpGet]
+        public async Task<IActionResult> GetEmployeeCountByDepartment()
+        {
+            var result = await _userService.GetEmployeeCountByDepartment();
+
+            if (result.Data != null)
+            {
+                return Ok(result);
+            }
+
+            return NotFound(new { Message = "Không có dữ liệu" });
+        }
+
+
+        [HttpGet]
+        public async Task<IActionResult> GetEmployeeCountByAge()
+        {
+            var result = await _userService.GetEmployeeCountByAge();
+            if (result.Data != null)
+            {
+                return Ok(result);
+            }
+
+            return NotFound(new { Message = "Không có dữ liệu" });
+        }
+
+
+        [HttpGet]
         public async Task<IActionResult> GetById(string id)
         {
             if (string.IsNullOrEmpty(id))

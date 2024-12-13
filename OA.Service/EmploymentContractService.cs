@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using OA.Core.Services;
+using OA.Core.Repositories;
 
 namespace OA.Service
 {
@@ -19,11 +20,13 @@ namespace OA.Service
     {
         private readonly ApplicationDbContext _context; 
         private readonly IMapper _mapper;
+        private readonly IBaseRepository<SysFile> _sysFileRepo;
 
-        public EmploymentContractService(ApplicationDbContext context, IMapper mapper)
+        public EmploymentContractService(ApplicationDbContext context, IMapper mapper, IBaseRepository<SysFile> sysFileRepo)
         {
             _context = context;
             _mapper = mapper;
+            _sysFileRepo = sysFileRepo; 
         }
 
         public async Task<ResponseResult> Search(FilterEmploymentContractVModel model)
@@ -69,18 +72,46 @@ namespace OA.Service
         public async Task<ResponseResult> GetContractsExpiringSoon(int day)
         {
             var result = new ResponseResult();
-
             var currentDate = DateTime.UtcNow;
             var targetDate = currentDate.AddDays(day);
 
             var contracts = await _context.EmploymentContract
+                .Include(ec => ec.User)
                 .Where(x => x.EndDate >= currentDate && x.EndDate <= targetDate)
                 .OrderBy(x => x.EndDate)
                 .ToListAsync();
 
+            var records = new List<object>();
+
+            foreach (var contract in contracts)
+            {
+                var avatarPath = contract.User.AvatarFileId != null
+                    ? "https://localhost:44381/" + (await _sysFileRepo.GetById((int)contract.User.AvatarFileId))?.Path
+                    : null;
+
+                var record = new
+                {
+                    Contract = _mapper.Map<EmploymentContractGetAllVModel>(contract),
+                    User = new
+                    {
+                        contract.User.UserName,
+                        contract.User.Email,
+                        contract.User.FullName,
+                        contract.User.PhoneNumber,
+                        contract.User.StartDateWork,
+                        contract.User.Birthday,
+                        contract.User.Address,
+                        contract.User.AvatarFileId,
+                        AvatarPath = avatarPath
+                    }
+                };
+
+                records.Add(record);
+            }
+
             result.Data = new
             {
-                Records = contracts.Select(contract => _mapper.Map<EmploymentContractGetAllVModel>(contract)).ToList(),
+                Records = records,
                 TotalRecords = contracts.Count
             };
 

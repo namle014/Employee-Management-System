@@ -8,6 +8,7 @@ namespace OA.Infrastructure.EF.Entities
 {
     public class EmploymentContract
     {
+        public virtual AspNetUser User { get; set; }
         public String Id { get; set; } = string.Empty;
         public bool IsActive { get; set; }
         public string? CreatedBy { get; set; }

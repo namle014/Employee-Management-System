@@ -9,17 +9,25 @@ using OA.Infrastructure.EF.Context;
 using OA.Infrastructure.EF.Entities;
 using OA.Service.Helpers;
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using OA.Core.Repositories;
+
 namespace OA.Service
 {
     public class EmploymentContractService : IEmploymentContractService
     {
         private readonly ApplicationDbContext _context; 
         private readonly IMapper _mapper;
+        private readonly IBaseRepository<SysFile> _sysFileRepo;
 
-        public EmploymentContractService(ApplicationDbContext context, IMapper mapper)
+        public EmploymentContractService(ApplicationDbContext context, IMapper mapper, IBaseRepository<SysFile> sysFileRepo)
         {
             _context = context;
             _mapper = mapper;
+            _sysFileRepo = sysFileRepo; 
         }
 
         public async Task<ResponseResult> Search(FilterEmploymentContractVModel model)
@@ -60,6 +68,121 @@ namespace OA.Service
 
             return result;
         }
+
+
+        public async Task<ResponseResult> GetContractsExpiringSoon(FilterEmploymentContractVModel model, int daysUntilExpiration)
+        {
+            var result = new ResponseResult();
+            string? keyword = model.Keyword?.ToLower();
+            var currentDate = DateTime.UtcNow;
+            var targetDate = currentDate.AddDays(daysUntilExpiration);
+
+            var recordsQuery = _context.EmploymentContract
+                .Include(ec => ec.User)
+                .Where(x => x.EndDate >= currentDate && x.EndDate <= targetDate)
+                .AsQueryable();
+
+            if (model.IsActive != null)
+            {
+                recordsQuery = recordsQuery.Where(x => x.IsActive == model.IsActive);
+            }
+
+            if (!string.IsNullOrEmpty(keyword))
+            {
+                recordsQuery = recordsQuery.Where(x =>
+                    x.UserId.ToLower().Contains(keyword) ||
+                    (x.ContractName != null && x.ContractName.ToLower().Contains(keyword)) ||
+                    (x.User != null && x.User.FullName.ToLower().Contains(keyword))
+                );
+            }
+
+            var records = model.IsDescending
+                ? await recordsQuery.OrderByDescending(x => x.EndDate).ToListAsync()
+                : await recordsQuery.OrderBy(x => x.EndDate).ToListAsync();
+
+            var contractList = new List<object>();
+            foreach (var contract in records)
+            {
+                var avatarPath = contract.User.AvatarFileId != null
+                    ? "https://localhost:44381/" +
+                      (await _sysFileRepo.GetById((int)contract.User.AvatarFileId))?.Path
+                    : null;
+
+                contractList.Add(new
+                {
+                    Contract = _mapper.Map<EmploymentContractGetAllVModel>(contract),
+                    User = new
+                    {
+                        contract.User.FullName,
+                        AvatarPath = avatarPath
+                    }
+                });
+            }
+
+            result.Data = new Pagination()
+            {
+                Records = contractList.Skip((model.PageNumber - 1) * model.PageSize)
+                    .Take(model.PageSize)
+                    .ToList(),
+                TotalRecords = records.Count
+            };
+
+            return result;
+        }
+
+
+        public async Task<ResponseResult> GetContractCountByType()
+        {
+            var result = new ResponseResult();
+            var contractCounts = await _context.EmploymentContract
+                .GroupBy(x => x.TypeContract)
+                .Select(g => new
+                {
+                    TypeContract = g.Key,
+                    Count = g.Count()
+                })
+                .ToListAsync();
+
+            result.Data = contractCounts;
+
+            return result;
+        }
+
+
+        public async Task<ResponseResult> GetEmployeeStatsByMonthAndYear(int year, int month)
+        {
+            var result = new ResponseResult();
+
+           
+            var contracts = await _context.EmploymentContract
+                .Where(c => c.StartDate.Year == year || c.EndDate.Year == year)
+                .ToListAsync();
+        
+            var startCount = contracts.Count(c => c.StartDate.Year == year && c.StartDate.Month == month);
+            var endCount = contracts.Count(c => c.EndDate.Year == year && c.EndDate.Month == month);
+       
+            var previousMonth = month == 1 ? 12 : month - 1;
+            var previousYear = month == 1 ? year - 1 : year;
+
+            var previousStartCount = contracts.Count(c => c.StartDate.Year == previousYear && c.StartDate.Month == previousMonth);
+            var previousEndCount = contracts.Count(c => c.EndDate.Year == previousYear && c.EndDate.Month == previousMonth);
+         
+            var startPercentChange = previousStartCount == 0 ? (int?)null : ((startCount - previousStartCount) * 100) / previousStartCount;
+            var endPercentChange = previousEndCount == 0 ? (int?)null : ((endCount - previousEndCount) * 100) / previousEndCount;
+          
+            result.Data = new
+            {
+                Year = year,
+                Month = month,
+                StartCount = startCount,
+                StartPercentChange = startPercentChange,
+                EndCount = endCount,
+                EndPercentChange = endPercentChange
+            };
+
+            return result;
+        }
+
 
         public async Task<ExportStream> ExportFile(FilterEmploymentContractVModel model, ExportFileVModel exportModel)
         {

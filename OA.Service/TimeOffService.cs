@@ -61,6 +61,44 @@ namespace OA.Service
             return result;
         }
 
+
+        public async Task<ResponseResult> CountTimeOffsInMonth(int year, int month)
+        {
+            var result = new ResponseResult();
+
+            if (month < 1 || month > 12)
+            {
+                throw new ArgumentException("Tháng phải nằm trong khoảng từ 1 đến 12.");
+            }
+                       
+            var currentMonthCount = await _context.TimeOff
+                .Where(x => x.Date.Year == year && x.Date.Month == month)
+                .CountAsync();
+                      
+            var previousMonth = month == 1 ? 12 : month - 1;
+            var previousYear = month == 1 ? year - 1 : year;
+            var previousMonthCount = await _context.TimeOff
+                .Where(x => x.Date.Year == previousYear && x.Date.Month == previousMonth)
+                .CountAsync();
+
+                      double? percentageIncrease = null;
+            if (previousMonthCount > 0)
+            {
+                percentageIncrease = ((double)(currentMonthCount - previousMonthCount) / previousMonthCount) * 100;
+            }
+                      
+            result.Data = new
+            {
+                Year = year,
+                Month = month,
+                CurrentMonthCount = currentMonthCount,
+                PreviousMonthCount = previousMonthCount,
+                PercentageIncrease = percentageIncrease
+            };
+
+            return result;
+        }
+
         public async Task<ExportStream> ExportFile(FilterTimeOffVModel model, ExportFileVModel exportModel)
         {
             model.IsExport = true;

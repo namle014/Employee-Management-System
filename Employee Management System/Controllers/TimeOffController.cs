@@ -27,6 +27,15 @@ namespace OA.WebAPI.AdminControllers
             return Ok(response);
         }
 
+        [HttpGet("time-off-statistics")]
+        public async Task<IActionResult> GetTimeOffStatistics(int year, int month)
+        {
+            var response = await _timeOffService.CountTimeOffsInMonth(year, month);
+            return Ok(response);
+        }
+
+
+
         [HttpGet("export")]
         public async Task<IActionResult> ExportFile([FromQuery] FilterTimeOffVModel model, [FromQuery] ExportFileVModel exportModel)
         {

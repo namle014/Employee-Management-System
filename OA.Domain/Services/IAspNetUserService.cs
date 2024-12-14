@@ -6,6 +6,9 @@ namespace OA.Core.Services
     public interface IAspNetUserService
     {
         Task<ResponseResult> GetAll(UserFilterVModel model);
+        Task<ResponseResult> GetEmployeeCountByRole();
+        Task<ResponseResult> GetEmployeeCountByDepartment();
+        Task<ResponseResult> GetEmployeeCountByAge();
         Task RequestPasswordReset(string emailUser);
         Task ResetPassword(ResetPasswordModel model);
         Task<ResponseResult> GetById(string id);

@@ -27,6 +27,36 @@ namespace OA.WebAPI.AdminControllers
             return Ok(response);
         }
 
+
+        [HttpGet("expiring-soon")]
+        public async Task<IActionResult> GetContractsExpiringSoon([FromQuery] FilterEmploymentContractVModel model, int daysUntilExpiration)
+        {
+            var result = await _EmploymentContractService.GetContractsExpiringSoon(model, daysUntilExpiration);
+            return Ok(result);
+        }
+
+
+        [HttpGet("count-by-type")]
+        public async Task<IActionResult> GetContractCountByType()
+        {
+            var response = await _EmploymentContractService.GetContractCountByType();
+            return Ok(response);
+        }
+
+        [HttpGet("monthly-stats")]
+        public async Task<IActionResult> GetEmployeeStatsByMonthAndYear([FromQuery] int year, [FromQuery] int month)
+        {
+            if (year <= 0 || month <= 0 || month > 12)
+            {
+                return BadRequest("Year and month must be valid values.");
+            }
+
+            var response = await _EmploymentContractService.GetEmployeeStatsByMonthAndYear(year, month);
+            return Ok(response);
+        }
+
+
+
         [HttpGet("export")]
         public async Task<IActionResult> ExportFile([FromQuery] FilterEmploymentContractVModel model, [FromQuery] ExportFileVModel exportModel)
         {

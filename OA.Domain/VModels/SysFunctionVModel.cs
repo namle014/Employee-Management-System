@@ -1,6 +1,4 @@
 ﻿using OA.Core.Constants;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace OA.Domain.VModels

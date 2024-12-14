@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-
 namespace OA.Infrastructure.EF.Entities
 {
     public partial class SysFile : BaseEntity

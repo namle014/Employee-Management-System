@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Identity;
-using System;
 namespace OA.Infrastructure.EF.Entities
 {
     public class AspNetRole : IdentityRole

@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace OA.Core.Constants
+﻿namespace OA.Core.Constants
 {
     public static class StringHelper
     {

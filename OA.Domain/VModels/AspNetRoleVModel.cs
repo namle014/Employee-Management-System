@@ -1,11 +1,8 @@
 ﻿using Newtonsoft.Json;
 using OA.Core.Constants;
 using OA.Infrastructure.EF.Entities;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Runtime.Serialization;
-using System.Xml.Linq;
 
 namespace OA.Domain.VModels.Role
 {

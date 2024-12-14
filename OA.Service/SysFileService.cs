@@ -14,9 +14,7 @@ using OA.Service.Helpers;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats;
 using System.Globalization;
-using System.Linq.Expressions;
 using System.Web;
-using static Microsoft.Extensions.Logging.EventSource.LoggingEventSource;
 
 namespace OA.Service
 {

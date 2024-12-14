@@ -1,17 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace OA.Core.VModels
+﻿namespace OA.Core.VModels
 {
     public class SalaryCreateVModel
     {
         public string UserId { get; set; } = string.Empty;
         public DateTime Date { get; set; }
-        public decimal PITax { get; set; }
         public decimal TotalSalary {  get; set; }
     }
     public class SalaryUpdateVModel
@@ -23,7 +15,16 @@ namespace OA.Core.VModels
     {
         public string Id { get; set; } = string.Empty;
         public string FullName { get; set; } = string.Empty;
+        public decimal Benefit {  get; set; }
+        public decimal Discipline { get; set; }
+        public decimal BasicSalary { get; set; }
+        public decimal Insurance { get; set; }
+        public decimal Reward { get; set; }
+        public decimal PITax { get; set; }
+        public int Timekeeping { get; set; }
         public bool IsActive { get; set; }
+        public bool? Ispaid { get; set; }
+        public string? PayrollPeriod {  get; set; }
     }
     public class SalaryGetByIdVModel : SalaryGetAllVModel
     {

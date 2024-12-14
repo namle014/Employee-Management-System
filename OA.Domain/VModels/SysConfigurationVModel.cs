@@ -1,6 +1,4 @@
 ﻿using OA.Core.Constants;
-using OA.Core.CustomValidationAttribute;
-using System;
 using System.ComponentModel.DataAnnotations;
 using System.Runtime.Serialization;
 namespace OA.Domain.VModels

@@ -1,6 +1,5 @@
-﻿using OA.Service.Helpers.Logging.Internal;
-using Microsoft.Extensions.Logging;
-using System;
+﻿using Microsoft.Extensions.Logging;
+using OA.Service.Helpers.Logging.Internal;
 
 namespace OA.Service.Helpers.Logging
 {

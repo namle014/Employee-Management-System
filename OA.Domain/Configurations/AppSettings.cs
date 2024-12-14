@@ -1,6 +1,4 @@
 ﻿using Microsoft.IdentityModel.Tokens;
-using System;
-using System.Threading.Tasks;
 namespace OA.Core.Configurations
 {
     public class ConnectionStrings

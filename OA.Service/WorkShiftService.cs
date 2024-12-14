@@ -1,5 +1,4 @@
 ﻿using AutoMapper;
-using Microsoft.EntityFrameworkCore;
 using OA.Core.Constants;
 using OA.Core.Models;
 using OA.Core.Repositories;
@@ -10,13 +9,6 @@ using OA.Infrastructure.EF.Context;
 using OA.Infrastructure.EF.Entities;
 using OA.Infrastructure.SQL;
 using OA.Service.Helpers;
-using System;
-using System.Collections.Generic;
-using System.Data.Common;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace OA.Service
 {

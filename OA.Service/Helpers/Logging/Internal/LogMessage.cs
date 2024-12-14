@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace OA.Service.Helpers.Logging.Internal
+﻿namespace OA.Service.Helpers.Logging.Internal
 {
     public struct LogMessage
     {

@@ -1,5 +1,4 @@
-﻿using System.Security.Claims;
-namespace OA.Core.Constants
+﻿namespace OA.Core.Constants
 {
     public static class ConstantsJWT
     {

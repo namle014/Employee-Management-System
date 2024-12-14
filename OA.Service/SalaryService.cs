@@ -1,24 +1,16 @@
 ﻿using AutoMapper;
-using OA.Core.Repositories;
-using OA.Core.VModels;
-using OA.Infrastructure.EF.Entities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using OA.Domain.Services;
-using OA.Core.Services;
-using OA.Repository;
 using Microsoft.AspNetCore.Http;
-using OA.Core.Models;
-using OA.Service.Helpers;
-using OA.Core.Constants;
-using OA.Infrastructure.SQL;
-using Microsoft.EntityFrameworkCore;
-using OA.Infrastructure.EF.Context;
 using Microsoft.AspNetCore.Identity;
-using static System.Runtime.InteropServices.JavaScript.JSType;
+using Microsoft.EntityFrameworkCore;
+using OA.Core.Constants;
+using OA.Core.Models;
+using OA.Core.Services;
+using OA.Core.VModels;
+using OA.Infrastructure.EF.Context;
+using OA.Infrastructure.EF.Entities;
+using OA.Repository;
+using OA.Service.Helpers;
+using System.Text.RegularExpressions;
 
 
 namespace OA.Service
@@ -30,12 +22,14 @@ namespace OA.Service
         private DbSet<Salary> _salary;
         private readonly IMapper _mapper;
         private string _nameService = "Salary";
+        private DbSet<EmploymentContract> _employments;
         private readonly UserManager<AspNetUser> _userManager;
 
         public SalaryService(ApplicationDbContext dbContext, IMapper mapper, IHttpContextAccessor contextAccessor, UserManager<AspNetUser> userManager) : base(contextAccessor)
         {
             _dbContext = dbContext ?? throw new ArgumentNullException("context");
             _salary = dbContext.Set<Salary>();
+            _employments = dbContext.Set<EmploymentContract>();
             _mapper = mapper;
             _userManager = userManager;
         }
@@ -54,10 +48,10 @@ namespace OA.Service
             
             if (highestId != null)
             {
-                if (highestId.Length > 2 && highestId.StartsWith("nv"))
+                if (highestId.Length > 2 && highestId.StartsWith("BL"))
                 {
                     var newIdNumber = int.Parse(highestId.Substring(2)) + 1; 
-                    entity.Id = "nv" + newIdNumber.ToString("D3"); 
+                    entity.Id = "BL" + newIdNumber.ToString("D4"); 
                 }
                 else
                 {
@@ -66,7 +60,7 @@ namespace OA.Service
             }
             else
             {
-                entity.Id = "nv001";
+                entity.Id = "BL0001";
             }
             entity.CreatedDate = DateTime.Now;
             entity.CreatedBy = GlobalUserName;
@@ -79,23 +73,45 @@ namespace OA.Service
                 throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorCreate, _nameService));
             }
         }
-
         public async Task<ResponseResult> GetAll()
         {
             var result = new ResponseResult();
             var query = _salary.AsQueryable();
-            var salaryList = await query.ToListAsync();
+            var salaryList = await query.Where(x=>x.IsActive).ToListAsync();
             var salaryGrouped = salaryList.GroupBy(x => x.UserId);
             var salaryListMapped = new List<SalaryGetAllVModel>();
             foreach (var group in salaryGrouped)
             {
-                var user = await _userManager.FindByIdAsync(group.Key);
+                var userId = group.Key;
+                var user = await _userManager.FindByIdAsync(userId);
                 if (user == null)
                 {
-                    throw new NotFoundException(string.Format(MsgConstants.WarningMessages.NotFound, $"UserId = {group.Key}"));
+                    throw new NotFoundException(string.Format(MsgConstants.WarningMessages.NotFound, $"UserId = {userId}"));
                 }
                 foreach (var item in group) {
                     var entityMapped = _mapper.Map<Salary, SalaryGetAllVModel>(item);
+                    var totalBasicSalary = _employments.Where(x => x.UserId == userId && x.IsActive)
+                                   .Sum(x => x.BasicSalary);
+                    entityMapped.BasicSalary = totalBasicSalary;
+                    var totalReward = _dbContext.Reward.Where(x => x.UserId == userId && x.IsActive).Sum(x=>x.Money);
+                    entityMapped.Reward = totalReward;
+                    var totalDiscipline = _dbContext.Discipline.Where(x => x.UserId == userId && x.IsActive).Sum(x => x.Money);
+                    entityMapped.Discipline = totalDiscipline;
+                    var timekeepingCount = _dbContext.Timekeeping
+                        .Count(x => x.UserId == userId && x.IsActive
+                                    && x.CheckInTime != TimeSpan.Zero && x.CheckOutTime != TimeSpan.Zero);
+                    entityMapped.Timekeeping = timekeepingCount;
+                    var totalBenefit = await (from bUser in _dbContext.BenefitUser
+                                              join benefit in _dbContext.Benefit on bUser.BenefitId equals benefit.Id
+                                              where (bUser.UserId == userId && benefit.IsActive)
+                                              select benefit.BenefitContribution).SumAsync();
+                    entityMapped.Benefit = totalBenefit;
+                    var totalInsurance = await (from insuranceUser in _dbContext.InsuranceUser
+                                               join insurance in _dbContext.Insurance on insuranceUser.InsuranceId equals insurance.Id
+                                               where (insuranceUser.UserId == userId && insurance.IsActive)
+                                               select insuranceUser.PaidInsuranceContribution).SumAsync();
+                    var PITax = 0;
+
                     entityMapped.FullName = user.FullName;
                     salaryListMapped.Add(entityMapped); }
             }
@@ -233,6 +249,88 @@ namespace OA.Service
             {
                 throw new BadRequestException(Utilities.MakeExceptionMessage(ex));
             }
+        }
+
+        public Task<ResponseResult> GetIncomeInMonth(int year, int month)
+        {
+            var result = new ResponseResult();
+            var query = _salary.AsQueryable();
+            string period = $"{year}-{month.ToString("D2")}";
+            var total =  query.Where(x => x.IsActive && x.PayrollPeriod == period).Sum(x => (decimal?)x.TotalSalary) ?? 0;
+            int bMonth = 0;
+            int bYear = 0;
+            if(month == 1)
+            {
+                bMonth = 12;
+                bYear = year - 1;
+            }
+            else
+            {
+                bMonth = month - 1;
+                bYear = year;
+            }
+            string bPeriod = $"{bYear}-{bMonth.ToString("D2")}";
+            var bTotal = query.Where(x => x.IsActive && x.PayrollPeriod == bPeriod).Sum(x => (decimal?)x.TotalSalary) ?? 0;
+
+            float? percentage = 0;
+            if (bTotal != 0)
+            {
+                percentage = (float)(((total - bTotal) / bTotal) * 100);
+            }
+            else percentage = null;
+
+            result.Data = new
+            {
+                TotalIncome = total,
+                PercentageChange = percentage
+            };
+
+            return Task.FromResult(result);
+        }
+
+        public Task<ResponseResult> GetYearIncome(int year)
+        {
+            var result = new ResponseResult();
+            var query = _salary.AsQueryable();
+            var months = Enumerable.Range(1,12).Select(m => m.ToString("D2")).ToArray();
+            var dbData = query
+                .Where(x => x.IsActive && x.PayrollPeriod != null && x.PayrollPeriod.StartsWith(year.ToString()))
+                .GroupBy(x => x.PayrollPeriod.Substring(5, 2))
+                .Select(g => new {
+                    month = g.Key,
+                    total = g.Sum(x => (decimal?)x.TotalSalary) ?? 0})
+                .ToArray();
+
+            var totalSalaries = months.Select(m => new
+            {
+                month = m,
+                total = dbData.FirstOrDefault(x => x.month == m)?.total ?? 0
+            }).ToArray(); 
+
+            var bYear = year - 1;
+
+            var bdbData = query
+                .Where(x => x.IsActive && x.PayrollPeriod != null && x.PayrollPeriod.StartsWith(bYear.ToString()))
+                .GroupBy(x => x.PayrollPeriod.Substring(5, 2))
+                .Select(g => new {
+                    month = g.Key,
+                    total = g.Sum(x => (decimal?)x.TotalSalary) ?? 0
+                })
+                .ToArray();
+
+            var bTotalSalaries = months.Select(m => new
+            {
+                month = m,
+                total = bdbData.FirstOrDefault(x => x.month == m)?.total ?? 0
+            }).ToArray();
+
+            result.Data = new
+            {
+                yearList = totalSalaries,
+                bYearList = bTotalSalaries
+            };
+
+            return Task.FromResult(result);
         }
     }
 }

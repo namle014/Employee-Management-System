@@ -2,8 +2,6 @@
 using OA.Core.Constants;
 using OA.Core.Services;
 using OA.Core.VModels;
-using OA.Infrastructure.EF.Entities;
-using OA.WebApi.Controllers;
 
 namespace OA.WebApi.Controllers
 {
@@ -88,6 +86,26 @@ namespace OA.WebApi.Controllers
             }
             await _salaryService.ChangeStatus(id);
             return NoContent();
+        }
+        [HttpGet]
+        public async Task<IActionResult> GetIncomeInMonth(int year, int month)
+        {
+            if (year < 1 || month < 1 || month > 12)
+            {
+                return new BadRequestObjectResult(string.Format(MsgConstants.Error404Messages.FieldIsInvalid, "year or month"));
+            }
+            var response = await _salaryService.GetIncomeInMonth(year, month);
+            return Ok(response);
+        }
+        [HttpGet]
+        public async Task<IActionResult> GetYearIncome(int year)
+        {
+            if (year < 1)
+            {
+                return new BadRequestObjectResult(string.Format(MsgConstants.Error404Messages.FieldIsInvalid, "year"));
+            }
+            var response = await _salaryService.GetYearIncome(year);
+            return Ok(response);
         }
     }
 }

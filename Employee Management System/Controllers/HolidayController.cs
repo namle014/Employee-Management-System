@@ -2,10 +2,8 @@
 using OA.Core.Constants;
 using OA.Core.Services;
 using OA.Core.VModels;
-using OA.Infrastructure.EF.Entities;
-using OA.Service;
 
-namespace OA.WebApi.Controllers 
+namespace OA.WebApi.Controllers
 {
     [Route(CommonConstants.Routes.BaseRouteAdmin)]
     [ApiController]

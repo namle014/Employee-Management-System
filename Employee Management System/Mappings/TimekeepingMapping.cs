@@ -1,8 +1,5 @@
 ﻿using AutoMapper;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
 using OA.Core.VModels;
-using OA.Domain.VModels;
 using OA.Infrastructure.EF.Entities;
 
 namespace OA.WebAPI.Mappings

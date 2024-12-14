@@ -1,11 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using OA.Core.Constants;
-using OA.Service;
-using OA.Domain.VModels;
-using System.Threading.Tasks;
-using OA.Core.VModels;
 using OA.Core.Services;
+using OA.Core.VModels;
+using OA.Domain.VModels;
 
 namespace OA.WebAPI.AdminControllers
 {

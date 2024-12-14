@@ -6,10 +6,7 @@ using OA.Core.Models;
 using OA.Core.Repositories;
 using OA.Infrastructure.EF.Context;
 using OA.Infrastructure.EF.Entities;
-using System;
-using System.Collections.Generic;
 using System.Linq.Expressions;
-using System.Threading.Tasks;
 namespace OA.Repository
 {
     public class BaseRepository<T> : GlobalVariables, IBaseRepository<T> where T : BaseEntity

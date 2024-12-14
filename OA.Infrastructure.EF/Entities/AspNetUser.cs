@@ -12,7 +12,7 @@ namespace OA.Infrastructure.EF.Entities
     {
         public string FullName { get; set; } = string.Empty;
         public int? AvatarFileId { get; set; }
-        public bool Gender { get; set; }
+        public bool? Gender { get; set; }
         public string Address { get; set; } = string.Empty;
         public DateTime? Birthday { get; set; }
         public string JsonUserHasFunctions { get; set; } = string.Empty;

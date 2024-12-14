@@ -2,16 +2,12 @@
 using Microsoft.EntityFrameworkCore;
 using OA.Core.Constants;
 using OA.Core.Models;
+using OA.Core.Services;
 using OA.Core.VModels;
 using OA.Domain.VModels;
-using OA.Infrastructure.EF.Entities;
 using OA.Infrastructure.EF.Context;
+using OA.Infrastructure.EF.Entities;
 using OA.Service.Helpers;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using OA.Core.Services;
 
 namespace OA.Service
 {

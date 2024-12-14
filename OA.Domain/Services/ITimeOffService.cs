@@ -1,5 +1,4 @@
-﻿using System.Threading.Tasks;
-using OA.Core.Models;
+﻿using OA.Core.Models;
 using OA.Core.VModels;
 using OA.Domain.VModels;
 

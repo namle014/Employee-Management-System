@@ -2,9 +2,7 @@ using Newtonsoft.Json;
 using OA.Core.Configurations;
 using OA.Core.Models;
 using OA.Core.Services.Helpers;
-using System.Linq;
 using System.Security.Claims;
-using System.Threading.Tasks;
 namespace OA.Service.Helpers
 {
     public class AuthTokens

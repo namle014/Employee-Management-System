@@ -1,12 +1,5 @@
 ﻿using OA.Core.Models;
 using OA.Core.VModels;
-using OA.Domain.VModels;
-using OA.Infrastructure.EF.Entities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace OA.Core.Services
 {
@@ -19,5 +12,7 @@ namespace OA.Core.Services
         Task<ResponseResult> Search(FilterSalaryVModel model);
         Task Remove(string id);
         Task ChangeStatus(string id);
+        Task<ResponseResult> GetIncomeInMonth(int year, int month);
+        Task<ResponseResult> GetYearIncome(int year);
     }
 }

@@ -1,5 +1,4 @@
-﻿using System.IO;
-namespace OA.Core.Models
+﻿namespace OA.Core.Models
 {
     public class ExportStream
     {

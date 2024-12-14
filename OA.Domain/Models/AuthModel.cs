@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace OA.Core.Models
+﻿namespace OA.Core.Models
 {
     public class AuthModel
     {

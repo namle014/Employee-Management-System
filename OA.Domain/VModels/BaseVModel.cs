@@ -1,5 +1,4 @@
 ﻿using OA.Core.Constants;
-using System;
 using System.ComponentModel.DataAnnotations;
 namespace OA.Core.VModels
 {

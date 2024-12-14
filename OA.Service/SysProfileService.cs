@@ -1,12 +1,8 @@
 ﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Options;
-using OA.Core.Models;
 using OA.Core.Services;
 using OA.Domain.Services;
 using OA.Domain.VModels;
 using OA.Repository;
-using System.Threading.Tasks;
 
 namespace OA.Service
 {

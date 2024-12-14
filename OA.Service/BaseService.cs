@@ -1,14 +1,9 @@
 ﻿using AutoMapper;
-using Microsoft.AspNetCore.Mvc;
 using OA.Core.Constants;
 using OA.Core.Models;
 using OA.Core.Repositories;
 using OA.Infrastructure.EF.Entities;
 using OA.Service.Helpers;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 namespace OA.Service
 {
     public class BaseService<TEntity, TCreateVModel, TUpdateVModel, TGetByIdVModel, TGetAllVModel, TExport>

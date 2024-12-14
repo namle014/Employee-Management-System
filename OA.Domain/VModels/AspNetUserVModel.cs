@@ -64,7 +64,7 @@ namespace OA.Domain.VModels
         public string? PhoneNumber { get; set; }
         public DateTime StartDateWork { get; set; }
         public int? AvatarFileId { get; set; }
-        public int? Sex { get; set; }
+        public int? Gender { get; set; }
         public string Address { get; set; } = string.Empty;
         public string Note { get; set; } = string.Empty;
         public DateTime? Birthday { get; set; }
@@ -87,7 +87,7 @@ namespace OA.Domain.VModels
     }
 
     public class UserGetAllVModel : UserUpdateVModel
-    {  
+    {
         public string DepartmentName { get; set; } = string.Empty;
         public string? AvatarPath { get; set; }
     }

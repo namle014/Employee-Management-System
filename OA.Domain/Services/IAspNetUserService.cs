@@ -1,9 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using OA.Core.Models;
-using OA.Core.VModels;
+﻿using OA.Core.Models;
 using OA.Domain.VModels;
 using OA.Domain.VModels.Role;
-using System.Threading.Tasks;
 namespace OA.Core.Services
 {
     public interface IAspNetUserService

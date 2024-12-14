@@ -1,11 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using OA.Core.Constants;
-using OA.Service;
-using OA.Domain.VModels;
-using System.Threading.Tasks;
-using OA.Core.VModels;
 using OA.Core.Services;
+using OA.Core.VModels;
+using OA.Domain.VModels;
 
 namespace OA.WebAPI.AdminControllers
 {
@@ -29,6 +26,15 @@ namespace OA.WebAPI.AdminControllers
             var response = await _timeOffService.Search(model);
             return Ok(response);
         }
+
+        [HttpGet("time-off-statistics")]
+        public async Task<IActionResult> GetTimeOffStatistics(int year, int month)
+        {
+            var response = await _timeOffService.CountTimeOffsInMonth(year, month);
+            return Ok(response);
+        }
+
+
 
         [HttpGet("export")]
         public async Task<IActionResult> ExportFile([FromQuery] FilterTimeOffVModel model, [FromQuery] ExportFileVModel exportModel)

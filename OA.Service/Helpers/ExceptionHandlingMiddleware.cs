@@ -1,10 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using OA.Core.VModels;
 using OA.Domain.VModels;
-using System;
 using System.Net;
-using System.Threading.Tasks;
 
 namespace OA.Service.Helpers
 {

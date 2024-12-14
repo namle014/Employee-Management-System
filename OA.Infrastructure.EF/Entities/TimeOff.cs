@@ -1,8 +1,4 @@
-﻿using System;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-
-namespace OA.Infrastructure.EF.Entities
+﻿namespace OA.Infrastructure.EF.Entities
 {
     public class TimeOff
     {

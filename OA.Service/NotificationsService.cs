@@ -1,7 +1,4 @@
-﻿using AngleSharp.Dom;
-using Aspose.Pdf;
-using Aspose.Pdf.Operators;
-using AutoMapper;
+﻿using AutoMapper;
 using Employee_Management_System.Hubs;
 using Ganss.Xss;
 using Microsoft.AspNetCore.Http;

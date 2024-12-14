@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace OA.Infrastructure.EF.Entities
+﻿namespace OA.Infrastructure.EF.Entities
 {
     public class Salary
     {
@@ -18,8 +12,8 @@ namespace OA.Infrastructure.EF.Entities
 
         public DateTime Date { get; set; }
 
-        public decimal PITax { get; set; }
-
         public decimal TotalSalary {  get; set; }
+        public bool? Ispaid { get; set; }
+        public string? PayrollPeriod { get; set; }
     }
 }

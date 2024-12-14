@@ -1,15 +1,10 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.AspNetCore.Mvc;
 using OA.Core.Constants;
-using OA.Core.Models;
 using OA.Domain.Services;
 using OA.Domain.VModels;
 using OA.Infrastructure.EF.Entities;
 using OA.Service.Helpers;
 using OA.WebApi.Controllers;
-using System.Net;
-using System.Threading.Tasks;
 
 namespace OA.WebAPI.AdminControllers
 {

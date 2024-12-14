@@ -1,7 +1,6 @@
 ﻿using OA.Core.Models;
 using OA.Domain.VModels;
 using System.Security.Claims;
-using System.Threading.Tasks;
 namespace OA.Domain.Services
 {
     public interface IAuthService

@@ -1,8 +1,5 @@
-﻿using OA.Core.Constants;
-using OA.Core.Models;
+﻿using OA.Core.Models;
 using OA.Infrastructure.EF.Entities;
-using System;
-using System.Threading.Tasks;
 
 namespace OA.Core.Services
 {

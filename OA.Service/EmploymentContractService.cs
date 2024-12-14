@@ -2,16 +2,17 @@
 using Microsoft.EntityFrameworkCore;
 using OA.Core.Constants;
 using OA.Core.Models;
+using OA.Core.Services;
 using OA.Core.VModels;
 using OA.Domain.VModels;
-using OA.Infrastructure.EF.Entities;
 using OA.Infrastructure.EF.Context;
+using OA.Infrastructure.EF.Entities;
 using OA.Service.Helpers;
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using OA.Core.Services;
 using OA.Core.Repositories;
 
 namespace OA.Service
@@ -69,50 +70,61 @@ namespace OA.Service
         }
 
 
-        public async Task<ResponseResult> GetContractsExpiringSoon(int day)
+        public async Task<ResponseResult> GetContractsExpiringSoon(FilterEmploymentContractVModel model, int daysUntilExpiration)
         {
             var result = new ResponseResult();
+            string? keyword = model.Keyword?.ToLower();
             var currentDate = DateTime.UtcNow;
-            var targetDate = currentDate.AddDays(day);
+            var targetDate = currentDate.AddDays(daysUntilExpiration);
 
-            var contracts = await _context.EmploymentContract
+            var recordsQuery = _context.EmploymentContract
                 .Include(ec => ec.User)
                 .Where(x => x.EndDate >= currentDate && x.EndDate <= targetDate)
-                .OrderBy(x => x.EndDate)
-                .ToListAsync();
+                .AsQueryable();
 
-            var records = new List<object>();
+            if (model.IsActive != null)
+            {
+                recordsQuery = recordsQuery.Where(x => x.IsActive == model.IsActive);
+            }
 
-            foreach (var contract in contracts)
+            if (!string.IsNullOrEmpty(keyword))
+            {
+                recordsQuery = recordsQuery.Where(x =>
+                    x.UserId.ToLower().Contains(keyword) ||
+                    (x.ContractName != null && x.ContractName.ToLower().Contains(keyword)) ||
+                    (x.User != null && x.User.FullName.ToLower().Contains(keyword))
+                );
+            }
+
+            var records = model.IsDescending
+                ? await recordsQuery.OrderByDescending(x => x.EndDate).ToListAsync()
+                : await recordsQuery.OrderBy(x => x.EndDate).ToListAsync();
+
+            var contractList = new List<object>();
+            foreach (var contract in records)
             {
                 var avatarPath = contract.User.AvatarFileId != null
-                    ? "https://localhost:44381/" + (await _sysFileRepo.GetById((int)contract.User.AvatarFileId))?.Path
+                    ? "https://localhost:44381/" +
+                      (await _sysFileRepo.GetById((int)contract.User.AvatarFileId))?.Path
                     : null;
 
-                var record = new
+                contractList.Add(new
                 {
                     Contract = _mapper.Map<EmploymentContractGetAllVModel>(contract),
                     User = new
                     {
-                        contract.User.UserName,
-                        contract.User.Email,
                         contract.User.FullName,
-                        contract.User.PhoneNumber,
-                        contract.User.StartDateWork,
-                        contract.User.Birthday,
-                        contract.User.Address,
-                        contract.User.AvatarFileId,
                         AvatarPath = avatarPath
                     }
-                };
-
-                records.Add(record);
+                });
             }
 
-            result.Data = new
+            result.Data = new Pagination()
             {
-                Records = records,
-                TotalRecords = contracts.Count
+                Records = contractList.Skip((model.PageNumber - 1) * model.PageSize)
+                    .Take(model.PageSize)
+                    .ToList(),
+                TotalRecords = records.Count
             };
 
             return result;

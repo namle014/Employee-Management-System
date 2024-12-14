@@ -1,15 +1,10 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.AspNetCore.Mvc;
 using OA.Core.Constants;
 using OA.Core.Services;
 using OA.Core.VModels;
 using OA.Domain.VModels;
 using OA.Infrastructure.EF.Entities;
-using OA.Service.Helpers;
 using OA.WebApi.Controllers;
-using System.Threading.Tasks;
 
 namespace OA.WebApi.AdminControllers
 {

@@ -1,11 +1,8 @@
 ﻿using Microsoft.Extensions.Options;
 using OA.Core.Configurations;
-using OA.Core.Constants;
 using OA.Core.Models;
-using System;
 using System.Net;
 using System.Net.Mail;
-using System.Threading.Tasks;
 using Twilio;
 using Twilio.Rest.Api.V2010.Account;
 using Twilio.Types;

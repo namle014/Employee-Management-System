@@ -1,22 +1,12 @@
 ﻿using AutoMapper;
-using Microsoft.AspNetCore.Http;
 using OA.Core.Constants;
 using OA.Core.Models;
 using OA.Core.Repositories;
-using OA.Core.Services;
 using OA.Core.VModels;
 using OA.Domain.Services;
-using OA.Domain.VModels;
 using OA.Infrastructure.EF.Entities;
-using OA.Repository;
 using OA.Service.Helpers;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Threading.Tasks;
 //using Twilio.TwiML.Voice;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace OA.Service
 {

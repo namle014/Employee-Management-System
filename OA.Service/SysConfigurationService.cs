@@ -8,8 +8,6 @@ using OA.Domain.VModels;
 using OA.Infrastructure.EF.Context;
 using OA.Infrastructure.EF.Entities;
 using OA.Service.Helpers;
-using System.Collections.Generic;
-using System.Reflection;
 namespace OA.Service
 {
     public class SysConfigurationService : BaseService<SysConfiguration, SysConfigurationCreateVModel, SysConfigurationUpdateVModel, SysConfigurationGetByIdVModel, SysConfigurationGetAllVModel, SysConfigurationExportVModel>, ISysConfigurationService

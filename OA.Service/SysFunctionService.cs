@@ -1,15 +1,11 @@
 ﻿using AutoMapper;
-using Microsoft.AspNetCore.Http;
 using OA.Core.Constants;
 using OA.Core.Models;
 using OA.Core.Repositories;
 using OA.Domain.Services;
 using OA.Domain.VModels;
 using OA.Infrastructure.EF.Entities;
-using OA.Repository;
 using OA.Service.Helpers;
-using System.Dynamic;
-using static OA.Core.Constants.CommonConstants;
 
 namespace OA.Service
 {

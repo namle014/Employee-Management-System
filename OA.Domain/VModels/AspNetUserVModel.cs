@@ -1,9 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using OA.Core.Constants;
-using System;
-using System.Collections.Generic;
+﻿using OA.Core.Constants;
 using System.ComponentModel.DataAnnotations;
-using System.Runtime.Serialization;
 
 namespace OA.Domain.VModels
 {

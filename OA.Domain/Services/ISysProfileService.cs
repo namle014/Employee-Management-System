@@ -1,10 +1,4 @@
-﻿using OA.Core.Models;
-using OA.Domain.VModels;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using OA.Domain.VModels;
 
 namespace OA.Domain.Services
 {

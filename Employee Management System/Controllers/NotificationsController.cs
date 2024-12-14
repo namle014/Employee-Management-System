@@ -1,13 +1,7 @@
-﻿using Employee_Management_System.Hubs;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.SignalR;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.AspNetCore.Mvc;
 using OA.Core.Constants;
 using OA.Core.Services;
 using OA.Core.VModels;
-using OA.Infrastructure.EF.Entities;
-using System.Threading.Tasks;
 namespace OA.WebApi.Controllers
 {
     //[Authorize(Policy = CommonConstants.Authorize.CustomAuthorization)]

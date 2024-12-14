@@ -1,11 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using OA.Infrastructure.EF.Entities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace OA.Infrastructure.EF.Context
 {
@@ -41,6 +36,8 @@ namespace OA.Infrastructure.EF.Context
         public virtual DbSet<Discipline> Discipline { get; set; }
         public virtual DbSet<WorkingRules> WorkingRules { get; set; }
         public virtual DbSet<WorkShifts> WorkShifts { get; set; }
+        public virtual DbSet<BenefitUser> BenefitUser { get; set; }
+        public virtual DbSet<InsuranceUser> InsuranceUser { get; set; }
         #endregion --DBSET--
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -55,6 +52,9 @@ namespace OA.Infrastructure.EF.Context
                 .HasOne(i => i.BenefitType)
                 .WithMany(it => it.Benefits)
                 .HasForeignKey(i => i.BenefitTypeId);
+
+            modelBuilder.Entity<BenefitUser>().HasNoKey();
+            modelBuilder.Entity<InsuranceUser>().HasNoKey();
         }
     }
 }

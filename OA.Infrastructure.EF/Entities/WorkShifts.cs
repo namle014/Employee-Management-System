@@ -1,5 +1,3 @@
-using System;
-
 namespace OA.Infrastructure.EF.Entities
 {
     public partial class WorkShifts : BaseEntity

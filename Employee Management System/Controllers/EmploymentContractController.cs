@@ -1,11 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using OA.Core.Constants;
-using OA.Service;
-using OA.Domain.VModels;
-using System.Threading.Tasks;
-using OA.Core.VModels;
 using OA.Core.Services;
+using OA.Core.VModels;
+using OA.Domain.VModels;
 
 namespace OA.WebAPI.AdminControllers
 {
@@ -32,17 +29,10 @@ namespace OA.WebAPI.AdminControllers
 
 
         [HttpGet("expiring-soon")]
-        public async Task<IActionResult> GetContractsExpiringSoon([FromQuery] int? day)
+        public async Task<IActionResult> GetContractsExpiringSoon([FromQuery] FilterEmploymentContractVModel model, int daysUntilExpiration)
         {
-          
-            if (!day.HasValue || day.Value <= 0)
-            {
-                return BadRequest(string.Format(MsgConstants.Error404Messages.FieldIsInvalid, "day"));
-            }
-
-            var response = await _EmploymentContractService.GetContractsExpiringSoon(day.Value);
-
-            return Ok(response);
+            var result = await _EmploymentContractService.GetContractsExpiringSoon(model, daysUntilExpiration);
+            return Ok(result);
         }
 
 

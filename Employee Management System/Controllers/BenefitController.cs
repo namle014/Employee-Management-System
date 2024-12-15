@@ -2,6 +2,7 @@
 using OA.Core.Constants;
 using OA.Core.Services;
 using OA.Core.VModels;
+using OA.Domain.VModels;
 
 namespace OA.WebAPI.AdminControllers
 {
@@ -32,9 +33,9 @@ namespace OA.WebAPI.AdminControllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Search([FromQuery] FilterBenefitVModel model)
+        public async Task<IActionResult> GetAll([FromQuery] FilterBenefitVModel model)
         {
-            var response = await _service.Search(model);
+            var response = await _service.GetAll(model);
 
             return Ok(response);
         }
@@ -92,6 +93,15 @@ namespace OA.WebAPI.AdminControllers
 
             return NoContent();
         }
+
+        [HttpPut]
+        public async Task<IActionResult> ChangeStatusMany(BenefitChangeStatusManyVModel model)
+        {
+            await _service.ChangeStatusMany(model);
+            return NoContent();
+        }
+
+
 
     }
 }

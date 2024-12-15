@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using OA.Core.Constants;
 using OA.Core.Models;
 using OA.Core.Repositories;
 using OA.Core.VModels;
@@ -86,6 +87,21 @@ namespace OA.Service
             var exportData = ImportExportHelper<DepartmentExportVModel>.ExportFile(exportModel, records);
             return exportData;
         }
+
+        //public override async Task Create(DepartmentCreateVModel model)
+        //{
+
+        //    var Create = _mapper.Map<DepartmentCreateVModel, Department>(model);
+        //    Create.CreatedDate = DateTime.Now;
+        //    Create.CreatedBy =
+        //    var createdResult = await _departmentRepo.Create(Create);
+        //    //await base.Create(model);
+
+        //    if (!createdResult.Success)
+        //    {
+        //        throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorCreate, "Object"));
+        //    }
+        //}
         //public override async Task Create(RewardCreateVModel model)
         //{
         //    var rewardCreate =  _mapper.Map<RewardCreateVModel, Reward>(model);

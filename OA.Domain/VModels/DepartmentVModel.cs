@@ -7,15 +7,13 @@ namespace OA.Core.VModels
     public class DepartmentCreateVModel
     {
         public string Name { get; set; } = string.Empty;
+        public string? DepartmentHeadId { get; set; }
+
     }
 
     public class DepartmentUpdateVModel : DepartmentCreateVModel
     {
         public int Id { get; set; }
-        public bool IsActive { get; set; }
-        public string? UpdatedBy { get; set; }
-
-
     }
 
     public class DepartmentGetAllVModel : DepartmentUpdateVModel
@@ -23,19 +21,23 @@ namespace OA.Core.VModels
         public DateTime? CreatedDate { get; set; }
         public string? CreatedBy { get; set; } = string.Empty;
         public DateTime? UpdatedDate { get; set; }
+        public string? UpdatedBy { get; set; }
     }
 
     public class DepartmentGetByIdVModel : DepartmentUpdateVModel
     {
         public DateTime? CreatedDate { get; set; }
-        public string? CreatedBy { get; set; }
+        public string? CreatedBy { get; set; } = string.Empty;
         public DateTime? UpdatedDate { get; set; }
+        public string? UpdatedBy { get; set; }
     }
     [DataContract]
     public class DepartmentExportVModel
     {
         [DataMember(Name = @"Name")]
         public string Name { get; set; } = string.Empty;
+        [DataMember(Name = @"DepartmentHeadId")]
+        public string? DepartmentHeadId { get; set; }
 
         [DataMember(Name = @"CreatedDate")]
         public DateTime CreatedDate { get; set; }

@@ -1,4 +1,7 @@
-﻿namespace OA.Core.VModels
+﻿using OA.Core.Constants;
+using System.ComponentModel.DataAnnotations;
+
+namespace OA.Core.VModels
 {
     public class SalaryCreateVModel
     {
@@ -24,7 +27,7 @@
         public int Timekeeping { get; set; }
         public bool IsActive { get; set; }
         public bool? Ispaid { get; set; }
-        public string? PayrollPeriod {  get; set; }
+        public string PayrollPeriod { get; set; } = string.Empty;
     }
     public class SalaryGetByIdVModel : SalaryGetAllVModel
     {
@@ -34,13 +37,18 @@
     {
 
     }
-    public class FilterSalaryVModel
+    public class SalaryFilterVModel
     {
-        public string FullName {  get; set; } = string.Empty ;
-        public int? Month { get; set; }
-        public int? Year { get; set; }
-
-        public bool? IsActive { get; set; }
+        public bool IsActive { get; set; } = true;
+        public DateTime? CreatedDate { get; set; }
+        [Range(1, int.MaxValue)]
+        public int PageSize { get; set; } = CommonConstants.ConfigNumber.pageSizeDefault;
+        [Range(1, int.MaxValue)]
+        public int PageNumber { get; set; } = 1;
+        public string? SortBy { get; set; }
+        public bool IsExport { get; set; } = false;
+        public bool IsDescending { get; set; } = true;
+        public string? Keyword { get; set; }
     }
     //public class UserVModel
     //{

@@ -55,6 +55,9 @@ namespace OA.Infrastructure.EF.Context
 
             modelBuilder.Entity<BenefitUser>().HasNoKey();
             modelBuilder.Entity<InsuranceUser>().HasNoKey();
+            modelBuilder.Entity<Salary>()
+                .Property(e => e.Date)
+                .HasColumnType("date");
         }
     }
 }

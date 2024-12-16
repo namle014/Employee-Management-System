@@ -36,25 +36,22 @@ namespace OA.WebApi.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAll([FromQuery] SalaryFilterVModel model)
         {
-            var response = await _salaryService.GetAll();
+            var response = await _salaryService.GetAll(model);
             return Ok(response);
         }
-        [HttpGet]
-        public async Task<IActionResult> Search([FromQuery] FilterSalaryVModel model)
-        {
-            var response = await _salaryService.Search(model);
-            return Ok(response);
-        }
+        //[HttpGet]
+        //public async Task<IActionResult> Search([FromQuery] FilterSalaryVModel model)
+        //{
+        //    var response = await _salaryService.Search(model);
+        //    return Ok(response);
+        //}
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] SalaryCreateVModel model)
+        public async Task<IActionResult> Create()
         {
-            if (!ModelState.IsValid)
-            {
-                return new BadRequestObjectResult(ModelState);
-            }
-            await _salaryService.Create(model);
+
+            await _salaryService.Create();
             return Created();
         }
         [HttpPut]

@@ -10,6 +10,7 @@ using OA.Infrastructure.EF.Context;
 using OA.Infrastructure.EF.Entities;
 using OA.Repository;
 using OA.Service.Helpers;
+using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
 
@@ -34,9 +35,10 @@ namespace OA.Service
             _userManager = userManager;
         }
 
-        public async Task Create(SalaryCreateVModel model)
+        public async Task Create()
         {
-            var entity = _mapper.Map<SalaryCreateVModel, Salary>(model);
+            var query =  _userManager.Users.Where(x => x.IsActive);
+            var userList = await query.ToListAsync();
             var idList = await _salary.Select(id => id.Id).ToListAsync();
 
             var highestId = idList.Select(id => new
@@ -45,27 +47,52 @@ namespace OA.Service
                 numPart = int.TryParse(id.Substring(2),out int number)? number: -1 //nv001
             })
             .OrderByDescending(x => x.numPart).Select(x => x.originalId).FirstOrDefault();
+
+            int currentMaxNumber = 1;
+            if (highestId != null && highestId.Length > 2 && highestId.StartsWith("BL"))
+            {
+                currentMaxNumber = int.Parse(highestId.Substring(2)) + 1;
+            }
+
+            var salaryList = new List<Salary>();
+                
+            foreach (var user in userList) {
+                var userId = user.Id;
+                var totalBasicSalary = _employments.Where(x => x.UserId == userId && x.IsActive)
+                                   .Sum(x => x.BasicSalary);
+                var totalReward = _dbContext.Reward.Where(x => x.UserId == userId && x.IsActive).Sum(x => x.Money) ?? 0;
+                var totalDiscipline = _dbContext.Discipline.Where(x => x.UserId == userId && x.IsActive).Sum(x => x.Money);
+                var totalBenefit = await (from bUser in _dbContext.BenefitUser
+                                          join benefit in _dbContext.Benefit on bUser.BenefitId equals benefit.Id
+                                          where (bUser.UserId == userId && benefit.IsActive)
+                                          select benefit.BenefitContribution).SumAsync();
+                var totalInsurance = await (from insuranceUser in _dbContext.InsuranceUser
+                                            join insurance in _dbContext.Insurance on insuranceUser.InsuranceId equals insurance.Id
+                                            where (insuranceUser.UserId == userId && insurance.IsActive)
+                                            select insuranceUser.PaidInsuranceContribution).SumAsync();
+
+                var model = new SalaryCreateVModel
+                {
+                    UserId = userId,
+                    Date = DateTime.Now.Date,
+                    
+                    TotalSalary = totalBasicSalary + totalReward - totalDiscipline + totalBenefit - totalInsurance
+                };
+                var entity = _mapper.Map<SalaryCreateVModel, Salary>(model);
+                entity.CreatedDate = DateTime.Now;
+                entity.CreatedBy = GlobalUserName;
+                entity.IsActive = true;
+                var year = DateTime.Now.Year;
+                var month = DateTime.Now.Month;
+                entity.PayrollPeriod = $"{year}-{month.ToString("D2")}";
+                entity.Id = $"BL{currentMaxNumber.ToString("D4")}";
+                entity.IsPaid = false;
+                salaryList.Add(entity);
+                currentMaxNumber++;
+
+            }
+            await _salary.AddRangeAsync(salaryList);
             
-            if (highestId != null)
-            {
-                if (highestId.Length > 2 && highestId.StartsWith("BL"))
-                {
-                    var newIdNumber = int.Parse(highestId.Substring(2)) + 1; 
-                    entity.Id = "BL" + newIdNumber.ToString("D4"); 
-                }
-                else
-                {
-                    throw new InvalidOperationException("Invalid ID format in the database.");
-                }
-            }
-            else
-            {
-                entity.Id = "BL0001";
-            }
-            entity.CreatedDate = DateTime.Now;
-            entity.CreatedBy = GlobalUserName;
-            entity.IsActive = false;
-            _salary.Add(entity);
 
             bool success = await _dbContext.SaveChangesAsync() > 0;
             if (!success)
@@ -73,7 +100,7 @@ namespace OA.Service
                 throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorCreate, _nameService));
             }
         }
-        public async Task<ResponseResult> GetAll()
+        public async Task<ResponseResult> GetAll(SalaryFilterVModel model)
         {
             var result = new ResponseResult();
             var query = _salary.AsQueryable();
@@ -93,7 +120,7 @@ namespace OA.Service
                     var totalBasicSalary = _employments.Where(x => x.UserId == userId && x.IsActive)
                                    .Sum(x => x.BasicSalary);
                     entityMapped.BasicSalary = totalBasicSalary;
-                    var totalReward = _dbContext.Reward.Where(x => x.UserId == userId && x.IsActive).Sum(x=>x.Money);
+                    var totalReward = _dbContext.Reward.Where(x => x.UserId == userId && x.IsActive).Sum(x=>x.Money) ?? 0;
                     entityMapped.Reward = totalReward;
                     var totalDiscipline = _dbContext.Discipline.Where(x => x.UserId == userId && x.IsActive).Sum(x => x.Money);
                     entityMapped.Discipline = totalDiscipline;
@@ -115,7 +142,41 @@ namespace OA.Service
                     entityMapped.FullName = user.FullName;
                     salaryListMapped.Add(entityMapped); }
             }
-            result.Data = salaryListMapped;
+            string? keyword = model.Keyword?.ToLower();
+            var salaryAns = salaryListMapped.Where(x =>
+                        (x.IsActive == model.IsActive) &&
+                                
+                        (string.IsNullOrEmpty(keyword) ||
+                                x.FullName.ToLower().Contains(keyword) ||
+                                x.Benefit.ToString().ToLower().Contains(keyword) ||
+                                x.Discipline.ToString().ToLower().Contains(keyword) ||
+                                x.Reward.ToString().ToLower().Contains(keyword) ||
+                                x.BasicSalary.ToString().ToLower().Contains(keyword) ||
+                                x.Insurance.ToString().ToLower().Contains(keyword) ||
+                                x.Timekeeping.ToString().ToLower().Contains(keyword) ||
+                                x.PITax.ToString().ToLower().Contains(keyword) ||
+                                x.PayrollPeriod.ToString().ToLower().Contains(keyword)
+                        )); ;
+            if (model.IsDescending == false)
+            {
+                salaryAns = string.IsNullOrEmpty(model.SortBy)
+                        ? salaryAns.OrderBy(r => r.Date).ToList()
+                        : salaryAns.OrderBy(r => r.GetType().GetProperty(model.SortBy)?.GetValue(r, null)).ToList();
+            }
+            else
+            {
+                salaryAns = string.IsNullOrEmpty(model.SortBy)
+                        ? salaryAns.OrderByDescending(r => r.Date).ToList()
+                        : salaryAns.OrderByDescending(r => r.GetType().GetProperty(model.SortBy)?.GetValue(r, null)).ToList();
+            }
+
+            result.Data = new Pagination();
+
+            var pagedRecords = salaryAns.Skip((model.PageNumber - 1) * model.PageSize).Take(model.PageSize).ToList();
+
+            result.Data.Records = pagedRecords;
+            result.Data.TotalRecords = salaryAns.Count();
+
             return result;
         }
 
@@ -139,43 +200,43 @@ namespace OA.Service
             return result;
         }
 
-        public async Task<ResponseResult> Search(FilterSalaryVModel model)
-        {
-            var result = new ResponseResult();
+        //public async Task<ResponseResult> Search(FilterSalaryVModel model)
+        //{
+        //    var result = new ResponseResult();
 
-            var query = _salary.AsQueryable();
+        //    var query = _salary.AsQueryable();
 
             
-            var userName = model.FullName;
-            query = (from salary in _dbContext.Salary
-                        join user in _dbContext.AspNetUsers on salary.UserId equals user.Id
-            where (string.IsNullOrEmpty(model.FullName) || user.FullName.Contains(userName)) 
-            && (!model.Month.HasValue || !model.Year.HasValue || (salary.CreatedDate.HasValue && salary.CreatedDate.Value.Month == model.Month && salary.CreatedDate.Value.Year == model.Year))
-            && (!model.IsActive.HasValue || salary.IsActive == model.IsActive)
-            select salary);
+        //    var userName = model.FullName;
+        //    query = (from salary in _dbContext.Salary
+        //                join user in _dbContext.AspNetUsers on salary.UserId equals user.Id
+        //    where (string.IsNullOrEmpty(model.FullName) || user.FullName.Contains(userName)) 
+        //    && (!model.Month.HasValue || !model.Year.HasValue || (salary.CreatedDate.HasValue && salary.CreatedDate.Value.Month == model.Month && salary.CreatedDate.Value.Year == model.Year))
+        //    && (!model.IsActive.HasValue || salary.IsActive == model.IsActive)
+        //    select salary);
            
 
-            var salaryList = await query.ToListAsync();
-            var salaryGrouped = salaryList.GroupBy(x => x.UserId);
-            var salaryListMapped = new List<SalaryGetAllVModel>();
-            foreach(var group in salaryGrouped)
-            {
-                var user = await _userManager.FindByIdAsync(group.Key);
-                if(user == null)
-                {
-                    throw new NotFoundException(string.Format(MsgConstants.WarningMessages.NotFound, $"UserId = {group.Key}"));
-                }
+        //    var salaryList = await query.ToListAsync();
+        //    var salaryGrouped = salaryList.GroupBy(x => x.UserId);
+        //    var salaryListMapped = new List<SalaryGetAllVModel>();
+        //    foreach(var group in salaryGrouped)
+        //    {
+        //        var user = await _userManager.FindByIdAsync(group.Key);
+        //        if(user == null)
+        //        {
+        //            throw new NotFoundException(string.Format(MsgConstants.WarningMessages.NotFound, $"UserId = {group.Key}"));
+        //        }
 
-                foreach (var item in group)
-                {
-                    var entityMapped = _mapper.Map<Salary, SalaryGetAllVModel>(item);
-                    entityMapped.FullName = user.FullName;
-                    salaryListMapped.Add(entityMapped);
-                }
-            }
-            result.Data = salaryListMapped;
-            return result;
-        }
+        //        foreach (var item in group)
+        //        {
+        //            var entityMapped = _mapper.Map<Salary, SalaryGetAllVModel>(item);
+        //            entityMapped.FullName = user.FullName;
+        //            salaryListMapped.Add(entityMapped);
+        //        }
+        //    }
+        //    result.Data = salaryListMapped;
+        //    return result;
+        //}
 
         public async Task Update(SalaryUpdateVModel model)
         {

@@ -20,8 +20,8 @@ namespace OA.Infrastructure.EF.Entities
         public bool WorkStatus { get; set; }
         public int DepartmentId { get; set; }
         public int EmployeeDependents { get; set; }
-        public string Note { get; set; } = string.Empty;
-        public string EmployeeId { get; set; } = string.Empty;
+        public string? Note { get; set; }
+        public string? EmployeeId { get; set; }
         
 
         //[ForeignKey("AvatarFileId")]

@@ -64,12 +64,13 @@ namespace OA.Domain.VModels
         public string? PhoneNumber { get; set; }
         public DateTime StartDateWork { get; set; }
         public int? AvatarFileId { get; set; }
-        public int? Gender { get; set; }
+        public bool Gender { get; set; }
         public string Address { get; set; } = string.Empty;
         public string Note { get; set; } = string.Empty;
         public DateTime? Birthday { get; set; }
         public int DepartmentId { get; set; }
         public int EmployeeDependents { get; set; }
+        public string EmployeeId { get; set; } = string.Empty;
     }
 
     public class UserCreateVModel : UserVModel

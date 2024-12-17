@@ -360,6 +360,10 @@ namespace OA.Service
             entity.CreatedDate = DateTime.Now;
             entity.CreatedBy = GlobalUserName;
 
+            var maxId = await _dbContext.AspNetUsers.MaxAsync(x => (string)x.Id) ?? "CC-000";
+            int numberPart = int.Parse(maxId.Substring(3)) + 1;
+            entity.EmployeeId = $"CC-{numberPart:D3}";
+
             if (entity.AvatarFileId != null)
             {
                 var sysFile = await _sysFileRepo.GetById((int)entity.AvatarFileId);

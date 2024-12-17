@@ -69,6 +69,7 @@ namespace OA.Domain.VModels
         public string Note { get; set; } = string.Empty;
         public DateTime? Birthday { get; set; }
         public int DepartmentId { get; set; }
+        public int EmployeeDependents { get; set; }
     }
 
     public class UserCreateVModel : UserVModel

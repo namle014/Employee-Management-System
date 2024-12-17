@@ -19,6 +19,7 @@ namespace OA.Infrastructure.EF.Entities
         public DateTime StartDateWork { get; set; }
         public bool WorkStatus { get; set; }
         public int DepartmentId { get; set; }
+        public int EmployeeDependents { get; set; }
 
         //[ForeignKey("AvatarFileId")]
         //public virtual SysFile? AvatarFile { get; set; }

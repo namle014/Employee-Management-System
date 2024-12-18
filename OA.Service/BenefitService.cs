@@ -288,5 +288,16 @@ namespace OA.Service
 
             return result;
         }
+
+        public async Task CreateBenefitType(BenefitTypeCreateVModel model)
+        {
+            var benefitType = _mapper.Map<BenefitTypeCreateVModel, BenefitType>(model);
+            //benefitType.Name = model.Name;
+            //benefitType.Description = model.Description;
+
+            _dbContext.BenefitType.Add(benefitType);
+
+            await _dbContext.SaveChangesAsync();
+        }
     }
 }

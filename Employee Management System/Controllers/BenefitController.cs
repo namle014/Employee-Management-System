@@ -63,6 +63,21 @@ namespace OA.WebAPI.AdminControllers
 
         }
 
+        [HttpPost]
+        public async Task<IActionResult> CreateBenefitType([FromBody] BenefitTypeCreateVModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return new BadRequestObjectResult(ModelState);
+            }
+
+            await _service.CreateBenefitType(model);
+
+            //return Created();
+            return StatusCode(StatusCodes.Status201Created); // Trả về status code 201 khi thành công
+
+        }
+
         [HttpPut]
         public async Task<IActionResult> Update([FromBody] BenefitUpdateVModel model)
         {

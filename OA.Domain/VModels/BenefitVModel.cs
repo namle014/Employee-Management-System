@@ -40,6 +40,12 @@ namespace OA.Core.VModels
         //public string? Description { get; set; }
     }
 
+    public class BenefitTypeCreateVModel
+    {
+        public string Name { get; set; } = string.Empty;
+        public string? Description {  get; set; }
+    }
+
 
     [DataContract]
     public class BenefitExportVModel

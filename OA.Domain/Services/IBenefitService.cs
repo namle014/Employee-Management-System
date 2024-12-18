@@ -15,6 +15,7 @@ namespace OA.Core.Services
         Task ChangeStatusMany(BenefitChangeStatusManyVModel model);
 
         Task<ResponseResult> GetAllBenefitType();
+        Task CreateBenefitType(BenefitTypeCreateVModel model);
         //Task<ResponseResult> GetAll();
     }
 }

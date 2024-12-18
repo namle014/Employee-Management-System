@@ -14,6 +14,7 @@ namespace OA.WebAPI.Mappings
            // CreateMap<BenefitUpdateVModel, Benefit>();
             //Get All 
             CreateMap<BenefitType, BenefitTypeGetAllVModel>();
+            CreateMap<BenefitTypeCreateVModel, BenefitType>();
             //Get By Id
           //  CreateMap<Benefit, BenefitGetByIdVModel>();
             //Export

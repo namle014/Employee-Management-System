@@ -37,6 +37,7 @@ namespace OA.Infrastructure.EF.Context
         public virtual DbSet<WorkingRules> WorkingRules { get; set; }
         public virtual DbSet<WorkShifts> WorkShifts { get; set; }
         public virtual DbSet<BenefitUser> BenefitUser { get; set; }
+        public virtual DbSet<BenefitType> BenefitType { get; set; }
         public virtual DbSet<InsuranceUser> InsuranceUser { get; set; }
         #endregion --DBSET--
 

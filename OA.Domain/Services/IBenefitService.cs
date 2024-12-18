@@ -14,7 +14,7 @@ namespace OA.Core.Services
         Task Remove(string id);
         Task ChangeStatusMany(BenefitChangeStatusManyVModel model);
 
-
+        Task<ResponseResult> GetAllBenefitType();
         //Task<ResponseResult> GetAll();
     }
 }

@@ -40,6 +40,14 @@ namespace OA.WebAPI.AdminControllers
             return Ok(response);
         }
 
+        [HttpGet]
+        public async Task<IActionResult> GetAllBenefitType()
+        {
+            var response = await _service.GetAllBenefitType();
+
+            return Ok(response);
+        }
+
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] BenefitCreateVModel model)
         {

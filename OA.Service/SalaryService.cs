@@ -1,4 +1,5 @@
-﻿using AutoMapper;
+﻿using AngleSharp.Css;
+using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -55,38 +56,107 @@ namespace OA.Service
             }
 
             var salaryList = new List<Salary>();
-                
+            var year = DateTime.Now.Year;
+            var month = 10;
+            var morningTimeConfig = _dbContext.SysConfigurations.FirstOrDefault(x => x.Key == "MORNING_TIME")?.Value; 
+            var lunchBreakConfig = _dbContext.SysConfigurations.FirstOrDefault(x => x.Key == "LUNCH_BREAK")?.Value;
+            var afternoonTimeConfig = _dbContext.SysConfigurations.FirstOrDefault(x => x.Key == "AFTERNOON_TIME")?.Value;
+            var quittingTimeConfig = _dbContext.SysConfigurations.FirstOrDefault(x => x.Key == "QUITTING_TIME")?.Value;
+
+            var morningTime = DateTime.Today.Add(TimeSpan.Parse(morningTimeConfig)).TimeOfDay; 
+            var lunchBreak = DateTime.Today.Add(TimeSpan.Parse(lunchBreakConfig)).TimeOfDay;
+            var afternoonTime = DateTime.Today.Add(TimeSpan.Parse(afternoonTimeConfig)).TimeOfDay;
+            var quittingTime = DateTime.Today.Add(TimeSpan.Parse(quittingTimeConfig)).TimeOfDay;  
+
+
             foreach (var user in userList) {
                 var userId = user.Id;
                 var totalBasicSalary = _employments.Where(x => x.UserId == userId && x.IsActive)
                                    .Sum(x => x.BasicSalary);
+                var workingDays = 0;
+
+                for (int day = 1; day <= DateTime.DaysInMonth(year, month); day++)
+                {
+                    DateTime currentDate = new DateTime(year, month, day);
+
+                    if (currentDate.DayOfWeek != DayOfWeek.Saturday && currentDate.DayOfWeek != DayOfWeek.Sunday)
+                    {
+                        workingDays++;
+                    }
+                }
+
+
+                var totalHours = _dbContext.Timekeeping
+                    .Where(x => x.UserId == userId
+                                && x.IsActive
+                                && x.CheckInTime >= morningTime
+                                && x.CheckOutTime <= quittingTime
+                                && x.Date.Month == month
+                                && x.Date.Year == year)
+                    .AsEnumerable() 
+                    .Sum(x => ((x.CheckOutTime - afternoonTime) + (lunchBreak - x.CheckInTime)).TotalHours);
+
+
+                var workdays = Math.Round(totalHours / 8, 2);
+
+                var dailyWage = (double)totalBasicSalary / workingDays * workdays;
+
+
                 var totalReward = _dbContext.Reward.Where(x => x.UserId == userId && x.IsActive).Sum(x => x.Money) ?? 0;
                 var totalDiscipline = _dbContext.Discipline.Where(x => x.UserId == userId && x.IsActive).Sum(x => x.Money);
                 var totalBenefit = await (from bUser in _dbContext.BenefitUser
                                           join benefit in _dbContext.Benefit on bUser.BenefitId equals benefit.Id
                                           where (bUser.UserId == userId && benefit.IsActive)
                                           select benefit.BenefitContribution).SumAsync();
-                var totalInsurance = await (from insuranceUser in _dbContext.InsuranceUser
-                                            join insurance in _dbContext.Insurance on insuranceUser.InsuranceId equals insurance.Id
-                                            where (insuranceUser.UserId == userId && insurance.IsActive)
-                                            select insuranceUser.PaidInsuranceContribution).SumAsync();
 
+                var insuranceList = (from insuranceUser in _dbContext.InsuranceUser
+                                            join insurance in _dbContext.Insurance on insuranceUser.InsuranceId equals insurance.Id
+                                            where (insuranceUser.UserId == userId && insurance.IsActive && insuranceUser.Status != "Đã đóng")
+                                            select insuranceUser);
+
+                var bhtn = Convert.ToDouble(_dbContext.SysConfigurations.FirstOrDefault(x => x.Key == "MD_BHTN")?.Value);
+                double totalInsurance = 0;
+                double maxBaseSalary = 20 * 2340000;
+                double maxBasicSalary = 20 * bhtn;
+
+                foreach (var ins in insuranceList)
+                {
+                    var rate = ins.EmployeeContributionRate ?? 0;
+                    var maxSalary = (ins.InsuranceId == "BHTN") ? maxBasicSalary : maxBaseSalary;
+                    var PaidInsuranceContribution = Math.Min(dailyWage, maxSalary) * (double)rate;
+
+                    var eIns = await _dbContext.InsuranceUser.FirstOrDefaultAsync(x => x.InsuranceId == ins.InsuranceId);
+                    if (eIns != null)
+                    {
+                        eIns.PaidInsuranceContribution = (decimal)PaidInsuranceContribution;
+                        _dbContext.InsuranceUser.Update(eIns);
+                        await _dbContext.SaveChangesAsync();
+                    }
+
+                    totalInsurance += PaidInsuranceContribution;
+                }
+
+               // var relative = (await _userManager.FindByIdAsync(userId))?.EmployeeDependents;
+
+                var taxableIncome = (dailyWage) > 11000000 ? ((decimal)dailyWage + totalReward - totalDiscipline + totalBenefit - (decimal)totalInsurance - 11000000) : 0;
+                double PITax = getPITax(taxableIncome);
+                
                 var model = new SalaryCreateVModel
                 {
                     UserId = userId,
                     Date = DateTime.Now.Date,
                     
-                    TotalSalary = totalBasicSalary + totalReward - totalDiscipline + totalBenefit - totalInsurance
+                    
                 };
                 var entity = _mapper.Map<SalaryCreateVModel, Salary>(model);
                 entity.CreatedDate = DateTime.Now;
                 entity.CreatedBy = GlobalUserName;
                 entity.IsActive = true;
-                var year = DateTime.Now.Year;
-                var month = DateTime.Now.Month;
                 entity.PayrollPeriod = $"{year}-{month.ToString("D2")}";
                 entity.Id = $"BL{currentMaxNumber.ToString("D4")}";
                 entity.IsPaid = false;
+                entity.TotalSalary = (decimal)dailyWage + totalReward - totalDiscipline + totalBenefit - (decimal)totalInsurance - (decimal)PITax;
+                entity.SalaryPayment = (decimal)dailyWage + totalReward - totalDiscipline + totalBenefit;
                 salaryList.Add(entity);
                 currentMaxNumber++;
 
@@ -100,11 +170,48 @@ namespace OA.Service
                 throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorCreate, _nameService));
             }
         }
-        public async Task<ResponseResult> GetAll(SalaryFilterVModel model)
+
+        public double getPITax(decimal? taxableIncome)
+        {
+            double PITax = 0;
+            if (taxableIncome == null)
+            {
+                return 0;
+            }else if (taxableIncome <= 5000000)
+            {
+                PITax = 5 / 100f * (double)taxableIncome;
+            }
+            else if (taxableIncome <= 10000000)
+            {
+                PITax = 10 / 100f * (double)taxableIncome - 250000;
+            }
+            else if (taxableIncome <= 18000000)
+            {
+                PITax = 15 / 100f *(double)taxableIncome - 750000;
+            }
+            else if (taxableIncome <= 32000000)
+            {
+                PITax = 20 / 100f * (double)taxableIncome - 1650000;
+            }
+            else if (taxableIncome <= 52000000)
+            {
+                PITax = 25 / 100f * (double)taxableIncome - 3250000;
+            }
+            else if (taxableIncome <= 80000000)
+            {
+                PITax = 30 / 100f * (double)taxableIncome - 5850000;
+            }
+            else
+            {
+                PITax = 35 / 100f * (double)taxableIncome - 9850000;
+            }
+            return PITax;
+        }
+        public async Task<ResponseResult> GetAll(SalaryFilterVModel model, string period)
         {
             var result = new ResponseResult();
             var query = _salary.AsQueryable();
-            var salaryList = await query.Where(x=>x.IsActive).ToListAsync();
+            var salaryList = await query.Where(x=>x.IsActive && x.PayrollPeriod == period).ToListAsync();
             var salaryGrouped = salaryList.GroupBy(x => x.UserId);
             var salaryListMapped = new List<SalaryGetAllVModel>();
             foreach (var group in salaryGrouped)
@@ -292,7 +399,7 @@ namespace OA.Service
                 {
                     entity.UpdatedDate = DateTime.Now;
                     entity.UpdatedBy = GlobalUserName;
-                    entity.IsActive = true;
+                    entity.IsActive = !entity.IsActive;
 
                     _salary.Update(entity);
                     var result = await _dbContext.SaveChangesAsync() > 0;
@@ -309,6 +416,45 @@ namespace OA.Service
             catch (Exception ex)
             {
                 throw new BadRequestException(Utilities.MakeExceptionMessage(ex));
+            }
+        }
+
+        public async Task ChangeStatusMany(SalaryChangeStatusManyVModel model)
+        {
+            using (var transaction = await _dbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    if (model.Ids.Any())
+                    {
+                        foreach (var id in model.Ids)
+                        {
+                            var entity = await _salary.FindAsync(id);
+                            if (entity == null)
+                            {
+                                throw new NotFoundException(string.Format(MsgConstants.WarningMessages.NotFound, id));
+                            }
+                            entity.IsActive = !entity.IsActive;
+                            _salary.Update(entity);
+                            var result = await _dbContext.SaveChangesAsync() > 0;
+                            if (!result)
+                            {
+                                throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorUpdate, id));
+                            }
+                        }
+
+                        await transaction.CommitAsync();
+                    }
+                    else
+                    {
+                        throw new NotFoundException(MsgConstants.WarningMessages.NotFoundData);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    throw new BadRequestException(ex.Message);
+                }
             }
         }
 
@@ -390,6 +536,14 @@ namespace OA.Service
                 yearList = totalSalaries,
                 bYearList = bTotalSalaries
             };
+
+            return Task.FromResult(result);
+        }
+
+        public Task<ResponseResult> GetInfoForChart()
+        {
+            var result = new ResponseResult();
+            //var salaryList = _salary.Where();
 
             return Task.FromResult(result);
         }

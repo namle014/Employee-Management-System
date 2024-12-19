@@ -2,6 +2,7 @@
 using OA.Core.Constants;
 using OA.Core.Services;
 using OA.Core.VModels;
+using OA.Domain.VModels;
 
 namespace OA.WebApi.Controllers
 {
@@ -36,9 +37,13 @@ namespace OA.WebApi.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll([FromQuery] SalaryFilterVModel model)
+        public async Task<IActionResult> GetAll([FromQuery] SalaryFilterVModel model, string period)
         {
-            var response = await _salaryService.GetAll(model);
+            if (string.IsNullOrEmpty(period))
+            {
+                return new BadRequestObjectResult(string.Format(MsgConstants.Error404Messages.FieldIsInvalid, "period"));
+            }
+            var response = await _salaryService.GetAll(model, period);
             return Ok(response);
         }
         //[HttpGet]
@@ -103,6 +108,12 @@ namespace OA.WebApi.Controllers
             }
             var response = await _salaryService.GetYearIncome(year);
             return Ok(response);
+        }
+        [HttpPut]
+        public async Task<IActionResult> ChangeStatusMany(SalaryChangeStatusManyVModel model)
+        {
+            await _salaryService.ChangeStatusMany(model);
+            return NoContent();
         }
     }
 }

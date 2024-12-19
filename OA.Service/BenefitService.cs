@@ -267,5 +267,37 @@ namespace OA.Service
             }
         }
 
+        public async Task<ResponseResult> GetAllBenefitType()
+        {
+            var result = new ResponseResult();
+
+            // Lấy toàn bộ danh sách BenefitType từ DbContext
+            var records = await _dbContext.Set<BenefitType>()
+                .OrderBy(x => x.Id) // Sắp xếp theo tên, có thể bỏ nếu không cần
+                .ToListAsync();
+
+            // Map sang ViewModel sử dụng AutoMapper
+            var list = _mapper.Map<List<BenefitTypeGetAllVModel>>(records);
+
+            // Gán vào response
+            result.Data = new Pagination
+            {
+                Records = list,
+                TotalRecords = list.Count
+            };
+
+            return result;
+        }
+
+        public async Task CreateBenefitType(BenefitTypeCreateVModel model)
+        {
+            var benefitType = _mapper.Map<BenefitTypeCreateVModel, BenefitType>(model);
+            //benefitType.Name = model.Name;
+            //benefitType.Description = model.Description;
+
+            _dbContext.BenefitType.Add(benefitType);
+
+            await _dbContext.SaveChangesAsync();
+        }
     }
 }

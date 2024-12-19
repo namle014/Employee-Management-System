@@ -40,6 +40,14 @@ namespace OA.WebAPI.AdminControllers
             return Ok(response);
         }
 
+        [HttpGet]
+        public async Task<IActionResult> GetAllBenefitType()
+        {
+            var response = await _service.GetAllBenefitType();
+
+            return Ok(response);
+        }
+
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] BenefitCreateVModel model)
         {
@@ -49,6 +57,21 @@ namespace OA.WebAPI.AdminControllers
             }
 
             await _service.Create(model);
+
+            //return Created();
+            return StatusCode(StatusCodes.Status201Created); // Trả về status code 201 khi thành công
+
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> CreateBenefitType([FromBody] BenefitTypeCreateVModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return new BadRequestObjectResult(ModelState);
+            }
+
+            await _service.CreateBenefitType(model);
 
             //return Created();
             return StatusCode(StatusCodes.Status201Created); // Trả về status code 201 khi thành công

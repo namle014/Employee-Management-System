@@ -360,8 +360,9 @@ namespace OA.Service
             entity.CreatedDate = DateTime.Now;
             entity.CreatedBy = GlobalUserName;
 
+
             var maxId = await _dbContext.AspNetUsers.Where(x => x.EmployeeId != null).MaxAsync(x =>x.EmployeeId) ?? "CC-000";
-            string lastThreeChars = maxId.Substring(maxId.Length - 3); 
+            string lastThreeChars = maxId.Substring(maxId.Length - 3);  
             int numberPart = int.Parse(lastThreeChars)+1;
             entity.EmployeeId = $"CC-{numberPart:D3}";
             if (entity.AvatarFileId != null)

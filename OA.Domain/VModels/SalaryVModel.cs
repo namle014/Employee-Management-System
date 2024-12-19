@@ -7,7 +7,6 @@ namespace OA.Core.VModels
     {
         public string UserId { get; set; } = string.Empty;
         public DateTime Date { get; set; }
-        public decimal TotalSalary {  get; set; }
     }
     public class SalaryUpdateVModel
     {
@@ -37,6 +36,12 @@ namespace OA.Core.VModels
     {
 
     }
+
+    public class SalaryChangeStatusManyVModel
+    {
+        public List<string> Ids { get; set; } = new List<string>();
+    }
+
     public class SalaryFilterVModel
     {
         public bool IsActive { get; set; } = true;

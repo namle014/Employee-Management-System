@@ -9,10 +9,12 @@ namespace OA.Core.Services
         Task Create();
         Task Update(SalaryUpdateVModel model);
         Task<ResponseResult> GetById(string id);
-        Task<ResponseResult> GetAll(SalaryFilterVModel model);
+        Task<ResponseResult> GetAll(SalaryFilterVModel model, string period);
         Task Remove(string id);
         Task ChangeStatus(string id);
         Task<ResponseResult> GetIncomeInMonth(int year, int month);
         Task<ResponseResult> GetYearIncome(int year);
+        Task ChangeStatusMany(SalaryChangeStatusManyVModel model);
+        Task<ResponseResult> GetInfoForChart();
     }
 }

@@ -13,9 +13,10 @@ namespace OA.Core.Services
         Task ChangeStatus(string id);
         Task Remove(string id);
         Task ChangeStatusMany(BenefitChangeStatusManyVModel model);
-
         Task<ResponseResult> GetAllBenefitType();
         Task CreateBenefitType(BenefitTypeCreateVModel model);
+        Task UpdateBenefitType(BenefitTypeUpdateVModel model);
+        Task RemoveBenefitType(string id);
         //Task<ResponseResult> GetAll();
     }
 }

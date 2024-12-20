@@ -37,6 +37,8 @@ namespace OA.Core.VModels
     {
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
+        public string? Description { get; set; }
+
         //public string? Description { get; set; }
     }
 
@@ -45,6 +47,11 @@ namespace OA.Core.VModels
         public string Name { get; set; } = string.Empty;
         public string? Description {  get; set; }
     }
+
+    public class BenefitTypeUpdateVModel : BenefitTypeCreateVModel { 
+        public int Id { get; set; }
+    }  
+
 
 
     [DataContract]

@@ -18,6 +18,7 @@ namespace OA.Service
     {
         private readonly ApplicationDbContext _dbContext;
         private DbSet<Benefit> _benefit;
+        private DbSet<BenefitType> _benefitType;
         //private readonly UserManager<AspNetUser> _userManager;
         private readonly IMapper _mapper;
         string _nameService = "Benefit";
@@ -26,6 +27,7 @@ namespace OA.Service
         {
             _dbContext = dbContext ?? throw new ArgumentNullException("context");
             _benefit = dbContext.Set<Benefit>();
+            _benefitType = dbContext.Set<BenefitType>();
             //_userManager = userManager;
             _mapper = mapper;
         }
@@ -298,6 +300,43 @@ namespace OA.Service
             _dbContext.BenefitType.Add(benefitType);
 
             await _dbContext.SaveChangesAsync();
+        }
+
+        public async Task UpdateBenefitType(BenefitTypeUpdateVModel model)
+        {
+            var entity = await _benefitType.FindAsync(model.Id);
+            if (entity == null)
+            {
+                throw new NotFoundException(MsgConstants.WarningMessages.NotFoundData);
+            }
+            entity.Name = model.Name;
+            entity.Description = model.Description;
+
+            _mapper.Map(model, entity);
+
+            bool success = await _dbContext.SaveChangesAsync() > 0;
+
+            if (!success)
+            {
+                throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorUpdate, _nameService));
+            }
+        }
+
+        public async Task RemoveBenefitType(string id)
+        {
+            var entity = await _benefitType.FindAsync(id);
+            if (entity == null)
+            {
+                throw new NotFoundException(MsgConstants.WarningMessages.NotFoundData);
+            }
+
+            _benefitType.Remove(entity);
+
+            bool success = await _dbContext.SaveChangesAsync() > 0;
+            if (!success)
+            {
+                throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorRemove, _nameService));
+            }
         }
     }
 }

@@ -81,12 +81,17 @@ namespace OA.WebAPI.AdminControllers
         [HttpPut]
         public async Task<IActionResult> Update([FromBody] BenefitUpdateVModel model)
         {
-            //if (!ModelState.IsValid || (model as dynamic)?.Id <= 0)
-            //{
-            //    return new BadRequestObjectResult(ModelState);
-            //}
 
             await _service.Update(model);
+
+            return NoContent();
+        }
+
+        [HttpPut]
+        public async Task<IActionResult> UpdateBenefitType([FromBody] BenefitTypeUpdateVModel model)
+        {
+
+            await _service.UpdateBenefitType(model);
 
             return NoContent();
         }
@@ -113,6 +118,19 @@ namespace OA.WebAPI.AdminControllers
             }
 
             await _service.Remove(id);
+
+            return NoContent();
+        }
+
+        [HttpDelete(CommonConstants.Routes.Id)]
+        public virtual async Task<IActionResult> RemoveBenefitType(string id)
+        {
+            if (id == null)
+            {
+                return new BadRequestObjectResult(string.Format(MsgConstants.Error404Messages.FieldIsInvalid, StringConstants.Validate.Id));
+            }
+
+            await _service.RemoveBenefitType(id);
 
             return NoContent();
         }

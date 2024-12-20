@@ -11,6 +11,7 @@
         public static class ControllerName
         {
             public const string Auth = "Auth";
+            public const string Event = "Event";
             public const string AspNetRole = "AspNetRole";
             public const string AspNetUser = "AspNetUser";
             public const string SysApis = "SysApis";

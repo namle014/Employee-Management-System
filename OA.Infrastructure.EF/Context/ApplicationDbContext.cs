@@ -39,6 +39,7 @@ namespace OA.Infrastructure.EF.Context
         public virtual DbSet<BenefitUser> BenefitUser { get; set; }
         public virtual DbSet<BenefitType> BenefitType { get; set; }
         public virtual DbSet<InsuranceUser> InsuranceUser { get; set; }
+        public virtual DbSet<Events> Events { get; set; }
         #endregion --DBSET--
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

@@ -56,6 +56,20 @@ namespace OA.WebAPI.AdminControllers
         }
 
 
+        [HttpGet("yearly-stats")]
+        public async Task<IActionResult> GetEmployeeStatsByYear([FromQuery] int year)
+        {
+            if (year <= 0)
+            {
+                return BadRequest("Year must be a valid value.");
+            }
+
+            var response = await _EmploymentContractService.GetEmployeeStatsByYear(year);
+            return Ok(response);
+        }
+
+
+
 
         [HttpGet("export")]
         public async Task<IActionResult> ExportFile([FromQuery] FilterEmploymentContractVModel model, [FromQuery] ExportFileVModel exportModel)

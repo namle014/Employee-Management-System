@@ -72,13 +72,13 @@ namespace OA.Service
             }
                        
             var currentMonthCount = await _context.TimeOff
-                .Where(x => x.Date.Year == year && x.Date.Month == month)
+                .Where(x => x.StartDate.Year == year && x.StartDate.Month == month)
                 .CountAsync();
                       
             var previousMonth = month == 1 ? 12 : month - 1;
             var previousYear = month == 1 ? year - 1 : year;
             var previousMonthCount = await _context.TimeOff
-                .Where(x => x.Date.Year == previousYear && x.Date.Month == previousMonth)
+                .Where(x => x.StartDate.Year == previousYear && x.StartDate.Month == previousMonth)
                 .CountAsync();
 
                       double? percentageIncrease = null;

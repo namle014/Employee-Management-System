@@ -153,23 +153,38 @@ namespace OA.Service
         {
             var result = new ResponseResult();
 
-           
-            var contracts = await _context.EmploymentContract
-                .Where(c => c.StartDate.Year == year || c.EndDate.Year == year)
-                .ToListAsync();
-        
-            var startCount = contracts.Count(c => c.StartDate.Year == year && c.StartDate.Month == month);
-            var endCount = contracts.Count(c => c.EndDate.Year == year && c.EndDate.Month == month);
-       
             var previousMonth = month == 1 ? 12 : month - 1;
             var previousYear = month == 1 ? year - 1 : year;
 
+            var firstDayOfMonth = new DateTime(year, month, 1);
+            var lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
+
+            var firstDayOfPreviousMonth = new DateTime(previousYear, previousMonth, 1);
+            var lastDayOfPreviousMonth = firstDayOfPreviousMonth.AddMonths(1).AddDays(-1);
+ 
+            var contracts = await _context.EmploymentContract
+                .Where(c => c.StartDate <= lastDayOfMonth && c.EndDate >= firstDayOfPreviousMonth).ToListAsync();
+
+
+            var startCount = contracts.Count(c => c.StartDate.Year == year && c.StartDate.Month == month);
+            var endCount = contracts.Count(c => c.EndDate.Year == year && c.EndDate.Month == month);
+
+            var contractsInMonth = contracts.Count(c =>
+                c.StartDate <= lastDayOfMonth && c.EndDate >= firstDayOfMonth);
+
+            var contractsInPreviousMonth = contracts.Count(c =>
+                c.StartDate <= lastDayOfPreviousMonth && c.EndDate >= firstDayOfPreviousMonth);
+
+            var contractsInMonthPercentChange = contractsInPreviousMonth == 0
+                ? (int?)null
+                : ((contractsInMonth - contractsInPreviousMonth) * 100) / contractsInPreviousMonth;
+
             var previousStartCount = contracts.Count(c => c.StartDate.Year == previousYear && c.StartDate.Month == previousMonth);
             var previousEndCount = contracts.Count(c => c.EndDate.Year == previousYear && c.EndDate.Month == previousMonth);
-         
+
             var startPercentChange = previousStartCount == 0 ? (int?)null : ((startCount - previousStartCount) * 100) / previousStartCount;
             var endPercentChange = previousEndCount == 0 ? (int?)null : ((endCount - previousEndCount) * 100) / previousEndCount;
-          
+                       
             result.Data = new
             {
                 Year = year,
@@ -177,7 +192,72 @@ namespace OA.Service
                 StartCount = startCount,
                 StartPercentChange = startPercentChange,
                 EndCount = endCount,
-                EndPercentChange = endPercentChange
+                EndPercentChange = endPercentChange,
+                ContractsInMonth = contractsInMonth,
+                ContractsInMonthPercentChange = contractsInMonthPercentChange 
+            };
+
+            return result;
+        }
+
+
+
+        public async Task<ResponseResult> GetEmployeeStatsByYear(int year)
+        {
+            var result = new ResponseResult();
+
+
+            var currentYearMonthlyCounts = new List<int>();
+            var previousYearMonthlyCounts = new List<int>();
+
+
+            double totalCurrentYear = 0; 
+            double totalPreviousYear = 0; 
+
+            for (int month = 1; month <= 12; month++)
+            {
+                var firstDayOfMonth = new DateTime(year, month, 1);
+                var lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
+
+                var firstDayOfPreviousYearMonth = new DateTime(year - 1, month, 1);
+                var lastDayOfPreviousYearMonth = firstDayOfPreviousYearMonth.AddMonths(1).AddDays(-1);
+                              
+                var contractsCurrentYear = await _context.EmploymentContract
+                    .Where(c =>
+                        (c.StartDate <= lastDayOfMonth && c.EndDate >= firstDayOfMonth)) 
+                    .ToListAsync();
+                             
+                var contractsPreviousYear = await _context.EmploymentContract
+                    .Where(c =>
+                        (c.StartDate <= lastDayOfPreviousYearMonth && c.EndDate >= firstDayOfPreviousYearMonth)) 
+                    .ToListAsync();
+
+                
+                var contractsInCurrentMonth = contractsCurrentYear.Count(c => c.StartDate <= lastDayOfMonth && c.EndDate >= firstDayOfMonth);
+                currentYearMonthlyCounts.Add(contractsInCurrentMonth);
+                totalCurrentYear += contractsInCurrentMonth;
+
+                var contractsInPreviousMonth = contractsPreviousYear.Count(c => c.StartDate <= lastDayOfPreviousYearMonth && c.EndDate >= firstDayOfPreviousYearMonth);
+                previousYearMonthlyCounts.Add(contractsInPreviousMonth);
+                totalPreviousYear += contractsInPreviousMonth;
+            }
+
+            double? totalPercentChange = totalPreviousYear == 0
+                ? (double?)null
+                : ((totalCurrentYear - totalPreviousYear) / totalPreviousYear) * 100;  
+                       
+            result.Data = new
+            {
+                Year = year,
+                MonthlyStats = currentYearMonthlyCounts.Select((count, index) => new
+                {
+                    Month = index + 1,
+                    CurrentYearCount = count,
+                    PreviousYearCount = previousYearMonthlyCounts[index]
+                }).ToList(),
+                TotalCurrentYear = totalCurrentYear,
+                TotalPreviousYear = totalPreviousYear,
+                TotalPercentChange = totalPercentChange 
             };
 
             return result;

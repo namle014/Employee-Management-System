@@ -115,5 +115,21 @@ namespace OA.WebApi.Controllers
             await _salaryService.ChangeStatusMany(model);
             return NoContent();
         }
+        [HttpGet]
+        public async Task<IActionResult> GetInfoForDepartmentChart()
+        {
+            var response = await _salaryService.GetInfoForDepartmentChart();
+            return Ok(response);
+        }
+        [HttpGet]
+        public async Task<IActionResult> GetSalaryByLevel()
+        {
+            var response = await _salaryService.GetSalaryByLevel();
+            if (response.Data != null)
+            {
+                return Ok(response);
+            }
+            return NotFound(new { Message = "Không có dữ liệu" });
+        }
     }
 }

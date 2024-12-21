@@ -15,6 +15,7 @@ namespace OA.Core.Services
         Task<ResponseResult> GetIncomeInMonth(int year, int month);
         Task<ResponseResult> GetYearIncome(int year);
         Task ChangeStatusMany(SalaryChangeStatusManyVModel model);
-        Task<ResponseResult> GetInfoForChart();
+        Task<ResponseResult> GetInfoForDepartmentChart();
+        Task<ResponseResult> GetSalaryByLevel();
     }
 }

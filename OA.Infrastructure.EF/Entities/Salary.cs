@@ -16,5 +16,7 @@
         public decimal SalaryPayment { get; set; }
         public bool? IsPaid { get; set; }
         public string? PayrollPeriod { get; set; }
+        public decimal ProRatedSalary { get; set; }
+        public decimal PITax { get; set; }
     }
 }

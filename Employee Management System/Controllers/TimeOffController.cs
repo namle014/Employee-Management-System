@@ -35,6 +35,16 @@ namespace OA.WebAPI.AdminControllers
         }
 
 
+        [HttpGet("pending-future-timeoffs")]
+        public async Task<IActionResult> GetPendingFutureTimeOffs()
+        {
+            var fromDate = DateTime.Now.Date;
+            var response = await _timeOffService.GetPendingFutureTimeOffs(fromDate);
+            return Ok(response);
+        }
+
+
+
 
         [HttpGet("export")]
         public async Task<IActionResult> ExportFile([FromQuery] FilterTimeOffVModel model, [FromQuery] ExportFileVModel exportModel)

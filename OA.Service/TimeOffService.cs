@@ -99,6 +99,21 @@ namespace OA.Service
             return result;
         }
 
+
+        public async Task<ResponseResult> GetPendingFutureTimeOffs(DateTime fromDate)
+        {
+            var result = new ResponseResult();
+
+            var records = await _context.TimeOff
+                .Where(x => x.StartDate >= fromDate && !x.IsAccepted)
+                .ToListAsync();
+
+            result.Data = records;
+            return result;
+        }
+
+
+
         public async Task<ExportStream> ExportFile(FilterTimeOffVModel model, ExportFileVModel exportModel)
         {
             model.IsExport = true;

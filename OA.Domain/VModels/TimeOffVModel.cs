@@ -56,7 +56,7 @@ namespace OA.Domain.VModels
 
     public class FilterTimeOffVModel
     {
-        public bool? IsActive { get; set; }
+        public bool? IsActive { get; set; } = true;
         public DateTime? CreatedDate { get; set; }
         [Range(1, int.MaxValue)]
         public int PageSize { get; set; } = CommonConstants.ConfigNumber.pageSizeDefault;

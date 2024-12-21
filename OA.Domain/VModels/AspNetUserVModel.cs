@@ -34,7 +34,7 @@ namespace OA.Domain.VModels
         public string CreatedBy { get; set; } = string.Empty;
         public DateTime? UpdatedDate { get; set; }
         public string UpdatedBy { get; set; } = string.Empty;
-        public bool? IsActive { get; set; }
+        public bool? IsActive { get; set; } = true;
         public int? AvatarFileId { get; set; }
         public int PageSize { get; set; } = CommonConstants.ConfigNumber.pageSizeDefault;
         public int PageNumber { get; set; } = 1;

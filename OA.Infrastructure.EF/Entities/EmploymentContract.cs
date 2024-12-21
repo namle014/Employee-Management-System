@@ -21,6 +21,7 @@
         public int ContractFileId { get; set; }
         public string? TypeContract { get; set; }
         public string? ManagerId { get; set; }
+        public string? Appendix { get; set; }
 
     }
 }

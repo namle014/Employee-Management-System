@@ -20,6 +20,8 @@ namespace OA.Domain.VModels
         public int ContractFileId { get; set; }
         public string? TypeContract { get; set; }
         public string? ManagerId { get; set; }
+        public string? Appendix { get; set; }
+       
     }
 
     public class EmploymentContractUpdateVModel : EmploymentContractCreateVModel
@@ -71,7 +73,7 @@ namespace OA.Domain.VModels
 
     public class FilterEmploymentContractVModel
     {
-        public bool? IsActive { get; set; }
+        public bool? IsActive { get; set; } = true;
         public DateTime? CreatedDate { get; set; }
         [Range(1, int.MaxValue)]
         public int PageSize { get; set; } = CommonConstants.ConfigNumber.pageSizeDefault;

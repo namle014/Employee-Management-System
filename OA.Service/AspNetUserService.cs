@@ -104,7 +104,9 @@ namespace OA.Service
                     var userViewModel = _mapper.Map<AspNetUser, UserGetAllVModel>(user);
                     userViewModel.Roles = roles.ToList();
                     userViewModel.AvatarPath = user.AvatarFileId != null ? "https://localhost:44381/" + (await _sysFileRepo.GetById((int)user.AvatarFileId))?.Path : null;
-                    userViewModel.DepartmentName = (await _departmentService.GetById(user.DepartmentId))?.Name ?? "";
+                    userViewModel.DepartmentName = user.DepartmentId.HasValue
+    ? (await _departmentService.GetById(user.DepartmentId.Value))?.Name ?? ""
+    : "";
                     userViewModels.Add(userViewModel);
                 }
 
@@ -184,9 +186,10 @@ namespace OA.Service
                 var departmentCounts = new Dictionary<string, int>();
 
                 foreach (var user in users)                {
-                   
-                    var department = (await _departmentService.GetById(user.DepartmentId))?.Name ?? "Chưa xác định";
-                  
+
+                    var department = user.DepartmentId.HasValue
+                        ? (await _departmentService.GetById(user.DepartmentId.Value))?.Name
+                        : "Chưa xác định";
                     if (departmentCounts.ContainsKey(department))
                     {
                         departmentCounts[department]++;

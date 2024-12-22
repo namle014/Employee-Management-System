@@ -18,7 +18,7 @@ namespace OA.Infrastructure.EF.Entities
         public string CitizenNumber { get; set; } = string.Empty;
         public DateTime StartDateWork { get; set; }
         public bool WorkStatus { get; set; }
-        public int DepartmentId { get; set; }
+        public int? DepartmentId { get; set; }
         public int EmployeeDependents { get; set; }
         public string? Note { get; set; }
         public string? EmployeeId { get; set; }

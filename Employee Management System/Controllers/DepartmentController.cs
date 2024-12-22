@@ -34,5 +34,13 @@ namespace OA.WebAPI.AdminControllers
             var content = await _departmentService.ExportFile(model, exportModel);
             return File(content.Stream, content.ContentType, content.FileName);
         }
+
+        [HttpGet]
+        public async Task<IActionResult> GetAllDepartments()
+        {
+            var response = await _departmentService.GetAllDepartments();
+
+            return Ok(response);
+        }
     }
 }

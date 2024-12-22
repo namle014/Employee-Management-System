@@ -274,7 +274,7 @@ namespace OA.Service
             var result = new ResponseResult();
 
             // Lấy toàn bộ danh sách BenefitType từ DbContext
-            var records = await _dbContext.Set<BenefitType>()
+            var records = await _dbContext.BenefitType
                 .OrderBy(x => x.Id) // Sắp xếp theo tên, có thể bỏ nếu không cần
                 .ToListAsync();
 

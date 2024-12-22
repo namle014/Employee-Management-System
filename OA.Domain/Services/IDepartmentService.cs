@@ -9,5 +9,6 @@ namespace OA.Domain.Services
     {
         Task<ResponseResult> Search(DepartmentFilterVModel model);
         Task<ExportStream> ExportFile(DepartmentFilterVModel model, ExportFileVModel exportModel);
+        Task<ResponseResult> GetAllDepartments();
     }
 }

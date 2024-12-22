@@ -1,11 +1,14 @@
 ﻿using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 using OA.Core.Constants;
 using OA.Core.Models;
 using OA.Core.Repositories;
 using OA.Core.VModels;
 using OA.Domain.Services;
+using OA.Infrastructure.EF.Context;
 using OA.Infrastructure.EF.Entities;
 using OA.Service.Helpers;
+using System.Reflection.Metadata.Ecma335;
 //using Twilio.TwiML.Voice;
 
 namespace OA.Service
@@ -14,11 +17,17 @@ namespace OA.Service
     {
         private readonly IBaseRepository<Department> _departmentRepo;
         private readonly IMapper _mapper;
+        private DbSet<Department> _dbSet;
+        private readonly ApplicationDbContext _dbContext;
 
-        public DepartmentService(IBaseRepository<Department> departmentRepo, IMapper mapper) : base(departmentRepo, mapper)
+
+        public DepartmentService(ApplicationDbContext dbContext,IBaseRepository<Department> departmentRepo, IMapper mapper) : base(departmentRepo, mapper)
         {
+            _dbContext = dbContext ?? throw new ArgumentNullException("context");
+
             _departmentRepo = departmentRepo;
             _mapper = mapper;
+            _dbSet = dbContext.Set<Department>();
         }
 
         public async Task<ResponseResult> Search(DepartmentFilterVModel model)
@@ -86,6 +95,37 @@ namespace OA.Service
             var records = _mapper.Map<IEnumerable<DepartmentExportVModel>>(result.Data?.Records);
             var exportData = ImportExportHelper<DepartmentExportVModel>.ExportFile(exportModel, records);
             return exportData;
+        }
+
+        public async Task<ResponseResult> GetAllDepartments()
+        {
+            var result = new ResponseResult();
+
+            var records = await _dbContext.Department.ToListAsync();
+
+            var listsDepartment = new List<DepartmentGetAllVModel>();
+            foreach(var list in records)
+            {
+                var model = _mapper.Map<DepartmentGetAllVModel>(list);
+                var departmentId = list.Id;
+                var countEntity = await _dbContext.AspNetUsers.Where(x => x.DepartmentId !=null && x.DepartmentId == departmentId && x.IsActive).CountAsync();
+                var userNames = await _dbContext.AspNetUsers
+                    .Where(x => x.DepartmentId == departmentId && x.IsActive && x.Id == list.DepartmentHeadId)
+                    .Select(x => x.FullName).FirstOrDefaultAsync();
+                if (countEntity > 0)
+                {
+                    model.CountDepartment = countEntity;
+                }
+                model.DepartmentHeadName = userNames;
+                listsDepartment.Add(model);
+            }
+
+            result.Data = new Pagination
+            {
+                Records = listsDepartment,
+                TotalRecords = listsDepartment.Count
+            };
+            return result;
         }
 
         //public override async Task Create(DepartmentCreateVModel model)

@@ -597,23 +597,23 @@ namespace OA.Service
                     var salary = item.TotalSalary;
                     if (salary < 10000000m)
                     {
-                        under10 += salary;
+                        under10++;
                     }
                     else if (10000000m <= salary && salary < 20000000m)
                     {
-                        between10and20 += salary;
+                        between10and20++;
                     }
                     else if (salary >= 20000000m && salary < 30000000m)
                     {
-                        between20and30 += salary;
+                        between20and30++;
                     }
                     else if (salary >= 30000000m && salary < 40000000m)
                     {
-                        between30and40 += salary;
+                        between30and40++;
                     }
                     else
                     {
-                        greaterThan40 += salary;
+                        greaterThan40++;
                     }
                 }
 

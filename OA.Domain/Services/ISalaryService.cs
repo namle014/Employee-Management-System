@@ -17,5 +17,6 @@ namespace OA.Core.Services
         Task ChangeStatusMany(SalaryChangeStatusManyVModel model);
         Task<ResponseResult> GetInfoForDepartmentChart();
         Task<ResponseResult> GetSalaryByLevel();
+        Task<ResponseResult> GetInfoForSalarySummary();
     }
 }

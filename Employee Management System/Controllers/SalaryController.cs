@@ -131,5 +131,15 @@ namespace OA.WebApi.Controllers
             }
             return NotFound(new { Message = "Không có dữ liệu" });
         }
+        [HttpGet]
+        public async Task<IActionResult> GetInfoForSalarySummary()
+        {
+            var response = await _salaryService.GetInfoForSalarySummary();
+            if(response.Data != null)
+            {
+                return Ok(response);
+            }
+            return NotFound(new { Message = "Không có dữ liệu" });
+        }
     }
 }

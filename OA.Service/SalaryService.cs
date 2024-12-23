@@ -50,6 +50,14 @@ namespace OA.Service
             })
             .OrderByDescending(x => x.numPart).Select(x => x.originalId).FirstOrDefault();
 
+            var insur = await (_dbContext.InsuranceUser.Where(x => x.Status == "Đã đóng")).ToListAsync();
+            foreach (var item in insur)
+            {
+                item.PaidInsuranceContribution = 0m;
+            }
+            _dbContext.InsuranceUser.UpdateRange(insur);  
+            await _dbContext.SaveChangesAsync();
+
             int currentMaxNumber = 1;
             if (highestId != null && highestId.Length > 2 && highestId.StartsWith("BL"))
             {
@@ -111,10 +119,10 @@ namespace OA.Service
                                           where (bUser.UserId == userId && benefit.IsActive)
                                           select benefit.BenefitContribution).SumAsync();
 
-                var insuranceList = (from insuranceUser in _dbContext.InsuranceUser
+                var insuranceList = await (from insuranceUser in _dbContext.InsuranceUser
                                      join insurance in _dbContext.Insurance on insuranceUser.InsuranceId equals insurance.Id
                                      where (insuranceUser.UserId == userId && insurance.IsActive && insuranceUser.Status != "Đã đóng")
-                                     select insuranceUser);
+                                     select insuranceUser).ToListAsync();
 
                 var bhtn = Convert.ToDouble(_dbContext.SysConfigurations.FirstOrDefault(x => x.Key == "MD_BHTN")?.Value);
                 double totalInsurance = 0;
@@ -123,7 +131,7 @@ namespace OA.Service
 
                 foreach (var ins in insuranceList)
                 {
-                    var rate = ins.EmployeeContributionRate ?? 0;
+                    var rate = ins.EmployeeContributionRate;
                     var maxSalary = (ins.InsuranceId == "BHTN") ? maxBasicSalary : maxBaseSalary;
                     var PaidInsuranceContribution = Math.Min(dailyWage, maxSalary) * (double)rate;
 
@@ -131,12 +139,13 @@ namespace OA.Service
                     if (eIns != null)
                     {
                         eIns.PaidInsuranceContribution = (decimal)PaidInsuranceContribution;
-                        _dbContext.InsuranceUser.Update(eIns);
-                        await _dbContext.SaveChangesAsync();
                     }
 
                     totalInsurance += PaidInsuranceContribution;
                 }
+
+                _dbContext.InsuranceUser.UpdateRange(insuranceList);
+                await _dbContext.SaveChangesAsync();
 
                 var relative = (await _userManager.FindByIdAsync(userId))?.EmployeeDependents;
 
@@ -556,22 +565,26 @@ namespace OA.Service
                 .Select(x => x.PayrollPeriod)
                 .FirstOrDefault();
 
-
-
-
-            var salaryByDepartment = new Dictionary<string, decimal>();
-
-            foreach (var department in departmentList)
+            if (period != null)
             {
-                var departmentName = department.Name;
-                var departmentId = department.Id;
-                var totalSalary = await (from salary in _dbContext.Salary
-                                         join user in _dbContext.AspNetUsers on salary.UserId equals user.Id
-                                         where user.DepartmentId == departmentId && salary.PayrollPeriod == period
-                                         select (decimal?)salary.TotalSalary).SumAsync() ?? 0m;
-                salaryByDepartment[departmentName] = totalSalary;
+                var salaryByDepartment = new Dictionary<string, decimal>();
+
+                foreach (var department in departmentList)
+                {
+                    var departmentName = department.Name;
+                    var departmentId = department.Id;
+                    var totalSalary = await (from salary in _dbContext.Salary
+                                             join user in _dbContext.AspNetUsers on salary.UserId equals user.Id
+                                             where user.DepartmentId == departmentId && salary.PayrollPeriod == period
+                                             select (decimal?)salary.TotalSalary).SumAsync() ?? 0m;
+                    salaryByDepartment[departmentName] = totalSalary;
+                }
+                result.Data = salaryByDepartment;
             }
-            result.Data = salaryByDepartment;
+            else
+            {
+                throw new NotFoundException(MsgConstants.WarningMessages.NotFoundData);
+            }
             return result;
         }
         public async Task<ResponseResult> GetSalaryByLevel()
@@ -584,54 +597,101 @@ namespace OA.Service
                     .OrderByDescending(x => DateTime.ParseExact(x.PayrollPeriod, "MM-yyyy", CultureInfo.InvariantCulture))
                     .Select(x => x.PayrollPeriod)
                     .FirstOrDefault();
-                var salaryList = await (_salary.Where(x => x.PayrollPeriod == period)).ToListAsync();
-
-                decimal under10 = 0;
-                decimal between10and20 = 0;
-                decimal between20and30 = 0;
-                decimal between30and40 = 0;
-                decimal greaterThan40 = 0;
-
-                foreach (var item in salaryList)
+                if (period != null)
                 {
-                    var salary = item.TotalSalary;
-                    if (salary < 10000000m)
+                    var salaryList = await (_salary.Where(x => x.PayrollPeriod == period)).ToListAsync();
+
+                    decimal under10 = 0;
+                    decimal between10and20 = 0;
+                    decimal between20and30 = 0;
+                    decimal between30and40 = 0;
+                    decimal greaterThan40 = 0;
+
+                    foreach (var item in salaryList)
                     {
-                        under10++;
+                        var salary = item.TotalSalary;
+                        if (salary < 10000000m)
+                        {
+                            under10++;
+                        }
+                        else if (10000000m <= salary && salary < 20000000m)
+                        {
+                            between10and20++;
+                        }
+                        else if (salary >= 20000000m && salary < 30000000m)
+                        {
+                            between20and30++;
+                        }
+                        else if (salary >= 30000000m && salary < 40000000m)
+                        {
+                            between30and40++;
+                        }
+                        else
+                        {
+                            greaterThan40++;
+                        }
                     }
-                    else if (10000000m <= salary && salary < 20000000m)
+
+                    result.Data = new
                     {
-                        between10and20++;
-                    }
-                    else if (salary >= 20000000m && salary < 30000000m)
-                    {
-                        between20and30++;
-                    }
-                    else if (salary >= 30000000m && salary < 40000000m)
-                    {
-                        between30and40++;
-                    }
-                    else
-                    {
-                        greaterThan40++;
-                    }
+                        period = period,
+                        under10 = under10,
+                        between10and20 = between10and20,
+                        between20and30 = between20and30,
+                        between30and40 = between30and40,
+                        greaterThan40 = greaterThan40
+                    };
                 }
-
-                result.Data = new
+                else
                 {
-                    period = period,
-                    under10 = under10,
-                    between10and20 = between10and20,
-                    between20and30 = between20and30,
-                    between30and40 = between30and40,
-                    greaterThan40 = greaterThan40
-                };
+                    throw new NotFoundException(MsgConstants.WarningMessages.NotFoundData);
+                }
             }
             catch (Exception ex)
             {
                 throw new BadRequestException(Utilities.MakeExceptionMessage(ex));
             }
 
+            return result;
+        }
+        public async Task<ResponseResult> GetInfoForSalarySummary()
+        {
+            var result = new ResponseResult();
+            try
+            {
+                var period = _salary
+                    .AsEnumerable()  // Chuyển về bộ nhớ client
+                    .OrderByDescending(x => DateTime.ParseExact(x.PayrollPeriod, "MM-yyyy", CultureInfo.InvariantCulture))
+                    .Select(x => x.PayrollPeriod)
+                    .FirstOrDefault();
+
+                if (period != null)
+                {
+                    var salaryList = await (_salary.Where(x => x.PayrollPeriod == period)).ToListAsync();
+                    decimal total = 0;
+                    decimal pitax = 0;
+                    foreach (var item in salaryList)
+                    {
+                        total += item.TotalSalary;
+                        pitax += item.PITax;
+                    }
+                    var totalInsurance = _dbContext.InsuranceUser.Sum(x => x.PaidInsuranceContribution ?? 0);
+                    result.Data = new
+                    {
+                        total = total / 1000000m,
+                        PITax = pitax / 1000000m,
+                        totalInsurance = totalInsurance / 1000000m,
+                    };
+                }
+                else
+                {
+                    throw new NotFoundException(MsgConstants.WarningMessages.NotFoundData);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new BadRequestException(Utilities.MakeExceptionMessage(ex));
+            }
             return result;
         }
     }

@@ -7,7 +7,7 @@
         public DateTime? EffectiveDate {  get; set; }
         public DateTime? ExpirationDate {  get; set; }
         public string Status { get; set; } = string.Empty ; 
-        public decimal? EmployeeContributionRate { get; set; }
-        public decimal PaidInsuranceContribution { get; set; }
+        public decimal EmployeeContributionRate { get; set; }
+        public decimal? PaidInsuranceContribution { get; set; }
     }
 }

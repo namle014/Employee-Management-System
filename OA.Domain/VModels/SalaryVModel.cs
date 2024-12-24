@@ -55,6 +55,12 @@ namespace OA.Core.VModels
         public bool IsDescending { get; set; } = true;
         public string? Keyword { get; set; }
     }
+    public class TotalIncomeVmodel
+    {
+        public string payrollPeriod { get; set; } = string.Empty;
+        public decimal TotalIncome { get; set; }
+        public decimal TotalSalary { get; set; }
+    }
     //public class UserVModel
     //{
     //    public string FirstName { get; set; } 

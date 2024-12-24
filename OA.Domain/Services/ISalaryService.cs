@@ -18,5 +18,7 @@ namespace OA.Core.Services
         Task<ResponseResult> GetInfoForDepartmentChart();
         Task<ResponseResult> GetSalaryByLevel();
         Task<ResponseResult> GetInfoForSalarySummary();
+        Task<ResponseResult> GetTotalIncomeOverTime();
+        Task<ResponseResult> GetIncomeStructure();
     }
 }

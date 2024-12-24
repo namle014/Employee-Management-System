@@ -575,7 +575,7 @@ namespace OA.Service
                     var departmentId = department.Id;
                     var totalSalary = await (from salary in _dbContext.Salary
                                              join user in _dbContext.AspNetUsers on salary.UserId equals user.Id
-                                             where user.DepartmentId == departmentId && salary.PayrollPeriod == period
+                                             where user.DepartmentId == departmentId && salary.PayrollPeriod == period && salary.IsActive == true
                                              select (decimal?)salary.TotalSalary).SumAsync() ?? 0m;
                     salaryByDepartment[departmentName] = totalSalary;
                 }
@@ -599,7 +599,7 @@ namespace OA.Service
                     .FirstOrDefault();
                 if (period != null)
                 {
-                    var salaryList = await (_salary.Where(x => x.PayrollPeriod == period)).ToListAsync();
+                    var salaryList = await (_salary.Where(x => x.PayrollPeriod == period && x.IsActive)).ToListAsync();
 
                     decimal under10 = 0;
                     decimal between10and20 = 0;
@@ -667,7 +667,7 @@ namespace OA.Service
 
                 if (period != null)
                 {
-                    var salaryList = await (_salary.Where(x => x.PayrollPeriod == period)).ToListAsync();
+                    var salaryList = await (_salary.Where(x => x.PayrollPeriod == period && x.IsActive)).ToListAsync();
                     decimal total = 0;
                     decimal pitax = 0;
                     foreach (var item in salaryList)
@@ -692,6 +692,60 @@ namespace OA.Service
             {
                 throw new BadRequestException(Utilities.MakeExceptionMessage(ex));
             }
+            return result;
+        }
+        public async Task<ResponseResult> GetTotalIncomeOverTime()
+        {
+            var result = new ResponseResult();
+            try
+            {
+                var payrollPeriod = _salary
+                    .AsEnumerable()  // Chuyển về bộ nhớ client
+                    .OrderByDescending(x => DateTime.ParseExact(x.PayrollPeriod, "MM-yyyy", CultureInfo.InvariantCulture))
+                    .Select(x => x.PayrollPeriod)
+                    .FirstOrDefault();
+                if (payrollPeriod != null)
+                {
+                    var month = Convert.ToInt32(payrollPeriod.Substring(0, 2));
+                    var year = Convert.ToInt32(payrollPeriod.Substring(3, 4));
+
+                    var period = string.Empty;
+                    if (month <= 1) {
+                        year--;
+                    }
+                    period = year.ToString();
+
+                    var salaryList = await _salary
+                        .Where(x => x.PayrollPeriod.Contains(period) && x.IsActive)
+                        .ToListAsync();
+
+                    var incomeList = salaryList
+                        .GroupBy(x => x.PayrollPeriod)
+                        .Select(group => new TotalIncomeVmodel
+                        {
+                            payrollPeriod = group.Key,
+                            TotalIncome = group.Sum(x => x.SalaryPayment),
+                            TotalSalary = group.Sum(x => x.TotalSalary)
+                        })
+                        .ToList();
+
+                    result.Data = incomeList;
+                }
+                else
+                {
+                    throw new NotFoundException(MsgConstants.WarningMessages.NotFoundData);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new BadRequestException(Utilities.MakeExceptionMessage(ex));
+            }
+            return result;
+        }
+        public async Task<ResponseResult> GetIncomeStructure()
+        {
+            var result = new ResponseResult();
+
             return result;
         }
     }

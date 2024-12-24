@@ -141,5 +141,25 @@ namespace OA.WebApi.Controllers
             }
             return NotFound(new { Message = "Không có dữ liệu" });
         }
+        [HttpGet]
+        public async Task<IActionResult> GetTotalIncomeOverTime()
+        {
+            var response = await _salaryService.GetTotalIncomeOverTime();
+            if (response.Data != null)
+            {
+                return Ok(response);
+            }
+            return NotFound(new { Message = "Không có dữ liệu" });
+        }
+        [HttpGet]
+        public async Task<IActionResult> GetIncomeStructure()
+        {
+            var response = await _salaryService.GetIncomeStructure();
+            if (response.Data != null)
+            {
+                return Ok(response);
+            }
+            return NotFound(new { Message = "Không có dữ liệu" });
+        }
     }
 }

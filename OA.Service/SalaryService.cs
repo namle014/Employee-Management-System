@@ -132,6 +132,7 @@ namespace OA.Service
                 foreach (var ins in insuranceList)
                 {
                     var rate = ins.EmployeeContributionRate;
+                    var status = (ins.InsuranceId == "BHYT") ? "Đã đóng" : "Đang đóng";
                     var maxSalary = (ins.InsuranceId == "BHTN") ? maxBasicSalary : maxBaseSalary;
                     var PaidInsuranceContribution = Math.Min(dailyWage, maxSalary) * (double)rate;
 
@@ -139,6 +140,7 @@ namespace OA.Service
                     if (eIns != null)
                     {
                         eIns.PaidInsuranceContribution = (decimal)PaidInsuranceContribution;
+                        eIns.Status = status;
                     }
 
                     totalInsurance += PaidInsuranceContribution;
@@ -745,7 +747,31 @@ namespace OA.Service
         public async Task<ResponseResult> GetIncomeStructure()
         {
             var result = new ResponseResult();
+            try
+            {
+                var period = _salary
+                    .AsEnumerable()  // Chuyển về bộ nhớ client
+                    .OrderByDescending(x => DateTime.ParseExact(x.PayrollPeriod, "MM-yyyy", CultureInfo.InvariantCulture))
+                    .Select(x => x.PayrollPeriod)
+                    .FirstOrDefault();
 
+                if(period != null)
+                {
+                    var month = Convert.ToInt32(period.Substring(0, 2));
+                    var year = Convert.ToInt32(period.Substring(3, 4));
+                    var baseSalary = await _salary.Where(x => x.PayrollPeriod == period && x.IsActive).Select(x => x.ProRatedSalary).SumAsync();
+                    var empReward = await _dbContext.Reward.Where(x => x.IsActive && x.IsReceived && x.Date.Month == month && x.Date.Year == year &&x .Note != null && x.Note.ToLower().Contains("doanh số")).Select(x => x.Money ?? 0).SumAsync();
+                    var PITax = await _salary.Where(x => x.PayrollPeriod == period && x.IsActive).Select(x => x.PITax).SumAsync();
+
+                }
+                else
+                {
+                    throw new NotFoundException(MsgConstants.WarningMessages.NotFoundData);
+                }
+            }
+            catch (Exception ex) {
+                throw new NotFoundException(MsgConstants.WarningMessages.NotFoundData);
+            }
             return result;
         }
     }

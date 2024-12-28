@@ -20,11 +20,12 @@ namespace OA.Service
         private DbSet<Benefit> _benefit;
         private DbSet<BenefitType> _benefitType;
         private DbSet<BenefitUser> _benefitUser;
+        private readonly UserManager<AspNetUser> _userManager;
         //private readonly UserManager<AspNetUser> _userManager;
         private readonly IMapper _mapper;
         string _nameService = "Benefit";
 
-        public BenefitService(ApplicationDbContext dbContext, IMapper mapper, IHttpContextAccessor contextAccessor) : base(contextAccessor)
+        public BenefitService(ApplicationDbContext dbContext, IMapper mapper, IHttpContextAccessor contextAccessor, UserManager<AspNetUser> userManager) : base(contextAccessor)
         {
             _dbContext = dbContext ?? throw new ArgumentNullException("context");
             _benefit = dbContext.Set<Benefit>();
@@ -32,6 +33,8 @@ namespace OA.Service
             _benefitUser = dbContext.Set<BenefitUser>();
             //_userManager = userManager;
             _mapper = mapper;
+            _userManager = userManager;
+            _userManager = userManager;
         }
 
         public async Task<ResponseResult> GetById(string id)
@@ -356,7 +359,6 @@ namespace OA.Service
         {
             var result = new ResponseResult();
             var query = _benefitUser.AsQueryable();
-            //var holidayList = await query.ToListAsync();
             string? keyword = model.Keyword?.ToLower();
 
             var records = await _benefitUser.ToListAsync();
@@ -387,8 +389,33 @@ namespace OA.Service
                     .Where(x=>x.Id == userId).ToListAsync();
                 vmodel.FullName = usertable[0].FullName;
                 vmodel.Gender = usertable[0].Gender;
+                var roles = await _userManager.GetRolesAsync(usertable[0]);
+                vmodel.Roles = roles.ToList();
 
-                //var roleTable = await _dbContext.AspNetUserRoles .Where(x=>x.UserId == userId).ToListAsync();
+                int? departmentId = usertable[0].DepartmentId;
+                var departmentName = await _dbContext.Department.Where(x=> x.Id == departmentId).Select(x => x.Name).FirstOrDefaultAsync();
+                vmodel.DepartmentName = departmentName;
+
+                var benefitName = await _dbContext.Benefit.Where(x => x.Id == benefitId).Select(x => x.Name).FirstOrDefaultAsync();
+                if(benefitName != null)
+                {
+                    vmodel.BenefitName = benefitName;
+                }
+
+                if (
+                    (string.IsNullOrEmpty(keyword) ||
+                     (vmodel.FullName?.ToLower()?.Contains(keyword) == true) ||
+                     (vmodel.BenefitName?.ToLower()?.Contains(keyword) == true) ||
+                     (vmodel.UserId?.ToLower()?.Contains(keyword) == true) ||
+                     (vmodel.Roles != null && vmodel.Roles.Any(role => role.ToLower().Contains(keyword))) 
+                     //(model.DepartmentIds != null && departmentId != null && model.DepartmentIds.Any(id => id == departmentId)) ||
+                    ) &&
+                    (model.Roles.Count == 0||(model.Roles.Count != 0 && vmodel.Roles.Count !=0 && model.Roles.Any(role => vmodel.Roles.Contains(role)))) &&
+                    (model.DepartmentIds.Count == 0 || (model.DepartmentIds.Count != 0 && departmentId != null && model.DepartmentIds.Any(id => id == departmentId))) &&
+                    (model.Gender == null || vmodel.Gender == model.Gender) &&
+                    (vmodel.BenefitContribution >= model.FromBenefitContribution &&
+                     vmodel.BenefitContribution < model.ToBenefitContribution)
+                   )
 
                 list.Add(vmodel);
             }

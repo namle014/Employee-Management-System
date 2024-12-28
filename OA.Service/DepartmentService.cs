@@ -69,6 +69,16 @@ namespace OA.Service
                 foreach (var entity in records)
                 {
                     var vmodel = _mapper.Map<DepartmentGetAllVModel>(entity);
+                    var departmentId = entity.Id;
+                    var countEntity = await _dbContext.AspNetUsers.Where(x => x.DepartmentId != null && x.DepartmentId == departmentId && x.IsActive).CountAsync();
+                    var userNames = await _dbContext.AspNetUsers
+                        .Where(x => x.DepartmentId == departmentId && x.IsActive && x.Id == entity.DepartmentHeadId)
+                        .Select(x => x.FullName).FirstOrDefaultAsync();
+                    if (countEntity > 0)
+                    {
+                        vmodel.CountDepartment = countEntity;
+                    }
+                    vmodel.DepartmentHeadName = userNames;
                     list.Add(vmodel);
                 }
                 var pagedRecords = list.Skip((model.PageNumber - 1) * model.PageSize).Take(model.PageSize).ToList();
@@ -128,6 +138,46 @@ namespace OA.Service
             return result;
         }
 
+        public async Task ChangeStatusMany(DepartmentChangeStatusManyVModel model)
+        {
+            if (model?.Ids == null || !model.Ids.Any())
+            {
+                throw new NotFoundException(MsgConstants.WarningMessages.NotFoundData);
+            }
+
+            using var transaction = await _dbContext.Database.BeginTransactionAsync();
+            try
+            {
+                // Lấy danh sách các thực thể cần cập nhật
+                var entitiesToUpdate = await _dbSet.Where(x => model.Ids.Contains(x.Id)).ToListAsync();
+
+                // Kiểm tra xem có thiếu ID nào không
+                var missingIds = model.Ids.Except(entitiesToUpdate.Select(x => x.Id)).ToList();
+                if (missingIds.Any())
+                {
+                    throw new NotFoundException(string.Format(MsgConstants.WarningMessages.NotFound, string.Join(", ", missingIds)));
+                }
+
+                // Cập nhật giá trị IsActive
+                foreach (var entity in entitiesToUpdate)
+                {
+                    entity.IsActive = !entity.IsActive; // Đảo ngược trạng thái IsActive
+                }
+
+                // Lưu thay đổi vào cơ sở dữ liệu
+                await _dbContext.SaveChangesAsync();
+
+                // Commit giao dịch
+                await transaction.CommitAsync();
+            }
+            catch (Exception ex)
+            {
+                // Rollback nếu xảy ra lỗi
+                await transaction.RollbackAsync();
+                throw new BadRequestException($"Transaction failed: {ex.Message}");
+            }
+        }
+
         //public override async Task Create(DepartmentCreateVModel model)
         //{
 
@@ -155,4 +205,6 @@ namespace OA.Service
         //    }
         //}
     }
+
+
 }

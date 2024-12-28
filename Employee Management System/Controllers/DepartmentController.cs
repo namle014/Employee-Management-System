@@ -42,5 +42,12 @@ namespace OA.WebAPI.AdminControllers
 
             return Ok(response);
         }
+
+        [HttpPut]
+        public async Task<IActionResult> ChangeStatusMany(DepartmentChangeStatusManyVModel model)
+        {
+            await _departmentService.ChangeStatusMany(model);
+            return NoContent();
+        }
     }
 }

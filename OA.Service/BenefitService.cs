@@ -19,6 +19,7 @@ namespace OA.Service
         private readonly ApplicationDbContext _dbContext;
         private DbSet<Benefit> _benefit;
         private DbSet<BenefitType> _benefitType;
+        private DbSet<BenefitUser> _benefitUser;
         //private readonly UserManager<AspNetUser> _userManager;
         private readonly IMapper _mapper;
         string _nameService = "Benefit";
@@ -28,6 +29,7 @@ namespace OA.Service
             _dbContext = dbContext ?? throw new ArgumentNullException("context");
             _benefit = dbContext.Set<Benefit>();
             _benefitType = dbContext.Set<BenefitType>();
+            _benefitUser = dbContext.Set<BenefitUser>();
             //_userManager = userManager;
             _mapper = mapper;
         }
@@ -302,6 +304,17 @@ namespace OA.Service
             await _dbContext.SaveChangesAsync();
         }
 
+        public async Task CreateBenefitUser(CreateBenefitUser model)
+        {
+            var benefitUser = _mapper.Map<CreateBenefitUser, BenefitUser>(model);
+            //benefitType.Name = model.Name;
+            //benefitType.Description = model.Description;
+
+            _dbContext.BenefitUser.Add(benefitUser);
+
+            await _dbContext.SaveChangesAsync();
+        }
+
         public async Task UpdateBenefitType(BenefitTypeUpdateVModel model)
         {
             var entity = await _benefitType.FindAsync(model.Id);
@@ -337,6 +350,53 @@ namespace OA.Service
             {
                 throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorRemove, _nameService));
             }
+        }
+
+        public async Task<ResponseResult> GetAllBenefitUser(GetAllBenefitUser model)
+        {
+            var result = new ResponseResult();
+            var query = _benefitUser.AsQueryable();
+            //var holidayList = await query.ToListAsync();
+            string? keyword = model.Keyword?.ToLower();
+
+            var records = await _benefitUser.ToListAsync();
+
+
+            if (model.IsDescending == false)
+            {
+                //records = string.IsNullOrEmpty(model.SortBy).records.OrderBy(r => r.GetType().GetProperty(model.SortBy)?.GetValue(r, null)).ToList();
+            }
+            else
+            {
+                //records = string.IsNullOrEmpty(model.SortBy)
+                //        ? records.OrderByDescending(r => r.CreatedDate).ToList()
+                //        : records.OrderByDescending(r => r.GetType().GetProperty(model.SortBy)?.GetValue(r, null)).ToList();
+            }
+
+
+            result.Data = new Pagination();
+            var list = new List<GetAllBenefitUser>();
+            foreach (var entity in records)
+            {
+                var vmodel = _mapper.Map<GetAllBenefitUser>(entity);
+
+                var userId = entity.UserId;
+                var benefitId = entity.BenefitId;
+
+                var usertable = await _dbContext.AspNetUsers
+                    .Where(x=>x.Id == userId).ToListAsync();
+                vmodel.FullName = usertable[0].FullName;
+                vmodel.Gender = usertable[0].Gender;
+
+                //var roleTable = await _dbContext.AspNetUserRoles .Where(x=>x.UserId == userId).ToListAsync();
+
+                list.Add(vmodel);
+            }
+            var pagedRecords = list.Skip((model.PageNumber - 1) * model.PageSize).Take(model.PageSize).ToList();
+            result.Data.Records = pagedRecords;
+            result.Data.TotalRecords = list.Count;
+
+            return result;
         }
     }
 }

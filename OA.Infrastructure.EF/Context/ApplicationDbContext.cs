@@ -14,6 +14,7 @@ namespace OA.Infrastructure.EF.Context
         #region --DBSET--
         public virtual DbSet<AspNetUser> AspNetUsers { get; set; }
         public virtual DbSet<AspNetRole> AspNetRoles { get; set; }
+        //public virtual DbSet<AspNetUserRoles> AspNetUserRoles { get; set; }
         public virtual DbSet<SysFile> SysFile { get; set; } = null!;
         public virtual DbSet<SysFunction> SysFunctions { get; set; } = null!;
         public virtual DbSet<SysApi> SysApis { get; set; } = null!;
@@ -56,9 +57,9 @@ namespace OA.Infrastructure.EF.Context
                 .HasOne(i => i.BenefitType)
                 .WithMany(it => it.Benefits)
                 .HasForeignKey(i => i.BenefitTypeId);
-
-            modelBuilder.Entity<BenefitUser>().HasNoKey();
-            modelBuilder.Entity<InsuranceUser>().HasNoKey();
+            //modelBuilder.Entity<AspNetUserRoles>().HasNoKey();
+            //modelBuilder.Entity<BenefitUser>().HasNoKey();
+            //modelBuilder.Entity<InsuranceUser>().HasNoKey();
             modelBuilder.Entity<Salary>()
                 .Property(e => e.Date)
                 .HasColumnType("date");

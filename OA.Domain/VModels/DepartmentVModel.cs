@@ -61,4 +61,9 @@ namespace OA.Core.VModels
         public bool IsDescending { get; set; } = true;
         public string? Keyword { get; set; }
     }
+
+    public class DepartmentChangeStatusManyVModel
+    {
+        public List<int> Ids { get; set; } = new List<int>();
+    }
 }

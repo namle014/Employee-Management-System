@@ -12,7 +12,6 @@ namespace OA.Infrastructure.EF.Entities
         public DateTime? UpdatedDate { get; set; }
         public string Name { get; set; } = string.Empty;
         public int BenefitTypeId { get; set; }
-        public decimal BenefitContribution { get; set; }
         [ForeignKey("BenefitTypeId")]
         public virtual required BenefitType BenefitType { get; set; }
     }

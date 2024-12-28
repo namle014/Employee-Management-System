@@ -9,8 +9,10 @@ namespace OA.Infrastructure.EF.Entities
 {
     public class BenefitUser
     {
+        public int Id { get; set; }
         public string UserId { get; set; } = string.Empty;
         public string BenefitId { get; set; } = string.Empty;
+        public decimal BenefitContribution { get; set; }
     }
 
     

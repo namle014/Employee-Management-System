@@ -10,10 +10,14 @@ namespace OA.WebAPI.Mappings
         {
             //Insert
             CreateMap<BenefitCreateVModel, Benefit>();
+
+            CreateMap<CreateBenefitUser, BenefitUser>();
             // Update
             CreateMap<BenefitUpdateVModel, Benefit>();
             //Get All 
             CreateMap<Benefit, BenefitGetAllVModel>();
+            CreateMap<BenefitUser, GetAllBenefitUser>();
+
             //Get By Id
             CreateMap<Benefit, BenefitGetByIdVModel>();
             //Export

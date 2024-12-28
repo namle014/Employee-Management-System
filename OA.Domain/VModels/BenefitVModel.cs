@@ -8,7 +8,6 @@ namespace OA.Core.VModels
     {
         public string Name { get; set; } = string.Empty;
         public int BenefitTypeId { get; set; }
-        public decimal BenefitContribution { get; set; }
         //public bool IsActive { get; set; }
 
     }
@@ -76,6 +75,33 @@ namespace OA.Core.VModels
     public class BenefitChangeStatusManyVModel
     {
         public List<string> Ids { get; set; } = new List<string>();
+    }
+
+    public class CreateBenefitUser
+    {
+        public string? UserId { get; set; }
+        public string? BenefitId { get; set; }
+        public decimal BenefitContribution { get; set; }
+    }
+
+    public class GetAllBenefitUser
+    {
+        public int PageSize { get; set; } = CommonConstants.ConfigNumber.pageSizeDefault;
+        [Range(1, int.MaxValue)]
+        public int PageNumber { get; set; } = 1;
+        public string? SortBy { get; set; }
+        public bool IsExport { get; set; } = false;
+        public bool IsDescending { get; set; } = true;
+        public string? Keyword { get; set; }
+        public int Id { get; set; }
+        public string UserId { get; set; } = string.Empty;
+        public string FullName { get; set; } = string.Empty;
+        public bool? Gender { get; set; }
+        public List<string> Roles { get; set; } = new List<string>();
+        public string BenefitId { get; set; } = string.Empty;
+        public string BenefitName { get; set; } = string.Empty;
+        public decimal BenefitContribution { get; set; }
+
     }
 
 }

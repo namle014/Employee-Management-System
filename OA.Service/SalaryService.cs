@@ -117,7 +117,7 @@ namespace OA.Service
                 var totalBenefit = await (from bUser in _dbContext.BenefitUser
                                           join benefit in _dbContext.Benefit on bUser.BenefitId equals benefit.Id
                                           where (bUser.UserId == userId && benefit.IsActive)
-                                          select benefit.BenefitContribution).SumAsync();
+                                          select bUser.BenefitContribution).SumAsync();
 
                 var insuranceList = await (from insuranceUser in _dbContext.InsuranceUser
                                      join insurance in _dbContext.Insurance on insuranceUser.InsuranceId equals insurance.Id
@@ -251,7 +251,7 @@ namespace OA.Service
                     var totalBenefit = await (from bUser in _dbContext.BenefitUser
                                               join benefit in _dbContext.Benefit on bUser.BenefitId equals benefit.Id
                                               where (bUser.UserId == userId && benefit.IsActive)
-                                              select benefit.BenefitContribution).SumAsync();
+                                              select bUser.BenefitContribution).SumAsync();
                     entityMapped.Benefit = totalBenefit;
                     var totalInsurance = await (from insuranceUser in _dbContext.InsuranceUser
                                                 join insurance in _dbContext.Insurance on insuranceUser.InsuranceId equals insurance.Id

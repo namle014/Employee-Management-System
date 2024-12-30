@@ -20,5 +20,8 @@ namespace OA.Core.Services
         Task<ResponseResult> GetInfoForSalarySummary();
         Task<ResponseResult> GetTotalIncomeOverTime();
         Task<ResponseResult> GetIncomeStructure();
+        Task<ResponseResult> GetPeriod();
+        Task<ResponseResult> GetTotalBySex();
+        Task<ResponseResult> GetGrossTotal();
     }
 }

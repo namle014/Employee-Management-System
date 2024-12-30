@@ -161,5 +161,35 @@ namespace OA.WebApi.Controllers
             }
             return NotFound(new { Message = "Không có dữ liệu" });
         }
+        [HttpGet]
+        public async Task<IActionResult> GetPeriod()
+        {
+            var response = await _salaryService.GetPeriod();
+            if (response.Data != null)
+            {
+                return Ok(response);
+            }
+            return NotFound(new { Message = "Không có dữ liệu" });
+        }
+        [HttpGet]
+        public async Task<IActionResult> GetTotalBySex()
+        {
+            var response = await _salaryService.GetTotalBySex();
+            if (response.Data != null)
+            {
+                return Ok(response);
+            }
+            return NotFound(new { Message = "Không có dữ liệu" });
+        }
+        [HttpGet]
+        public async Task<IActionResult> GetGrossTotal()
+        {
+            var response = await _salaryService.GetGrossTotal();
+            if (response.Data != null)
+            {
+                return Ok(response);
+            }
+            return NotFound(new { Message = "Không có dữ liệu" });
+        }
     }
 }

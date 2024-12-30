@@ -8,9 +8,10 @@ namespace OA.Core.VModels
     {
         public string UserId { get; set; } = string.Empty;
         public string? Reason { get; set; }
-        public decimal Money { get; set; }
+        public decimal? Money { get; set; }
         public string? Note { get; set; }
         public bool IsActive { get; set; }
+        public bool IsReceived { get; set; } = false;
 
     }
 
@@ -21,6 +22,9 @@ namespace OA.Core.VModels
 
     public class RewardGetAllVModel : RewardUpdateVModel
     {
+        public string FullName { get; set; } = string.Empty;
+        public string? Department { get; set; }
+        public DateTime Date { get; set; }
         public DateTime? CreatedDate { get; set; }
         public string? CreatedBy { get; set; } = string.Empty;
         public DateTime? UpdatedDate { get; set; }

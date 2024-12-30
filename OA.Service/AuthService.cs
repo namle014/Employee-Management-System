@@ -21,14 +21,18 @@ namespace OA.Service
     public class AuthService : GlobalVariables, IAuthService
     {
         private readonly UserManager<AspNetUser> _userManager;
+        private readonly RoleManager<AspNetRole> _roleManager;
         private readonly IAspNetUserService _userService;
         private readonly IJwtFactory _jwtFactory;
         private readonly JwtIssuerOptions _jwtOptions;
         private readonly IMapper _mapper;
         private readonly IBaseRepository<SysFile> _sysFileRepo;
 
-        public AuthService(UserManager<AspNetUser> userManager, IAspNetUserService userService, IJwtFactory jwtFactory, IOptions<JwtIssuerOptions> jwtOptions, IHttpContextAccessor contextAccessor, IBaseRepository<SysFile> sysFileRepo, IMapper mapper) : base(contextAccessor)
+        public AuthService(UserManager<AspNetUser> userManager, RoleManager<AspNetRole> roleManager, IAspNetUserService userService,
+            IJwtFactory jwtFactory, IOptions<JwtIssuerOptions> jwtOptions, IHttpContextAccessor contextAccessor,
+            IBaseRepository<SysFile> sysFileRepo, IMapper mapper) : base(contextAccessor)
         {
+            _roleManager = roleManager;
             _userManager = userManager;
             _userService = userService;
             _jwtFactory = jwtFactory;
@@ -154,7 +158,44 @@ namespace OA.Service
                 model.Roles = (List<string>)entityRoles;
             }
 
-            model.MenuLeft = CreateMenuLeft(entity.JsonUserHasFunctions) ?? new List<MenuLeft>();
+            var roleJsons = new List<string>();
+
+            foreach (var roleName in model.Roles)
+            {
+                var role = await _roleManager.FindByNameAsync(roleName) ?? new AspNetRole();
+                if (role.JsonRoleHasFunctions != null)
+                {
+                    roleJsons.Add(role.JsonRoleHasFunctions.ToString());
+                }
+            }
+
+            var allRoles = roleJsons
+                .Where(json => !string.IsNullOrWhiteSpace(json))
+                .SelectMany(json =>
+                {
+                    return JsonConvert.DeserializeObject<List<MenuLeft>>(json) ?? new List<MenuLeft>();
+                })
+                .ToList();
+
+            var mergedRoles = allRoles
+            .GroupBy(role => role.Id)
+            .Select(group =>
+            {
+                var merged = group.First();
+                merged.Function = new Function
+                {
+                    IsAllowAll = group.Any(r => r.Function.IsAllowAll),
+                    IsAllowView = group.Any(r => r.Function.IsAllowView),
+                    IsAllowCreate = group.Any(r => r.Function.IsAllowCreate),
+                    IsAllowEdit = group.Any(r => r.Function.IsAllowEdit),
+                    IsAllowPrint = group.Any(r => r.Function.IsAllowPrint),
+                    IsAllowDelete = group.Any(r => r.Function.IsAllowDelete)
+                };
+                return merged;
+            })
+            .ToList();
+
+            model.MenuLeft = mergedRoles;
 
             result.Data = model;
             return result;

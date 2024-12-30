@@ -98,7 +98,10 @@ namespace OA.Core.VModels
         public string FullName { get; set; } = string.Empty;
         public bool? Gender { get; set; }
         public List<string> Roles { get; set; } = new List<string>();
-        public string BenefitId { get; set; } = string.Empty;
+        public string? DepartmentName{ get; set; }
+        public List<int> DepartmentIds { get; set; } = new List<int>();
+        public decimal FromBenefitContribution { get; set; }
+        public decimal ToBenefitContribution { get; set; }
         public string BenefitName { get; set; } = string.Empty;
         public decimal BenefitContribution { get; set; }
 

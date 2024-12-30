@@ -1,10 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using OA.Core.Constants;
 using OA.Core.Services;
 using OA.Core.VModels;
 namespace OA.WebApi.Controllers
 {
-    //[Authorize(Policy = CommonConstants.Authorize.CustomAuthorization)]
+    [Authorize(Policy = CommonConstants.Authorize.CustomAuthorization)]
     [Route(CommonConstants.Routes.BaseRouteAdmin)]
     [ApiController]
     public class TimekeepingController : ControllerBase
@@ -54,6 +55,15 @@ namespace OA.WebApi.Controllers
             {
                 return new BadRequestObjectResult(ModelState);
             }
+
+            string? ipAddress = HttpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault()
+                   ?? HttpContext.Connection.RemoteIpAddress?.ToString();
+
+            // Lấy thông tin User-Agent từ header
+            string? userAgent = HttpContext.Request.Headers["User-Agent"];
+
+            model.CheckInIP = ipAddress;
+            model.UserAgent = userAgent;
 
             await _service.Create(model);
 

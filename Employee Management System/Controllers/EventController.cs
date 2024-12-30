@@ -11,7 +11,6 @@ namespace OA.WebApi.Controllers
     {
         public readonly IEventService _eventService;
         public readonly ILogger _logger;
-        private static string _nameController = StringConstants.ControllerName.Event;
 
         public EventController(IEventService eventService, ILogger<EventController> logger)
         {

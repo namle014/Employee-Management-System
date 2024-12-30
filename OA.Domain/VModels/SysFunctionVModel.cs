@@ -12,6 +12,7 @@ namespace OA.Domain.VModels
         public string? PathTo { get; set; }
         public string? PathIcon { get; set; }
         public bool IsActive { get; set; }
+        public string? NameController { get; set; } = string.Empty;
     }
 
     public class SysFunctionUpdateVModel : SysFunctionCreateVModel

@@ -33,6 +33,12 @@ namespace OA.Service.Helpers
             HttpStatusCode code;
             switch (exception)
             {
+                case UnauthorizedAccessException _:
+                    code = HttpStatusCode.Unauthorized;
+                    break;
+                case ForbiddenException _:
+                    code = HttpStatusCode.Forbidden;
+                    break;
                 case NotFoundException _:
                     code = HttpStatusCode.NotFound;
                     break;
@@ -62,6 +68,13 @@ namespace OA.Service.Helpers
     public class NotFoundException : Exception
     {
         public NotFoundException(string message) : base(message)
+        {
+
+        }
+    }
+    public class ForbiddenException : Exception
+    {
+        public ForbiddenException(string message) : base(message)
         {
 
         }

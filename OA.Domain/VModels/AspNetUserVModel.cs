@@ -70,7 +70,7 @@ namespace OA.Domain.VModels
         public DateTime? Birthday { get; set; }
         public int DepartmentId { get; set; }
         public int EmployeeDependents { get; set; }
-        public string? EmployeeId { get; set; } 
+        public string? EmployeeId { get; set; }
     }
 
     public class UserCreateVModel : UserVModel
@@ -85,7 +85,7 @@ namespace OA.Domain.VModels
     {
         public string Id { get; set; } = string.Empty;
         public bool? IsActive { get; set; }
-        public List<string>? Roles { get; set; }
+        public List<string> Roles { get; set; } = new List<string>();
     }
 
     public class UserGetAllVModel : UserUpdateVModel
@@ -107,6 +107,7 @@ namespace OA.Domain.VModels
         public int Sort { get; set; }
         public string PathIcon { get; set; } = string.Empty;
         public int? ParentId { get; set; }
+        public string? NameController { get; set; } = string.Empty;
         public Function Function { get; set; } = new Function();
         public List<MenuLeft> Childs { get; set; } = new List<MenuLeft>();
     }

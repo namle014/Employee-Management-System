@@ -16,6 +16,16 @@ namespace OA.Domain.VModels
 
         public static ImmutableDictionary<int, ErrorMessage> Values = ImmutableDictionary.CreateRange<int, ErrorMessage>(
         [
+            new KeyValuePair<int, ErrorMessage>(401, new ErrorMessage
+            {
+                ErrorCode = $"{ERROR_PREFIX}_UNAUTHORIZED",
+                Message = "Unauthorized",
+            }),
+            new KeyValuePair<int, ErrorMessage>(403, new ErrorMessage
+            {
+                ErrorCode = $"{ERROR_PREFIX}_FORBIDDEN",
+                Message = "Forbidden",
+            }),
             new KeyValuePair<int, ErrorMessage>(400, new ErrorMessage
             {
                 ErrorCode = $"{ERROR_PREFIX}_BAD_REQUEST",

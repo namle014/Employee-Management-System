@@ -9,6 +9,7 @@ using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json.Serialization;
 using OA.Core.Configurations;
+using OA.Core.Constants;
 using OA.Core.Repositories;
 using OA.Core.Services;
 using OA.Core.Services.Helpers;
@@ -83,6 +84,14 @@ builder.Services.AddSwaggerGen(options =>
 // Configure Database
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy(CommonConstants.Authorize.CustomAuthorization, policy =>
+    {
+        policy.RequireAuthenticatedUser(); // Yêu cầu người dùng đã đăng nhập
+    });
+});
 
 // Configure JWT authentication
 void RegisterJWT(IServiceCollection services)
@@ -222,6 +231,8 @@ app.UseCors("AllowSpecificOrigin"); // Thêm dòng này để sử dụng cấu 
 
 app.UseAuthentication(); // Ensure authentication middleware is used
 app.UseAuthorization();
+
+app.UseMiddleware<CustomAuthorizationMiddleware>();
 
 app.MapHub<NotificationHub>("/notificationHub");
 app.MapControllers();

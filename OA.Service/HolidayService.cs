@@ -15,92 +15,29 @@ namespace OA.Service
     public class HolidayService : GlobalVariables, IHolidayService
     {
         private readonly ApplicationDbContext _dbContext;
-        private readonly DbSet<Holiday> _holiday;
+        private readonly DbSet<Events> _event;
         private readonly IMapper _mapper;
-        private readonly string _nameService = "holiday";
+        private readonly string _nameService = "Event";
         public HolidayService(ApplicationDbContext dbContext, IMapper mapper, IHttpContextAccessor contextAccessor) : base(contextAccessor)
         {
             _dbContext = dbContext ?? throw new ArgumentNullException("context");
             _mapper = mapper;
-            _holiday = dbContext.Set<Holiday>();
+            _event = dbContext.Set<Events>();
         }
 
-        public async Task Create(HolidayCreateVModel model)
+        public async Task Create(EventCreateVModel model)
         {
-            var entity = _mapper.Map<HolidayCreateVModel, Holiday>(model);
-            entity.StartDate = new DateTime(
-                model.StartDate.GetValueOrDefault(DateTime.Now).Year,
-                model.StartDate.GetValueOrDefault(DateTime.Now).Month,
-                model.StartDate.GetValueOrDefault(DateTime.Now).Day,
-                model.StartDate.GetValueOrDefault(DateTime.Now).Hour,
-                model.StartDate.GetValueOrDefault(DateTime.Now).Minute,
-                0
-            );
-            entity.EndDate = new DateTime(
-                model.EndDate.GetValueOrDefault(DateTime.Now).Year,
-                model.EndDate.GetValueOrDefault(DateTime.Now).Month,
-                model.EndDate.GetValueOrDefault(DateTime.Now).Day,
-                model.EndDate.GetValueOrDefault(DateTime.Now).Hour,
-                model.EndDate.GetValueOrDefault(DateTime.Now).Minute,
-                0
-            );
-            entity.CreatedDate = DateTime.Now;
-            entity.CreatedBy = GlobalUserName;
-            entity.IsActive = true;
-            _holiday.Add(entity);
+            var entity = _mapper.Map<EventCreateVModel, Events>(model);
+            _event.Add(entity);
             bool success = await _dbContext.SaveChangesAsync() > 0;
             if (!success)
             {
                 throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorCreate, _nameService));
+
+
             }
         }
-
-        public async Task<ResponseResult> GetAll(HolidayFilterVModel model)
-        {
-            var result = new ResponseResult();
-            var query = _holiday.AsQueryable();
-            //var holidayList = await query.ToListAsync();
-            string? keyword = model.Keyword?.ToLower();
-
-            var records = await _holiday.Where(x =>
-                x.IsActive == model.IsActive &&
-                (!model.CreatedDate.HasValue ||
-                    (x.CreatedDate.HasValue &&
-                    x.CreatedDate.Value.Date == model.CreatedDate.Value.Date)) &&
-                (string.IsNullOrEmpty(keyword) ||
-                    x.Name.ToLower().Contains(keyword.ToLower()) ||
-                    (x.Note != null && x.Note.ToLower().Contains(keyword.ToLower())) ||
-                    (x.CreatedBy != null && x.CreatedBy.ToLower().Contains(keyword.ToLower()))
-                )).ToListAsync();
-
-
-            if (model.IsDescending == false)
-            {
-                records = string.IsNullOrEmpty(model.SortBy)
-                        ? records.OrderBy(r => r.CreatedDate).ToList()
-                        : records.OrderBy(r => r.GetType().GetProperty(model.SortBy)?.GetValue(r, null)).ToList();
-            }
-            else
-            {
-                records = string.IsNullOrEmpty(model.SortBy)
-                        ? records.OrderByDescending(r => r.CreatedDate).ToList()
-                        : records.OrderByDescending(r => r.GetType().GetProperty(model.SortBy)?.GetValue(r, null)).ToList();
-            }
-
-            result.Data = new Pagination();
-            var list = new List<HolidayGetAllVModel>();
-            foreach (var entity in records)
-            {
-                var vmodel = _mapper.Map<HolidayGetAllVModel>(entity);
-                list.Add(vmodel);
-            }
-            var pagedRecords = list.Skip((model.PageNumber - 1) * model.PageSize).Take(model.PageSize).ToList();
-            result.Data.Records = pagedRecords;
-            result.Data.TotalRecords = list.Count;
-
-            return result;
-        }
-
+        
         public async Task DeleteMany(HolidayDeleteManyVModel model)
         {
             if (model?.Ids == null || !model.Ids.Any())
@@ -112,7 +49,7 @@ namespace OA.Service
             try
             {
                 // Lấy danh sách các thực thể cần xóa
-                var entitiesToDelete = await _holiday.Where(x => model.Ids.Contains(x.Id)).ToListAsync();
+                var entitiesToDelete = await _event.Where(x => model.Ids.Contains(x.Id)).ToListAsync();
 
                 // Kiểm tra xem có thiếu ID nào không
                 var missingIds = model.Ids.Except(entitiesToDelete.Select(x => x.Id)).ToList();
@@ -122,7 +59,7 @@ namespace OA.Service
                 }
 
                 // Xóa các thực thể
-                _holiday.RemoveRange(entitiesToDelete);
+                _event.RemoveRange(entitiesToDelete);
 
                 // Lưu thay đổi
                 await _dbContext.SaveChangesAsync();
@@ -138,13 +75,48 @@ namespace OA.Service
             }
         }
 
+        public async Task<ResponseResult> GetAll(EventFilterVModel model)
+        {
+            var result = new ResponseResult();
+            var query = _event.AsQueryable();
+
+            string? keyword = model.Keyword?.ToLower();
+
+            var records = await _event.Where(x => x.IsHoliday &&
+                (string.IsNullOrEmpty(keyword) ||
+                    x.Title.ToLower().Contains(keyword) ||
+                    (x.Description != null && x.Description.ToLower().Contains(keyword))
+                )).ToListAsync();
+
+                
+            if (model.IsDescending == false)
+            {
+                records = string.IsNullOrEmpty(model.SortBy)
+                        ? records.OrderBy(r => r.Title).ToList()
+                        : records.OrderBy(r => r.GetType().GetProperty(model.SortBy)?.GetValue(r, null)).ToList();
+            }
+            else
+            {
+                records = string.IsNullOrEmpty(model.SortBy)
+                        ? records.OrderByDescending(r => r.Title).ToList()
+                        : records.OrderByDescending(r => r.GetType().GetProperty(model.SortBy)?.GetValue(r, null)).ToList();
+            }
+
+            result.Data = new Pagination();
+
+            var pagedRecords = records.Skip((model.PageNumber - 1) * model.PageSize).Take(model.PageSize).ToList();
+            result.Data.Records = pagedRecords;
+            result.Data.TotalRecords = records.Count;
+
+            return result;
+        }
 
         public async Task<ResponseResult> GetById(int id)
         {
             var result = new ResponseResult();
             try
             {
-                var entity = await _holiday.FirstOrDefaultAsync(s => s.Id == id);
+                var entity = await _event.FirstOrDefaultAsync(s => s.Id == id);
                 if (entity == null)
                 {
                     throw new NotFoundException(MsgConstants.WarningMessages.NotFoundData);
@@ -161,12 +133,13 @@ namespace OA.Service
 
         public async Task Remove(int id)
         {
-            var entity = await _holiday.FindAsync(id);
-            if(entity == null)
+            var entity = await _event.FindAsync(id);
+            if (entity == null)
             {
                 throw new NotFoundException(MsgConstants.WarningMessages.NotFoundData);
             }
-            _holiday.Remove(entity);
+
+            _event.Remove(entity);
             bool success = await _dbContext.SaveChangesAsync() > 0;
             if (!success)
             {
@@ -174,9 +147,9 @@ namespace OA.Service
             }
         }
 
-        public async Task Update(HolidayUpdateVModel model)
+        public async Task Update(EventUpdateVModel model)
         {
-            var entity = await _holiday.FindAsync(model.Id);
+            var entity = await _event.FindAsync(model.Id);
             if (entity == null)
             {
                 throw new NotFoundException(MsgConstants.WarningMessages.NotFoundData);
@@ -184,14 +157,12 @@ namespace OA.Service
 
             _mapper.Map(model, entity);
 
-            entity.UpdatedDate = DateTime.Now;
-            entity.UpdatedBy = GlobalUserName;
-
             bool success = await _dbContext.SaveChangesAsync() > 0;
             if (!success)
             {
                 throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorUpdate, _nameService));
             }
         }
+
     }
 }

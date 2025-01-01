@@ -191,5 +191,55 @@ namespace OA.WebApi.Controllers
             }
             return NotFound(new { Message = "Không có dữ liệu" });
         }
+        [HttpGet]
+        public async Task<IActionResult> GetTotalMaxMin()
+        {
+            var response = await _salaryService.GetTotalMaxMin();
+            if (response.Data != null)
+            {
+                return Ok(response);
+            }
+            return NotFound(new { Message = "Không có dữ liệu" });
+        }
+        [HttpGet]
+        public async Task<IActionResult> GetDisplayInfo()
+        {
+            var response = await _salaryService.GetDisplayInfo();
+            if (response.Data != null)
+            {
+                return Ok(response);
+            }
+            return NotFound(new { Message = "Không có dữ liệu" });
+        }
+        [HttpGet]
+        public async Task<IActionResult> GetGrossTotalByDepartments()
+        {
+            var response = await _salaryService.GetGrossTotalByDepartments();
+            if (response.Data != null)
+            {
+                return Ok(response);
+            }
+            return NotFound(new { Message = "Không có dữ liệu" });
+        }
+        [HttpGet]
+        public async Task<IActionResult> GetPayrollOfDepartmentOvertime(int year)
+        {
+            if (year < 1)
+            {
+                return new BadRequestObjectResult(string.Format(MsgConstants.Error404Messages.FieldIsInvalid, "year"));
+            }
+            var response = await _salaryService.GetPayrollOfDepartmentOvertime(year);
+            return Ok(response);
+        }
+        [HttpGet]
+        public async Task<IActionResult> GetPayrollReport(int year)
+        {
+            if (year < 1)
+            {
+                return new BadRequestObjectResult(string.Format(MsgConstants.Error404Messages.FieldIsInvalid, "year"));
+            }
+            var response = await _salaryService.GetPayrollReport(year);
+            return Ok(response);
+        }
     }
 }

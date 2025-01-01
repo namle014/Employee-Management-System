@@ -23,5 +23,10 @@ namespace OA.Core.Services
         Task<ResponseResult> GetPeriod();
         Task<ResponseResult> GetTotalBySex();
         Task<ResponseResult> GetGrossTotal();
+        Task<ResponseResult> GetTotalMaxMin();
+        Task<ResponseResult> GetDisplayInfo();
+        Task<ResponseResult> GetGrossTotalByDepartments();
+        Task<ResponseResult> GetPayrollOfDepartmentOvertime(int year);
+        Task<ResponseResult> GetPayrollReport(int year);
     }
 }

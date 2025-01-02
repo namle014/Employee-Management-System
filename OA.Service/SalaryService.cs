@@ -670,12 +670,14 @@ namespace OA.Service
                     var salaryList = await (_salary.Where(x => x.PayrollPeriod == period && x.IsActive)).ToListAsync();
                     decimal total = 0;
                     decimal pitax = 0;
+                    decimal totalInsurance = 0;
                     foreach (var item in salaryList)
                     {
                         total += item.TotalSalary;
                         pitax += item.PITax;
+                        totalInsurance += item.TotalInsurance;
+
                     }
-                    var totalInsurance = _dbContext.InsuranceUser.Sum(x => x.PaidInsuranceContribution ?? 0);
                     result.Data = new
                     {
                         total = total / 1000000m,
@@ -870,10 +872,7 @@ namespace OA.Service
                 {
                     var netSalary = (double)await (_salary.Where(x => x.IsActive && x.PayrollPeriod == period).Select(x => x.TotalSalary)).SumAsync();
                     var PITax = (double)await (_salary.Where(x => x.IsActive && x.PayrollPeriod == period).Select(x => x.PITax)).SumAsync();
-                    var totalInsurance = (double)await (from insuranceUser in _dbContext.InsuranceUser
-                                                join salary in _salary on insuranceUser.UserId equals salary.UserId
-                                                where salary.IsActive && salary.PayrollPeriod == period
-                                                select insuranceUser.PaidInsuranceContribution).SumAsync();
+                    var totalInsurance = (double) await _salary.Where(x => x.IsActive && x.PayrollPeriod == period).Select(x => x.TotalInsurance).SumAsync();
 
                     var total = netSalary + PITax + totalInsurance;
 

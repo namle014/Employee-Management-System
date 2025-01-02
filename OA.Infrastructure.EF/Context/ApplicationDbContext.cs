@@ -43,6 +43,8 @@ namespace OA.Infrastructure.EF.Context
         public virtual DbSet<Events> Events { get; set; }
         public virtual DbSet<ErrorReport> ErrorReport { get; set; }
         public virtual DbSet<JobHistory> JobHistory { get; set; }
+        public virtual DbSet<Message> Message { get; set; }
+        public virtual DbSet<TransferHistory> TransferHistory { get; set; }
         #endregion --DBSET--
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

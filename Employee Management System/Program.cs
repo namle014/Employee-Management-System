@@ -176,6 +176,8 @@ builder.Services.AddScoped<IWorkShiftService, WorkShiftService>();
 builder.Services.AddScoped<IEventService, EventService>();
 builder.Services.AddScoped<IErrorReportService, ErrorReportService>();
 builder.Services.AddScoped<IJobHistoryService, JobHistoryService>();
+builder.Services.AddScoped<IMassageService, MassageService>();
+builder.Services.AddScoped<ITransferHistoryService, TransferHistoryService>();
 
 // Configure Identity
 var identityBuilder = builder.Services.AddIdentityCore<AspNetUser>(opt =>

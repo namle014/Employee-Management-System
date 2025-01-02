@@ -229,6 +229,9 @@ app.UseStaticFiles(new StaticFileOptions
 
 app.UseCors("AllowSpecificOrigin"); // Thêm dòng này để sử dụng cấu hình CORS
 
+
+app.UseSession();
+
 app.UseAuthentication(); // Ensure authentication middleware is used
 app.UseAuthorization();
 

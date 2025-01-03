@@ -176,6 +176,8 @@ builder.Services.AddScoped<IWorkShiftService, WorkShiftService>();
 builder.Services.AddScoped<IEventService, EventService>();
 builder.Services.AddScoped<IErrorReportService, ErrorReportService>();
 builder.Services.AddScoped<IJobHistoryService, JobHistoryService>();
+builder.Services.AddScoped<IMassageService, MassageService>();
+builder.Services.AddScoped<ITransferHistoryService, TransferHistoryService>();
 
 // Configure Identity
 var identityBuilder = builder.Services.AddIdentityCore<AspNetUser>(opt =>
@@ -228,6 +230,9 @@ app.UseStaticFiles(new StaticFileOptions
 });
 
 app.UseCors("AllowSpecificOrigin"); // Thêm dòng này để sử dụng cấu hình CORS
+
+
+app.UseSession();
 
 app.UseAuthentication(); // Ensure authentication middleware is used
 app.UseAuthorization();

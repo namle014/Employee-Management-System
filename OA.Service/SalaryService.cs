@@ -1,4 +1,5 @@
 ﻿using AngleSharp.Css;
+using Aspose.Pdf.AI;
 using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -107,6 +108,7 @@ namespace OA.Service
                     .Sum(x => ((x.CheckOutTime - afternoonTime) + (lunchBreak - x.CheckInTime)).TotalHours);
 
 
+
                 var workdays = Math.Round(totalHours / 8, 2);
 
                 var dailyWage = (double)totalBasicSalary / workingDays * workdays;
@@ -161,6 +163,11 @@ namespace OA.Service
                 };
                 var entity = _mapper.Map<SalaryCreateVModel, Salary>(model);
                 entity.ProRatedSalary = (decimal)dailyWage;
+                entity.NumberOfWorkingHours = totalHours;
+                entity.TotalInsurance = (decimal)totalInsurance;
+                entity.TotalBenefit = totalBenefit;
+                entity.TotalReward = totalReward;
+                entity.TotalDiscipline = totalDiscipline;
                 entity.PITax = (decimal)PITax;
                 entity.CreatedDate = DateTime.Now;
                 entity.CreatedBy = GlobalUserName;
@@ -242,25 +249,15 @@ namespace OA.Service
                 {
                     var entityMapped = _mapper.Map<Salary, SalaryGetAllVModel>(item);
                     entityMapped.BasicSalary = item.ProRatedSalary;
-                    var totalReward = _dbContext.Reward.Where(x => x.UserId == userId && x.IsActive &&x.Date.Month == month && x.Date.Year == year).Sum(x => x.Money) ?? 0;
-                    entityMapped.Reward = totalReward;
-                    var totalDiscipline = _dbContext.Discipline.Where(x => x.UserId == userId && x.IsActive &&x.Date.Month == month && x.Date.Year == year).Sum(x => x.Money);
-                    entityMapped.Discipline = totalDiscipline;
-                    var timekeepingCount = _dbContext.Timekeeping
-                        .Count(x => x.UserId == userId && x.IsActive
-                                    && x.CheckInTime != TimeSpan.Zero && x.CheckOutTime != TimeSpan.Zero && x.Date.Year == year && x.Date.Month == month);
-                    entityMapped.Timekeeping = timekeepingCount;
-                    var totalBenefit = await (from bUser in _dbContext.BenefitUser
-                                              join benefit in _dbContext.Benefit on bUser.BenefitId equals benefit.Id
-                                              where (bUser.UserId == userId && benefit.IsActive)
-                                              select bUser.BenefitContribution).SumAsync();
-                    entityMapped.Benefit = totalBenefit;
-                    var totalInsurance = await (from insuranceUser in _dbContext.InsuranceUser
-                                                join insurance in _dbContext.Insurance on insuranceUser.InsuranceId equals insurance.Id
-                                                where (insuranceUser.UserId == userId && insurance.IsActive)
-                                                select insuranceUser.PaidInsuranceContribution).SumAsync();
+                    entityMapped.Reward = item.TotalReward;
+                    entityMapped.Discipline = item.TotalDiscipline;
+                    
+                    entityMapped.Timekeeping = item.NumberOfWorkingHours;
 
-                    var PITax = item.PITax;
+                    entityMapped.Benefit = item.TotalBenefit;
+                    entityMapped.Insurance = item.TotalInsurance;
+
+                    entityMapped.PITax = item.PITax;
 
                     entityMapped.FullName = user.FullName;
                     salaryListMapped.Add(entityMapped);
@@ -561,7 +558,7 @@ namespace OA.Service
         public async Task<ResponseResult> GetInfoForDepartmentChart()
         {
             var result = new ResponseResult();
-            var departmentList = await _dbContext.Department.ToListAsync();
+            var departmentList = await _dbContext.Department.Where(x => x.IsActive).ToListAsync();
             var period = _salary
                 .AsEnumerable()  // Chuyển về bộ nhớ client
                 .OrderByDescending(x => DateTime.ParseExact(x.PayrollPeriod, "MM-yyyy", CultureInfo.InvariantCulture))
@@ -673,12 +670,14 @@ namespace OA.Service
                     var salaryList = await (_salary.Where(x => x.PayrollPeriod == period && x.IsActive)).ToListAsync();
                     decimal total = 0;
                     decimal pitax = 0;
+                    decimal totalInsurance = 0;
                     foreach (var item in salaryList)
                     {
                         total += item.TotalSalary;
                         pitax += item.PITax;
+                        totalInsurance += item.TotalInsurance;
+
                     }
-                    var totalInsurance = _dbContext.InsuranceUser.Sum(x => x.PaidInsuranceContribution ?? 0);
                     result.Data = new
                     {
                         total = total / 1000000m,
@@ -873,10 +872,7 @@ namespace OA.Service
                 {
                     var netSalary = (double)await (_salary.Where(x => x.IsActive && x.PayrollPeriod == period).Select(x => x.TotalSalary)).SumAsync();
                     var PITax = (double)await (_salary.Where(x => x.IsActive && x.PayrollPeriod == period).Select(x => x.PITax)).SumAsync();
-                    var totalInsurance = (double)await (from insuranceUser in _dbContext.InsuranceUser
-                                                join salary in _salary on insuranceUser.UserId equals salary.UserId
-                                                where salary.IsActive && salary.PayrollPeriod == period
-                                                select insuranceUser.PaidInsuranceContribution).SumAsync();
+                    var totalInsurance = (double) await _salary.Where(x => x.IsActive && x.PayrollPeriod == period).Select(x => x.TotalInsurance).SumAsync();
 
                     var total = netSalary + PITax + totalInsurance;
 
@@ -904,6 +900,298 @@ namespace OA.Service
         public async Task<ResponseResult> GetGrossTotalByDepartments()
         {
             var result = new ResponseResult();
+            try
+            {
+                var departmentList = await _dbContext.Department.Where(x => x.IsActive).ToListAsync();
+                var period = _salary
+                    .AsEnumerable()  // Chuyển về bộ nhớ client
+                    .OrderByDescending(x => DateTime.ParseExact(x.PayrollPeriod, "MM-yyyy", CultureInfo.InvariantCulture))
+                    .Select(x => x.PayrollPeriod)
+                    .FirstOrDefault();
+
+                if (period != null)
+                {
+                    var salaryByDepartment = new Dictionary<string, decimal>();
+                    var salaryPercent = new Dictionary<string, double>();
+                    var total = await _salary.Where(x => x.IsActive && x.PayrollPeriod == period).Select(x => x.SalaryPayment).SumAsync();
+
+                    foreach (var department in departmentList)
+                    {
+                        var departmentName = department.Name;
+                        var departmentId = department.Id;
+                        var totalSalary = await (from salary in _dbContext.Salary
+                                                 join user in _dbContext.AspNetUsers on salary.UserId equals user.Id
+                                                 where user.DepartmentId == departmentId && salary.PayrollPeriod == period && salary.IsActive == true
+                                                 select (decimal?)salary.SalaryPayment).SumAsync() ?? 0m;
+                        salaryByDepartment[departmentName] = totalSalary;
+                        salaryPercent[departmentName] = Math.Round(((double)(totalSalary / total)) * 100, 2);
+                    }
+                    result.Data = new
+                    {
+                        salaryByDepartment = salaryByDepartment,
+                        salaryPercent = salaryPercent
+                    };
+                }
+                else
+                {
+                    throw new NotFoundException(MsgConstants.WarningMessages.NotFoundData);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new BadRequestException(Utilities.MakeExceptionMessage(ex));
+            }
+            return result;
+        }
+        public async Task<ResponseResult> GetTotalMaxMin()
+        {
+            var result = new ResponseResult();
+            try
+            {
+
+                var period = _salary
+                    .AsEnumerable()  // Chuyển về bộ nhớ client
+                    .OrderByDescending(x => DateTime.ParseExact(x.PayrollPeriod, "MM-yyyy", CultureInfo.InvariantCulture))
+                    .Select(x => x.PayrollPeriod)
+                    .FirstOrDefault();
+
+                if (period != null)
+                {
+                    var maxSalaryRow = await _salary
+                        .Where(x => x.IsActive && x.PayrollPeriod == period)
+                        .OrderByDescending(x => x.SalaryPayment) // Sắp xếp giảm dần theo SalaryPayment
+                        .FirstOrDefaultAsync(); // Lấy bản ghi đầu tiên
+
+                    var minSalaryRow = await _salary
+                        .Where(x => x.IsActive && x.PayrollPeriod == period)
+                        .OrderBy(x => x.SalaryPayment) // Sắp xếp tăng dần theo SalaryPayment
+                        .FirstOrDefaultAsync();
+
+                    var maxUser = maxSalaryRow != null
+                        ? (await _userManager.FindByIdAsync(maxSalaryRow.UserId))?.FullName
+                        : "Dữ liệu không tồn tại";
+
+                    var minUser = minSalaryRow != null
+                        ? (await _userManager.FindByIdAsync(minSalaryRow.UserId))?.FullName
+                        : "Dữ liệu không tồn tại";
+
+                    var max = maxSalaryRow != null ? maxSalaryRow.SalaryPayment : 0;
+                    var min = minSalaryRow != null ? minSalaryRow.SalaryPayment : 0;
+
+                    result.Data = new
+                    {
+                        maxUser = maxUser,
+                        max = max,
+                        minUser = minUser,
+                        min = min
+                    };
+                }
+                else
+                {
+                    throw new NotFoundException(MsgConstants.WarningMessages.NotFoundData);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new BadRequestException(Utilities.MakeExceptionMessage(ex));
+            }
+            return result;
+        }
+        public async Task<ResponseResult> GetDisplayInfo()
+        {
+            var result = new ResponseResult();
+            try
+            {
+
+                var period = _salary
+                    .AsEnumerable()  // Chuyển về bộ nhớ client
+                    .OrderByDescending(x => DateTime.ParseExact(x.PayrollPeriod, "MM-yyyy", CultureInfo.InvariantCulture))
+                    .Select(x => x.PayrollPeriod)
+                    .FirstOrDefault();
+
+                if (period != null)
+                {
+                    var year = Convert.ToInt32(period.Substring(3, 4));
+                    var month = Convert.ToInt32(period.Substring(0, 2));
+                    if(month == 1)
+                    {
+                        month = 12;
+                        year--;
+                    }
+                    else { month--; }
+                    var bPeriod = $"{month}-{year}";
+
+                    var grossTotal = await _salary.Where(x => x.IsActive && x.PayrollPeriod == period).Select(x => x.SalaryPayment).SumAsync();
+                    var netTotal = await _salary.Where(x => x.IsActive && x.PayrollPeriod == period).Select(x => x.TotalSalary).SumAsync();
+                    var basicTotal = await _salary.Where(x => x.IsActive && x.PayrollPeriod == period).Select(x => x.ProRatedSalary).SumAsync();
+
+                    var userCount = await _salary.Where(x => x.IsActive && x.PayrollPeriod == period).CountAsync();
+
+                    var grossProgress = Math.Round((netTotal / grossTotal) * 100, 2);
+                    var netProgress = Math.Round((netTotal / userCount) / netTotal *100 , 2);
+                    var netPerPerson = Math.Round(netTotal / userCount, 2);
+                    var basicProgress = Math.Round((basicTotal / userCount) / basicTotal * 100, 2);
+                    var basicPerPerson = Math.Round(basicTotal / userCount, 2);
+
+                    bool bPeriodExists = await _salary.AnyAsync(x => x.IsActive && x.PayrollPeriod == bPeriod);
+
+                    float? grossPercent = 0, netPercent = 0, basicPercent = 0;
+                    if (bPeriodExists)
+                    {
+                        var bGross = await _salary.Where(x => x.IsActive && x.PayrollPeriod == bPeriod).Select(x => x.SalaryPayment).SumAsync();
+                        var bNet = await _salary.Where(x => x.IsActive && x.PayrollPeriod == bPeriod).Select(x => x.TotalSalary).SumAsync();
+                        var bBasic = await _salary.Where(x => x.IsActive && x.PayrollPeriod == bPeriod).Select(x => x.ProRatedSalary).SumAsync();
+
+                        grossPercent = bGross != 0 ? (float)(((grossTotal - bGross) / bGross) * 100) : null ;
+                        netPercent = bNet !=0 ? (float)(((netTotal - bNet) / bNet) * 100) : null;
+                        basicPercent = bBasic != 0 ? (float)(((basicTotal - bBasic) / bBasic) * 100) : null;
+                    }
+
+                    result.Data = new
+                    {
+                        grossTotal = grossTotal,
+                        grossPercent = grossPercent,
+                        grossProgress = grossProgress,
+                        netTotal = netTotal,
+                        netPercent = netPercent,
+                        netProgress = netProgress,
+                        netPerPerson = netPerPerson,
+                        basicTotal = basicTotal,
+                        basicPercent = basicPercent,
+                        basicProgress = basicProgress,
+                        basicPerPerson = basicPerPerson
+                    };
+                }
+                else
+                {
+                    throw new NotFoundException(MsgConstants.WarningMessages.NotFoundData);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new BadRequestException(Utilities.MakeExceptionMessage(ex));
+            }
+            return result;
+        }
+        public async Task<ResponseResult> GetPayrollOfDepartmentOvertime(int year)
+        {
+            var result = new ResponseResult();
+            try
+            {
+                var departmentList = await _dbContext.Department.Where(x => x.IsActive).ToListAsync();
+                var salaryByDepartment = new Dictionary<string, List<KeyValuePair<string, decimal>>>();
+
+                foreach (var department in departmentList)
+                {
+                    var departmentName = department.Name;
+                    var departmentId = department.Id;
+
+                    var totalSalariesByPeriod = await (from salary in _dbContext.Salary
+                                                       join user in _dbContext.AspNetUsers on salary.UserId equals user.Id
+                                                       where user.DepartmentId == departmentId
+                                                             && salary.PayrollPeriod.Contains(year.ToString())
+                                                             && salary.IsActive == true
+                                                       group salary by salary.PayrollPeriod into grouped
+                                                       select new
+                                                       {
+                                                           PayrollPeriod = grouped.Key,
+                                                           TotalSalary = grouped.Sum(s => (decimal?)s.SalaryPayment) ?? 0m
+                                                       }).ToListAsync();
+
+                    if (!totalSalariesByPeriod.Any())
+                    {
+                        salaryByDepartment[departmentName] = new List<KeyValuePair<string, decimal>>
+                            {
+                                new KeyValuePair<string, decimal>("No Data", 0m)
+                            };
+                    }
+                    else
+                    {
+                        salaryByDepartment[departmentName] = totalSalariesByPeriod
+                            .Select(x => new KeyValuePair<string, decimal>(x.PayrollPeriod, x.TotalSalary))
+                            .ToList();
+                    }
+
+                    result.Data = salaryByDepartment;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new BadRequestException(Utilities.MakeExceptionMessage(ex));
+            }
+            return result;
+        }
+        public async Task<ResponseResult> GetPayrollReport(int year)
+        {
+            var result = new ResponseResult();
+            try
+            {
+                var totalInsurance = await (from salary in _salary
+                                            join insUser in _dbContext.InsuranceUser on salary.UserId equals insUser.UserId
+                                            where salary.IsActive && salary.PayrollPeriod.Contains(year.ToString())
+                                            group salary by salary.PayrollPeriod into grouped
+                                            select new
+                                            {
+                                                PayrollPeriod = grouped.Key,
+                                                TotalSalary = grouped.Sum(s => (decimal?)s.SalaryPayment) ?? 0m
+                                            })
+                                            .OrderBy(x => x.PayrollPeriod).ToListAsync();
+                var PITaxByPayroll = await _salary
+                    .Where(x => x.IsActive && x.PayrollPeriod.Contains(year.ToString()))
+                    .GroupBy(x => x.PayrollPeriod)
+                    .Select(group => new
+                    {
+                        PayrollPeriod = group.Key,
+                        TotalPITax = group.Sum(salary => salary.PITax)
+                    })
+                    .ToListAsync();
+
+                var netTotal = await _salary
+                    .Where(x => x.IsActive && x.PayrollPeriod.Contains(year.ToString()))
+                    .GroupBy(x => x.PayrollPeriod)
+                    .Select(group => new
+                    {
+                        PayrollPeriod = group.Key,
+                        TotalPITax = group.Sum(salary => salary.TotalSalary)
+                    })
+                    .ToListAsync();
+
+                var grossTotal = await _salary
+                    .Where(x => x.IsActive && x.PayrollPeriod.Contains(year.ToString()))
+                    .GroupBy(x => x.PayrollPeriod)
+                    .Select(group => new
+                    {
+                        PayrollPeriod = group.Key,
+                        TotalPITax = group.Sum(salary => salary.SalaryPayment)
+                    })
+                    .ToListAsync();
+
+                result.Data = new
+                {
+                    insurance = totalInsurance,
+                    PITax = PITaxByPayroll,
+                    net = netTotal,
+                    gross = grossTotal
+                };
+            }
+            catch (Exception ex)
+            {
+                throw new BadRequestException(Utilities.MakeExceptionMessage(ex));
+            }
+            return result;
+        }
+        public async Task<ResponseResult> GetUnpaidSalary(int year)
+        {
+            var result = new ResponseResult();
+            try
+            {
+                var unpaidList = await _salary.Where(x => x.IsActive && x.IsPaid == false).ToListAsync();
+
+            }
+            catch (Exception ex)
+            {
+                throw new BadRequestException(Utilities.MakeExceptionMessage(ex));
+            }
             return result;
         }
     }

@@ -47,8 +47,7 @@ namespace OA.WebAPI.Controllers
         }
 
         [HttpPost]
-        [Authorize]
-        public async Task<IActionResult> RequestPasswordReset([FromBody] string email)
+        public async Task<IActionResult> RequestPasswordReset([FromBody] RequestResetPassword model)
         {
             if (!ModelState.IsValid)
             {
@@ -56,13 +55,12 @@ namespace OA.WebAPI.Controllers
             }
             else
             {
-                await _userService.RequestPasswordReset(email);
+                await _userService.RequestPasswordReset(model);
             }
             return NoContent();
         }
 
         [HttpPost]
-        [Authorize]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordModel model)
         {
             if (!ModelState.IsValid)

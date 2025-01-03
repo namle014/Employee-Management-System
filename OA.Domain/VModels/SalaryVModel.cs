@@ -18,12 +18,12 @@ namespace OA.Core.VModels
         public string Id { get; set; } = string.Empty;
         public string FullName { get; set; } = string.Empty;
         public decimal Benefit {  get; set; }
-        public decimal Discipline { get; set; }
+        public decimal? Discipline { get; set; }
         public decimal BasicSalary { get; set; }
         public decimal Insurance { get; set; }
-        public decimal Reward { get; set; }
+        public decimal? Reward { get; set; }
         public decimal PITax { get; set; }
-        public int Timekeeping { get; set; }
+        public double? Timekeeping { get; set; }
         public bool IsActive { get; set; }
         public bool? Ispaid { get; set; }
         public string PayrollPeriod { get; set; } = string.Empty;

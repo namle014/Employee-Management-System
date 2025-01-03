@@ -142,22 +142,22 @@ namespace OA.Service
         {
             var result = new ResponseResult();
             try
-            {    
-                var users = await _userManager.Users.ToListAsync();          
+            {
+                var users = await _userManager.Users.ToListAsync();
                 var roleCounts = new Dictionary<string, int>();
                 foreach (var user in users)
                 {
                     var roles = await _userManager.GetRolesAsync(user);
                     foreach (var role in roles)
                     {
-                    
+
                         if (roleCounts.ContainsKey(role))
                         {
                             roleCounts[role]++;
                         }
                         else
                         {
-                          
+
                             roleCounts[role] = 1;
                         }
                     }
@@ -180,12 +180,13 @@ namespace OA.Service
         {
             var result = new ResponseResult();
             try
-            {      
+            {
                 var users = await _userManager.Users.ToListAsync();
-             
+
                 var departmentCounts = new Dictionary<string, int>();
 
-                foreach (var user in users)                {
+                foreach (var user in users)
+                {
 
                     var department = user.DepartmentId.HasValue
                         ? (await _departmentService.GetById(user.DepartmentId.Value))?.Name
@@ -198,8 +199,8 @@ namespace OA.Service
                     {
                         departmentCounts[department] = 1;
                     }
-                }               
-                var departmentCountList = departmentCounts.Select(department => new { Department = department.Key, Count = department.Value }).ToList();              
+                }
+                var departmentCountList = departmentCounts.Select(department => new { Department = department.Key, Count = department.Value }).ToList();
                 result.Data = departmentCountList;
             }
             catch (Exception ex)
@@ -215,15 +216,15 @@ namespace OA.Service
             var result = new ResponseResult();
             try
             {
-              
+
                 var users = await _userManager.Users.ToListAsync();
 
-              
+
                 int lessThan32 = 0;
                 int between32And45 = 0;
                 int greaterThan45 = 0;
 
-              
+
                 foreach (var user in users)
                 {
                     if (user.Birthday.HasValue)
@@ -231,13 +232,13 @@ namespace OA.Service
                         var birthDate = user.Birthday.Value;
                         var age = DateTime.Now.Year - birthDate.Year;
 
-                        
+
                         if (DateTime.Now.DayOfYear < birthDate.DayOfYear)
                         {
                             age--;
                         }
 
-                      
+
                         if (age < 32)
                         {
                             lessThan32++;
@@ -253,22 +254,22 @@ namespace OA.Service
                     }
                 }
 
-             
+
                 int totalEmployees = lessThan32 + between32And45 + greaterThan45;
 
-             
+
                 var lessThan32Percentage = totalEmployees == 0 ? 0 : ((double)lessThan32 / totalEmployees) * 100;
                 var between32And45Percentage = totalEmployees == 0 ? 0 : ((double)between32And45 / totalEmployees) * 100;
                 var greaterThan45Percentage = totalEmployees == 0 ? 0 : ((double)greaterThan45 / totalEmployees) * 100;
 
-                
+
                 var totalPercentage = lessThan32Percentage + between32And45Percentage + greaterThan45Percentage;
                 if (totalPercentage < 100)
                 {
                     greaterThan45Percentage += (100 - totalPercentage);
                 }
 
-              
+
                 result.Data = new
                 {
                     LessThan32 = lessThan32,
@@ -364,9 +365,9 @@ namespace OA.Service
             entity.CreatedBy = GlobalUserName;
 
 
-            var maxId = await _dbContext.AspNetUsers.Where(x => x.EmployeeId != null).MaxAsync(x =>x.EmployeeId) ?? "CC-000";
-            string lastThreeChars = maxId.Substring(maxId.Length - 3);  
-            int numberPart = int.Parse(lastThreeChars)+1;
+            var maxId = await _dbContext.AspNetUsers.Where(x => x.EmployeeId != null).MaxAsync(x => x.EmployeeId) ?? "CC-000";
+            string lastThreeChars = maxId.Substring(maxId.Length - 3);
+            int numberPart = int.Parse(lastThreeChars) + 1;
             entity.EmployeeId = $"CC-{numberPart:D3}";
             if (entity.AvatarFileId != null)
             {
@@ -640,9 +641,9 @@ namespace OA.Service
             return true;
         }
 
-        public async Task RequestPasswordReset([FromBody] string emailUser)
+        public async Task RequestPasswordReset(RequestResetPassword model)
         {
-            var user = await _userManager.FindByEmailAsync(emailUser);
+            var user = await _userManager.FindByEmailAsync(model.Email);
 
             if (user == null)
             {
@@ -664,19 +665,33 @@ namespace OA.Service
             var fromPassWord = configInfo.SendMailAccountPassword;
             var sendMailTitle = "Request password reset!";
 
-            var sendMailBody = $"Enter link {token}";
+            // Generate the URL with token as a query parameter
+            var resetLink = $"http://localhost:3000/update-password?token={Uri.EscapeDataString(token)}";
+            var sendMailBody = $@"
+    <p>Hello,</p>
+    <p>We received a request to reset your password. Please click the link below to proceed:</p>
+    <a href=""{resetLink}"" style=""color: #007bff; text-decoration: none; font-weight: bold;"">Reset Your Password</a>
+    <p>If you didn’t request this, please ignore this email.</p>
+    <p>Thanks,<br/>The Team NPM</p>";
 
-            await _authMessageSender.SendMailAsync(fromEmail ?? string.Empty, fromPassWord ?? string.Empty, emailUser, sendMailTitle, sendMailBody);
+            await _authMessageSender.SendMailAsync(fromEmail ?? string.Empty, fromPassWord ?? string.Empty, model.Email, sendMailTitle, sendMailBody);
         }
+
 
         public async Task ResetPassword(ResetPasswordModel model)
         {
             var result = new ResponseResult();
+
             var user = await _userManager.FindByEmailAsync(model.Email);
 
             if (user == null)
             {
                 throw new BadRequestException(string.Format(MsgConstants.WarningMessages.NotFound, _nameService));
+            }
+
+            if (model.Password != model.NewPassword)
+            {
+                throw new BadRequestException("Password have to equal new Password");
             }
 
             var confirmed = ConfirmAccount(new ConfirmAccount() { Code = model.Token, UserId = user.Id });

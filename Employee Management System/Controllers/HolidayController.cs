@@ -18,7 +18,7 @@ namespace OA.WebApi.Controllers
             _logger = logger;
         }
         [HttpGet]
-        public async Task<IActionResult> GetAll([FromQuery] HolidayFilterVModel model)
+        public async Task<IActionResult> GetAll([FromQuery] EventFilterVModel model)
         {
             var response = await _holidayService.GetAll(model);
             return Ok(response);
@@ -38,7 +38,7 @@ namespace OA.WebApi.Controllers
             return Ok(response);
         }
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] HolidayCreateVModel model)
+        public async Task<IActionResult> Create([FromBody] EventCreateVModel model)
         {
             if (!ModelState.IsValid)
             {
@@ -48,7 +48,7 @@ namespace OA.WebApi.Controllers
             return Created();
         }
         [HttpPut]
-        public async Task<IActionResult> Update([FromBody] HolidayUpdateVModel model)
+        public async Task<IActionResult> Update([FromBody] EventUpdateVModel model)
         {
             if (!ModelState.IsValid || (model as dynamic)?.Id <= 0)
             {

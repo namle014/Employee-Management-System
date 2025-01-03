@@ -11,6 +11,8 @@ namespace OA.Core.VModels
         public decimal Money { get; set; }
         public string? Note { get; set; }
         public bool IsActive { get; set; }
+        public bool IsPenalized { get; set; } = false;
+
 
     }
 
@@ -21,6 +23,8 @@ namespace OA.Core.VModels
 
     public class DisciplineGetAllVModel : DisciplineUpdateVModel
     {
+        public string FullName { get; set; } = string.Empty;
+        public string? Department { get; set; }
         public DateTime? CreatedDate { get; set; }
         public string? CreatedBy { get; set; } = string.Empty;
         public DateTime? UpdatedDate { get; set; }

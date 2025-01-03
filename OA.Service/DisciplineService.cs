@@ -1,9 +1,11 @@
 ﻿using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 using OA.Core.Constants;
 using OA.Core.Models;
 using OA.Core.Repositories;
 using OA.Core.VModels;
 using OA.Domain.Services;
+using OA.Infrastructure.EF.Context;
 using OA.Infrastructure.EF.Entities;
 using OA.Service.Helpers;
 //using Twilio.TwiML.Voice;
@@ -14,9 +16,13 @@ namespace OA.Service
     {
         private readonly IBaseRepository<Discipline> _disciplineRepo;
         private readonly IMapper _mapper;
+        private readonly ApplicationDbContext _dbContext;
 
-        public DisciplineService(IBaseRepository<Discipline> disciplineRepo, IMapper mapper) : base(disciplineRepo, mapper)
+
+        public DisciplineService(ApplicationDbContext dbContext, IBaseRepository<Discipline> disciplineRepo, IMapper mapper) : base(disciplineRepo, mapper)
         {
+            _dbContext = dbContext ?? throw new ArgumentNullException("context");
+
             _disciplineRepo = disciplineRepo;
             _mapper = mapper;
         }
@@ -62,6 +68,13 @@ namespace OA.Service
                 foreach (var entity in records)
                 {
                     var vmodel = _mapper.Map<DisciplineGetAllVModel>(entity);
+                    var userId = entity.UserId;
+                    var usertable = await _dbContext.AspNetUsers
+                    .Where(x => x.Id == userId).ToListAsync();
+                    vmodel.FullName = usertable[0].FullName;
+                    int? departmentId = usertable[0].DepartmentId;
+                    var departmentName = await _dbContext.Department.Where(x => x.Id == departmentId).Select(x => x.Name).FirstOrDefaultAsync();
+                    vmodel.Department = departmentName;
                     list.Add(vmodel);
                 }
                 var pagedRecords = list.Skip((model.PageNumber - 1) * model.PageSize).Take(model.PageSize).ToList();

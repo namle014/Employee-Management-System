@@ -48,6 +48,8 @@ namespace OA.Service
                                     (x.CreatedBy != null && x.CreatedBy.ToLower().Contains(keyword)) ||
                                     (x.UpdatedBy != null && x.UpdatedBy.ToLower().Contains(keyword))));
 
+            records = records.OrderBy(x => x.Id);
+
             if (!model.IsDescending)
             {
                 records = string.IsNullOrEmpty(model.SortBy)

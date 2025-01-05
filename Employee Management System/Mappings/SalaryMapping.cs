@@ -18,6 +18,7 @@ namespace OA.WebAPI.Mappings
             CreateMap<Salary, SalaryGetByIdVModel>();
             //Export
             CreateMap<Salary, SalaryExportVModel>();
+            CreateMap<Salary, UnPaidSalaryVModel>();
         }
     }
 }

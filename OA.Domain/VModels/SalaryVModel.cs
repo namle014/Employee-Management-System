@@ -28,9 +28,45 @@ namespace OA.Core.VModels
         public bool? Ispaid { get; set; }
         public string PayrollPeriod { get; set; } = string.Empty;
     }
-    public class SalaryGetByIdVModel : SalaryGetAllVModel
+
+    public class UnPaidSalaryVModel : SalaryGetAllVModel
     {
-        
+        public int? AvatarFileId { get; set; }
+    }
+
+    public class MyInfo
+    {
+        public int? AvatarFileId { get; set; }
+        public string FullName { get; set; } = string.Empty;
+        public string RoleName { get; set; } = string.Empty;
+        public string DepartmentName { get; set; } = string.Empty;
+        public string? PhoneNumber { get; set; }
+        public string Email { get; set; } = string.Empty;
+        public string Address { get; set; } = string.Empty;
+        public DateTime StartDateWork { get; set; }
+        public int? PayrollCycle { get; set; }
+    }
+    public class SalaryGetByIdVModel
+    {
+        public int? AvatarFileId { get; set; }
+        public string FullName { get; set; } = string.Empty;
+        public string Id { get; set; } = string.Empty;
+        public bool IsActive { get; set; }
+        public string UserId { get; set; } = string.Empty;
+
+        public DateTime Date { get; set; }
+
+        public decimal TotalSalary { get; set; }
+        public decimal SalaryPayment { get; set; }
+        public bool? IsPaid { get; set; }
+        public string PayrollPeriod { get; set; } = string.Empty;
+        public decimal ProRatedSalary { get; set; }
+        public decimal PITax { get; set; }
+        public decimal TotalInsurance { get; set; }
+        public decimal TotalBenefit { get; set; }
+        public decimal? TotalReward { get; set; }
+        public decimal? TotalDiscipline { get; set; }
+        public double? NumberOfWorkingHours { get; set; }
     }
     public class SalaryExportVModel
     {

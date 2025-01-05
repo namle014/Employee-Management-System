@@ -35,5 +35,11 @@ namespace OA.WebApi.Controllers
             await _messageService.Create(model);
             return Created();
         }
+        [HttpGet]
+        public async Task<IActionResult> GetMeMessage()
+        {
+            var response = await _messageService.GetMeMessage();
+            return Ok(response);
+        }
     }
 }

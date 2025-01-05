@@ -38,6 +38,7 @@ namespace OA.Service
         {
             var entity = _mapper.Map<MessageCreateVModel,Message>(model);
             entity.CreatedAt = DateTime.Now;
+            entity.UserId = model.UserId;
             
             _message.Add(entity);
             bool success = await _dbContext.SaveChangesAsync() > 0;
@@ -60,6 +61,20 @@ namespace OA.Service
             }
             return result;
         }
-  
+        public async Task<ResponseResult> GetMeMessage()
+        {
+            var result = new ResponseResult();
+            try
+            {
+                var user = GlobalUserId == null ? string.Empty : GlobalUserId;
+                var messageList = await _message.Where(x => x.UserId == user).ToListAsync();
+                result.Data = messageList;
+            }
+            catch (Exception ex)
+            {
+                throw new BadRequestException(Utilities.MakeExceptionMessage(ex));
+            }
+            return result;
+        }
     }
 }

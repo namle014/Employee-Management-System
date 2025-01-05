@@ -241,5 +241,16 @@ namespace OA.WebApi.Controllers
             var response = await _salaryService.GetPayrollReport(year);
             return Ok(response);
         }
+
+        [HttpGet]
+        public async Task<IActionResult> GetUnpaidSalary([FromQuery] SalaryFilterVModel model, int year)
+        {
+            if (year < 1)
+            {
+                return new BadRequestObjectResult(string.Format(MsgConstants.Error404Messages.FieldIsInvalid, "year"));
+            }
+            var response = await _salaryService.GetUnpaidSalary(model, year);
+            return Ok(response);
+        }
     }
 }

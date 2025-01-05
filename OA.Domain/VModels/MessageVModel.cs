@@ -11,6 +11,7 @@ namespace OA.Core.VModels
     {
         public string Content { get; set; } = string.Empty;
         public bool Type { get; set; }
+        public string UserId { get; set; } = string.Empty ;
     }
     public class MessageGetAllVModel : MessageCreateVModel
     {

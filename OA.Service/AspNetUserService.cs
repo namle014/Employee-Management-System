@@ -224,6 +224,12 @@ namespace OA.Service
                 int between32And45 = 0;
                 int greaterThan45 = 0;
 
+                int between0And18 = 0;
+                int between19And35 = 0;
+                int between36And50 = 0;
+                int between51And65 = 0;
+                int greaterThan65 = 0;
+
 
                 foreach (var user in users)
                 {
@@ -251,6 +257,29 @@ namespace OA.Service
                         {
                             greaterThan45++;
                         }
+
+
+                        if (age >= 0 && age <= 18)
+                        {
+                            between0And18++;
+                        }
+                        else if (age >= 19 && age <= 35)
+                        {
+                            between19And35++;
+                        }
+                        else if (age >= 36 && age <= 50)
+                        {
+                            between36And50++;
+                        }
+                        else if (age >= 51 && age <= 65)
+                        {
+                            between51And65++;
+                        }
+                        else if (age > 65)
+                        {
+                            greaterThan65++;
+                        }
+
                     }
                 }
 
@@ -261,6 +290,14 @@ namespace OA.Service
                 var lessThan32Percentage = totalEmployees == 0 ? 0 : ((double)lessThan32 / totalEmployees) * 100;
                 var between32And45Percentage = totalEmployees == 0 ? 0 : ((double)between32And45 / totalEmployees) * 100;
                 var greaterThan45Percentage = totalEmployees == 0 ? 0 : ((double)greaterThan45 / totalEmployees) * 100;
+
+
+                int newTotal = between0And18 + between19And35 + between36And50 + between51And65 + greaterThan65;
+                var between0And18Percentage = newTotal == 0 ? 0 : ((double)between0And18 / newTotal) * 100;
+                var between19And35Percentage = newTotal == 0 ? 0 : ((double)between19And35 / newTotal) * 100;
+                var between36And50Percentage = newTotal == 0 ? 0 : ((double)between36And50 / newTotal) * 100;
+                var between51And65Percentage = newTotal == 0 ? 0 : ((double)between51And65 / newTotal) * 100;
+                var greaterThan65Percentage = newTotal == 0 ? 0 : ((double)greaterThan65 / newTotal) * 100;
 
 
                 var totalPercentage = lessThan32Percentage + between32And45Percentage + greaterThan45Percentage;
@@ -277,7 +314,18 @@ namespace OA.Service
                     GreaterThan45 = greaterThan45,
                     LessThan32Percentage = lessThan32Percentage,
                     Between32And45Percentage = between32And45Percentage,
-                    GreaterThan45Percentage = greaterThan45Percentage
+                    GreaterThan45Percentage = greaterThan45Percentage,
+
+                    Between0And18 = between0And18,
+                    Between19And35 = between19And35,
+                    Between36And50 = between36And50,
+                    Between51And65 = between51And65,
+                    GreaterThan65 = greaterThan65,
+                    Between0And18Percentage = between0And18Percentage,
+                    Between19And35Percentage = between19And35Percentage,
+                    Between36And50Percentage = between36And50Percentage,
+                    Between51And65Percentage = between51And65Percentage,
+                    GreaterThan65Percentage = greaterThan65Percentage
                 };
             }
             catch (Exception ex)
@@ -286,6 +334,58 @@ namespace OA.Service
             }
             return result;
         }
+
+        public async Task<ResponseResult> GetEmployeeCountByGender()
+        {
+            var result = new ResponseResult();
+            try
+            {
+                var users = await _userManager.Users.ToListAsync();
+                int maleCount = 0;
+                int femaleCount = 0;
+                int otherGenderCount = 0;
+
+                foreach (var user in users)
+                {
+                    if (user.Gender.HasValue)
+                    {
+                        if (user.Gender.Value)
+                        {
+                            maleCount++;
+                        }
+                        else
+                        {
+                            femaleCount++;
+                        }
+                    }
+                    else
+                    {
+                        otherGenderCount++;
+                    }
+                }
+
+                int totalEmployees = maleCount + femaleCount + otherGenderCount;
+                var malePercentage = totalEmployees == 0 ? 0 : ((double)maleCount / totalEmployees) * 100;
+                var femalePercentage = totalEmployees == 0 ? 0 : ((double)femaleCount / totalEmployees) * 100;
+                var otherGenderPercentage = totalEmployees == 0 ? 0 : ((double)otherGenderCount / totalEmployees) * 100;
+
+                result.Data = new
+                {
+                    Male = maleCount,
+                    Female = femaleCount,
+                    Other = otherGenderCount,
+                    MalePercentage = malePercentage,
+                    FemalePercentage = femalePercentage,
+                    OtherPercentage = otherGenderPercentage
+                };
+            }
+            catch (Exception ex)
+            {
+                throw new BadRequestException(Utilities.MakeExceptionMessage(ex));
+            }
+            return result;
+        }
+
 
         public async Task<ResponseResult> GetById(string id)
         {

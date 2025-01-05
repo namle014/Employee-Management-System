@@ -66,6 +66,19 @@ namespace OA.WebApi.AdminControllers
             return NotFound(new { Message = "Không có dữ liệu" });
         }
 
+        [HttpGet]
+        public async Task<IActionResult> GetEmployeeCountByGender()
+        {
+            var result = await _userService.GetEmployeeCountByGender();
+            if (result.Data != null)
+            {
+                return Ok(result);
+            }
+
+            return NotFound(new { Message = "Không có dữ liệu" });
+        }
+
+
 
         [HttpGet]
         public async Task<IActionResult> GetById(string id)

@@ -14,20 +14,25 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using OA.Core.Repositories;
+using AngleSharp.Dom;
+using OA.Repository;
+using Microsoft.AspNetCore.Http;
 
 namespace OA.Service
 {
-    public class EmploymentContractService : IEmploymentContractService
+    public class EmploymentContractService : GlobalVariables, IEmploymentContractService
     {
         private readonly ApplicationDbContext _context; 
         private readonly IMapper _mapper;
         private readonly IBaseRepository<SysFile> _sysFileRepo;
+        private IHttpContextAccessor _contextAccessor;
 
-        public EmploymentContractService(ApplicationDbContext context, IMapper mapper, IBaseRepository<SysFile> sysFileRepo)
+        public EmploymentContractService(ApplicationDbContext context, IHttpContextAccessor contextAccessor, IMapper mapper, IBaseRepository<SysFile> sysFileRepo):base(contextAccessor)
         {
             _context = context;
             _mapper = mapper;
-            _sysFileRepo = sysFileRepo; 
+            _sysFileRepo = sysFileRepo;
+            _contextAccessor = contextAccessor;
         }
 
         public async Task<ResponseResult> Search(FilterEmploymentContractVModel model)
@@ -148,6 +153,52 @@ namespace OA.Service
             return result;
         }
 
+        public async Task<ResponseResult> GetEmployeesStatsByYears(int year)
+        {
+            var result = new ResponseResult();
+            try
+            {
+                var yearStats = new List<object>();
+
+                for (int month = 1; month <= 12; month++)
+                {
+                    var previousMonth = month == 1 ? 12 : month - 1;
+                    var previousYear = month == 1 ? year - 1 : year;
+                    var firstDayOfMonth = new DateTime(year, month, 1);
+                    var lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
+                    var firstDayOfPreviousMonth = new DateTime(previousYear, previousMonth, 1);
+                    var lastDayOfPreviousMonth = firstDayOfPreviousMonth.AddMonths(1).AddDays(-1);
+                    var contracts = await _context.EmploymentContract
+                        .Where(c => c.StartDate <= lastDayOfMonth && c.EndDate >= firstDayOfPreviousMonth).ToListAsync();
+
+                    var startCount = contracts.Count(c => c.StartDate.Year == year && c.StartDate.Month == month);
+                    var endCount = contracts.Count(c => c.EndDate.Year == year && c.EndDate.Month == month);
+                    var contractsInMonth = contracts.Count(c =>
+                        c.StartDate <= lastDayOfMonth && c.EndDate >= firstDayOfMonth);
+
+                    yearStats.Add(new
+                    {
+                        Month = month,
+                        StartCount = startCount,                    
+                        EndCount = endCount,                      
+                        ContractsInMonth = contractsInMonth,       
+                    });
+                }
+
+                result.Data = new
+                {
+                    Year = year,
+                    MonthlyStats = yearStats
+                };
+            }
+            catch (Exception ex)
+            {
+                throw new BadRequestException(Utilities.MakeExceptionMessage(ex));
+            }
+            return result;
+        }
+
+
 
         public async Task<ResponseResult> GetEmployeeStatsByMonthAndYear(int year, int month)
         {
@@ -184,7 +235,22 @@ namespace OA.Service
 
             var startPercentChange = previousStartCount == 0 ? (int?)null : ((startCount - previousStartCount) * 100) / previousStartCount;
             var endPercentChange = previousEndCount == 0 ? (int?)null : ((endCount - previousEndCount) * 100) / previousEndCount;
-                       
+
+
+            var createdContractsCount = contracts.Count(c =>
+            c.CreatedDate.HasValue &&
+            c.CreatedDate.Value.Year == year &&
+            c.CreatedDate.Value.Month == month);
+
+            var previousCreatedContractsCount = contracts.Count(c =>
+            c.CreatedDate.HasValue &&
+            c.CreatedDate.Value.Year == previousYear &&
+            c.CreatedDate.Value.Month == previousMonth);
+
+            var createdContractsPercentChange = previousCreatedContractsCount == 0
+            ? (int?)null
+            : ((createdContractsCount - previousCreatedContractsCount) * 100) / previousCreatedContractsCount;
+
             result.Data = new
             {
                 Year = year,
@@ -194,7 +260,9 @@ namespace OA.Service
                 EndCount = endCount,
                 EndPercentChange = endPercentChange,
                 ContractsInMonth = contractsInMonth,
-                ContractsInMonthPercentChange = contractsInMonthPercentChange 
+                ContractsInMonthPercentChange = contractsInMonthPercentChange,
+                CreatedContractsCount = createdContractsCount, 
+                CreatedContractsPercentChange = createdContractsPercentChange 
             };
 
             return result;
@@ -297,7 +365,9 @@ namespace OA.Service
             await _context.EmploymentContract.AddAsync(entityCreated);
             var maxId = await _context.EmploymentContract.MaxAsync(x => (string)x.Id) ?? "EC-000";
             int numberPart = int.Parse(maxId.Substring(3)) + 1; 
-            entityCreated.Id = $"EC-{numberPart:D3}"; 
+            entityCreated.Id = $"EC-{numberPart:D3}";
+            entityCreated.CreatedDate = DateTime.Now;
+            entityCreated.CreatedBy = GlobalUserName;
             var saveResult = await _context.SaveChangesAsync(); 
             if (saveResult <= 0)
             {

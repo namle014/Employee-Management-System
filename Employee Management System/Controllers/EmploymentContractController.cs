@@ -43,6 +43,18 @@ namespace OA.WebAPI.AdminControllers
             return Ok(response);
         }
 
+        [HttpGet]
+        public async Task<IActionResult> GetEmployeesStatsByYears([FromQuery] int year)
+        {
+            if (year <= 0)
+            {
+                return BadRequest("Year must be a valid value.");
+            }
+
+            var response = await _EmploymentContractService.GetEmployeesStatsByYears(year);
+            return Ok(response);
+        }
+
         [HttpGet("monthly-stats")]
         public async Task<IActionResult> GetEmployeeStatsByMonthAndYear([FromQuery] int year, [FromQuery] int month)
         {

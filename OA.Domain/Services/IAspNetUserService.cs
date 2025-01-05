@@ -9,6 +9,7 @@ namespace OA.Core.Services
         Task<ResponseResult> GetEmployeeCountByRole();
         Task<ResponseResult> GetEmployeeCountByDepartment();
         Task<ResponseResult> GetEmployeeCountByAge();
+        Task<ResponseResult> GetEmployeeCountByGender();
         Task RequestPasswordReset(RequestResetPassword model);
         Task ResetPassword(ResetPasswordModel model);
         Task<ResponseResult> GetById(string id);

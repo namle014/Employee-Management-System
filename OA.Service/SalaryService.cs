@@ -1,5 +1,6 @@
 ﻿using AngleSharp.Css;
 using Aspose.Pdf.AI;
+using Aspose.Pdf.Operators;
 using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -8,6 +9,7 @@ using OA.Core.Constants;
 using OA.Core.Models;
 using OA.Core.Services;
 using OA.Core.VModels;
+using OA.Domain.VModels;
 using OA.Infrastructure.EF.Context;
 using OA.Infrastructure.EF.Entities;
 using OA.Repository;
@@ -40,6 +42,16 @@ namespace OA.Service
 
         public async Task Create()
         {
+            var year = DateTime.Now.Year;
+            var month = DateTime.Now.Month;
+            var period = $"{month.ToString("D2")}-{year}";
+
+            bool periodExists = await _salary.AnyAsync(x => x.IsActive && x.PayrollPeriod == period);
+            if (periodExists)
+            {
+                throw new BadRequestException($"Payroll period {period} already exists.");
+            }
+
             var query = _userManager.Users.Where(x => x.IsActive);
             var userList = await query.ToListAsync();
             var idList = await _salary.Select(id => id.Id).ToListAsync();
@@ -51,14 +63,6 @@ namespace OA.Service
             })
             .OrderByDescending(x => x.numPart).Select(x => x.originalId).FirstOrDefault();
 
-            var insur = await (_dbContext.InsuranceUser.Where(x => x.Status == "Đã đóng")).ToListAsync();
-            foreach (var item in insur)
-            {
-                item.PaidInsuranceContribution = 0m;
-            }
-            _dbContext.InsuranceUser.UpdateRange(insur);  
-            await _dbContext.SaveChangesAsync();
-
             int currentMaxNumber = 1;
             if (highestId != null && highestId.Length > 2 && highestId.StartsWith("BL"))
             {
@@ -66,8 +70,6 @@ namespace OA.Service
             }
 
             var salaryList = new List<Salary>();
-            var year = DateTime.Now.Year;
-            var month = DateTime.Now.Month;
             var morningTimeConfig = _dbContext.SysConfigurations.FirstOrDefault(x => x.Key == "MORNING_TIME")?.Value;
             var lunchBreakConfig = _dbContext.SysConfigurations.FirstOrDefault(x => x.Key == "LUNCH_BREAK")?.Value;
             var afternoonTimeConfig = _dbContext.SysConfigurations.FirstOrDefault(x => x.Key == "AFTERNOON_TIME")?.Value;
@@ -123,7 +125,7 @@ namespace OA.Service
 
                 var insuranceList = await (from insuranceUser in _dbContext.InsuranceUser
                                      join insurance in _dbContext.Insurance on insuranceUser.InsuranceId equals insurance.Id
-                                     where (insuranceUser.UserId == userId && insurance.IsActive && insuranceUser.Status != "Đã đóng")
+                                     where (insuranceUser.UserId == userId && insurance.IsActive && insuranceUser.Status != 2)
                                      select insuranceUser).ToListAsync();
 
                 var bhtn = Convert.ToDouble(_dbContext.SysConfigurations.FirstOrDefault(x => x.Key == "MD_BHTN")?.Value);
@@ -134,14 +136,14 @@ namespace OA.Service
                 foreach (var ins in insuranceList)
                 {
                     var rate = ins.EmployeeContributionRate;
-                    var status = (ins.InsuranceId == "BHYT") ? "Đã đóng" : "Đang đóng";
+                    var status = (ins.InsuranceId == "BHYT") ? 2 : 1;
                     var maxSalary = (ins.InsuranceId == "BHTN") ? maxBasicSalary : maxBaseSalary;
                     var PaidInsuranceContribution = Math.Min(dailyWage, maxSalary) * (double)rate;
 
                     var eIns = await _dbContext.InsuranceUser.FirstOrDefaultAsync(x => x.InsuranceId == ins.InsuranceId);
                     if (eIns != null)
                     {
-                        eIns.PaidInsuranceContribution = (decimal)PaidInsuranceContribution;
+                        
                         eIns.Status = status;
                     }
 
@@ -172,7 +174,7 @@ namespace OA.Service
                 entity.CreatedDate = DateTime.Now;
                 entity.CreatedBy = GlobalUserName;
                 entity.IsActive = true;
-                entity.PayrollPeriod = $"{month.ToString("D2")}-{year}";
+                entity.PayrollPeriod = period;
                 entity.Id = $"BL{currentMaxNumber.ToString("D4")}";
                 entity.IsPaid = false;
                 entity.TotalSalary = (decimal)dailyWage + totalReward - totalDiscipline + totalBenefit - (decimal)totalInsurance - (decimal)PITax;
@@ -230,7 +232,7 @@ namespace OA.Service
         }
         public async Task<ResponseResult> GetAll(SalaryFilterVModel model, string period)
         {
-                var result = new ResponseResult();
+            var result = new ResponseResult();
             var query = _salary.AsQueryable();
             var salaryList = await query.Where(x => x.IsActive && x.PayrollPeriod == period).ToListAsync();
             var salaryGrouped = salaryList.GroupBy(x => x.UserId);
@@ -312,7 +314,11 @@ namespace OA.Service
                     throw new NotFoundException(MsgConstants.WarningMessages.NotFoundData);
                 }
 
-                result.Data = entity;
+                var salary = _mapper.Map<Salary, SalaryGetByIdVModel>(entity);
+                var user = await _userManager.FindByIdAsync(salary.UserId);
+                salary.FullName = user != null ? (user.FullName != null ? user.FullName : string.Empty) : string.Empty;
+                salary.AvatarFileId = user != null ? user.AvatarFileId : null;
+                result.Data = salary;
             }
             catch (Exception ex)
             {
@@ -680,9 +686,9 @@ namespace OA.Service
                     }
                     result.Data = new
                     {
-                        total = total / 1000000m,
-                        PITax = pitax / 1000000m,
-                        totalInsurance = totalInsurance / 1000000m,
+                        total = Math.Round(total / 1000000m, 2),
+                        PITax = Math.Round(pitax / 1000000m, 2),
+                        totalInsurance = Math.Round(totalInsurance / 1000000m, 2),
                     };
                 }
                 else
@@ -769,10 +775,10 @@ namespace OA.Service
                     var total = baseSalary + empReward + PITax + birthday;
                     result.Data = new
                     {
-                        baseSalary = Math.Round(baseSalary / total * 100, 2),
-                        reward = Math.Round(empReward / total * 100, 2),
-                        PITax = Math.Round(PITax / total * 100, 2),
-                        birthday = Math.Round(birthday / total * 100, 2)
+                        baseSalary = total != 0m ? Math.Round(baseSalary / total * 100, 2) : 0,
+                        reward = total != 0m ? Math.Round(empReward / total * 100, 2) : 0,
+                        PITax = total != 0m ? Math.Round(PITax / total * 100, 2) : 0,
+                        birthday = total != 0m ? Math.Round(birthday / total * 100, 2) : 0
                     };
                 }
                 else
@@ -1027,20 +1033,21 @@ namespace OA.Service
 
                     var userCount = await _salary.Where(x => x.IsActive && x.PayrollPeriod == period).CountAsync();
 
-                    var grossProgress = Math.Round((netTotal / grossTotal) * 100, 2);
-                    var netProgress = Math.Round((netTotal / userCount) / netTotal *100 , 2);
-                    var netPerPerson = Math.Round(netTotal / userCount, 2);
-                    var basicProgress = Math.Round((basicTotal / userCount) / basicTotal * 100, 2);
-                    var basicPerPerson = Math.Round(basicTotal / userCount, 2);
+                    var grossProgress = grossTotal > 0m ? (decimal?)Math.Round((netTotal / grossTotal) * 100, 2) : null;
+                    var netProgress = netTotal > 0m && userCount > 0 ? (decimal?)Math.Round((netTotal / userCount) / netTotal *100 , 2) : null;
+                    var netPerPerson = userCount > 0 ? (decimal?)Math.Round(netTotal / userCount, 2) : null;
+                    var basicProgress = userCount > 0 && basicTotal > 0 ? (decimal?)Math.Round((basicTotal / userCount) / basicTotal * 100, 2) : null;
+                    var basicPerPerson = userCount > 0 ? (decimal?)Math.Round(basicTotal / userCount, 2) : null;
 
                     bool bPeriodExists = await _salary.AnyAsync(x => x.IsActive && x.PayrollPeriod == bPeriod);
 
                     float? grossPercent = 0, netPercent = 0, basicPercent = 0;
+                    decimal bGross = 0, bNet = 0, bBasic = 0;
                     if (bPeriodExists)
                     {
-                        var bGross = await _salary.Where(x => x.IsActive && x.PayrollPeriod == bPeriod).Select(x => x.SalaryPayment).SumAsync();
-                        var bNet = await _salary.Where(x => x.IsActive && x.PayrollPeriod == bPeriod).Select(x => x.TotalSalary).SumAsync();
-                        var bBasic = await _salary.Where(x => x.IsActive && x.PayrollPeriod == bPeriod).Select(x => x.ProRatedSalary).SumAsync();
+                         bGross = await _salary.Where(x => x.IsActive && x.PayrollPeriod == bPeriod).Select(x => x.SalaryPayment).SumAsync();
+                         bNet = await _salary.Where(x => x.IsActive && x.PayrollPeriod == bPeriod).Select(x => x.TotalSalary).SumAsync();
+                         bBasic = await _salary.Where(x => x.IsActive && x.PayrollPeriod == bPeriod).Select(x => x.ProRatedSalary).SumAsync();
 
                         grossPercent = bGross != 0 ? (float)(((grossTotal - bGross) / bGross) * 100) : null ;
                         netPercent = bNet !=0 ? (float)(((netTotal - bNet) / bNet) * 100) : null;
@@ -1050,13 +1057,16 @@ namespace OA.Service
                     result.Data = new
                     {
                         grossTotal = grossTotal,
+                        bGross = (grossTotal - bGross),
                         grossPercent = grossPercent,
                         grossProgress = grossProgress,
                         netTotal = netTotal,
+                        bTotal = (netTotal - bNet),
                         netPercent = netPercent,
                         netProgress = netProgress,
                         netPerPerson = netPerPerson,
                         basicTotal = basicTotal,
+                        bBasic = (basicTotal - bBasic),
                         basicPercent = basicPercent,
                         basicProgress = basicProgress,
                         basicPerPerson = basicPerPerson
@@ -1133,7 +1143,7 @@ namespace OA.Service
                                             select new
                                             {
                                                 PayrollPeriod = grouped.Key,
-                                                TotalSalary = grouped.Sum(s => (decimal?)s.SalaryPayment) ?? 0m
+                                                TotalInsurance = grouped.Sum(s => (decimal?)s.TotalInsurance) ?? 0m
                                             })
                                             .OrderBy(x => x.PayrollPeriod).ToListAsync();
                 var PITaxByPayroll = await _salary
@@ -1152,7 +1162,7 @@ namespace OA.Service
                     .Select(group => new
                     {
                         PayrollPeriod = group.Key,
-                        TotalPITax = group.Sum(salary => salary.TotalSalary)
+                        TotalSalary = group.Sum(salary => salary.TotalSalary)
                     })
                     .ToListAsync();
 
@@ -1162,7 +1172,7 @@ namespace OA.Service
                     .Select(group => new
                     {
                         PayrollPeriod = group.Key,
-                        TotalPITax = group.Sum(salary => salary.SalaryPayment)
+                        SalaryPayment = group.Sum(salary => salary.SalaryPayment)
                     })
                     .ToListAsync();
 
@@ -1180,13 +1190,131 @@ namespace OA.Service
             }
             return result;
         }
-        public async Task<ResponseResult> GetUnpaidSalary(int year)
+        public async Task<ResponseResult> GetUnpaidSalary(SalaryFilterVModel model, int year)
         {
             var result = new ResponseResult();
             try
             {
-                var unpaidList = await _salary.Where(x => x.IsActive && x.IsPaid == false).ToListAsync();
+                var unpaidList = await _salary.Where(x => x.IsActive && x.IsPaid == false && x.Date.Year == year).ToListAsync();
 
+
+                var salaryGrouped = unpaidList.GroupBy(x => x.UserId);
+                var salaryListMapped = new List<UnPaidSalaryVModel>();
+                foreach (var group in salaryGrouped)
+                {
+                    var userId = group.Key;
+                    var user = await _userManager.FindByIdAsync(userId);
+                    if (user == null)
+                    {
+                        throw new NotFoundException(string.Format(MsgConstants.WarningMessages.NotFound, $"UserId = {userId}"));
+                    }
+                    foreach (var item in group)
+                    {
+                        var entityMapped = _mapper.Map<Salary, UnPaidSalaryVModel>(item);
+                        entityMapped.BasicSalary = item.ProRatedSalary;
+                        entityMapped.Reward = item.TotalReward;
+                        entityMapped.Discipline = item.TotalDiscipline;
+
+                        entityMapped.Timekeeping = item.NumberOfWorkingHours;
+
+                        entityMapped.Benefit = item.TotalBenefit;
+                        entityMapped.Insurance = item.TotalInsurance;
+
+                        entityMapped.PITax = item.PITax;
+
+                        entityMapped.FullName = user.FullName;
+                        entityMapped.AvatarFileId = user.AvatarFileId;
+                        salaryListMapped.Add(entityMapped);
+                    }
+                }
+
+                string? keyword = model.Keyword?.ToLower();
+                var salaryAns = salaryListMapped.Where(x =>
+                            (x.IsActive == model.IsActive) &&
+
+                            (string.IsNullOrEmpty(keyword) ||
+                                    x.FullName.ToLower().Contains(keyword) ||
+                                    x.Benefit.ToString().ToLower().Contains(keyword) ||
+                                    x.Discipline.ToString().ToLower().Contains(keyword) ||
+                                    x.Reward.ToString().ToLower().Contains(keyword) ||
+                                    x.BasicSalary.ToString().ToLower().Contains(keyword) ||
+                                    x.Insurance.ToString().ToLower().Contains(keyword) ||
+                                    x.Timekeeping.ToString().ToLower().Contains(keyword) ||
+                                    x.PITax.ToString().ToLower().Contains(keyword) ||
+                                    x.PayrollPeriod.ToString().ToLower().Contains(keyword)
+                            )); ;
+                if (model.IsDescending == false)
+                {
+                    salaryAns = string.IsNullOrEmpty(model.SortBy)
+                            ? salaryAns.OrderBy(r => r.Date).ToList()
+                            : salaryAns.OrderBy(r => r.GetType().GetProperty(model.SortBy)?.GetValue(r, null)).ToList();
+                }
+                else
+                {
+                    salaryAns = string.IsNullOrEmpty(model.SortBy)
+                            ? salaryAns.OrderByDescending(r => r.Date).ToList()
+                            : salaryAns.OrderByDescending(r => r.GetType().GetProperty(model.SortBy)?.GetValue(r, null)).ToList();
+                }
+
+                result.Data = new Pagination();
+
+                var pagedRecords = salaryAns.Skip((model.PageNumber - 1) * model.PageSize).Take(model.PageSize).ToList();
+
+                result.Data.Records = pagedRecords;
+                result.Data.TotalRecords = salaryAns.Count();
+
+            }
+            catch (Exception ex)
+            {
+                throw new BadRequestException(Utilities.MakeExceptionMessage(ex));
+            }
+            return result;
+        }
+
+        public async Task<ResponseResult> GetMe(string id)
+        {
+            var result = new ResponseResult();
+            var userId = GlobalUserId;
+            userId = userId != null ? userId : string.Empty;
+            try
+            {
+                var entity = await _salary.FirstOrDefaultAsync(s => s.Id == id);
+                if (entity == null)
+                {
+                    throw new NotFoundException(MsgConstants.WarningMessages.NotFoundData);
+                }
+
+                var salary = _mapper.Map<Salary, SalaryGetByIdVModel>(entity);
+                var user = await _userManager.FindByIdAsync(userId);
+                salary.FullName = user != null ? (user.FullName != null ? user.FullName : string.Empty) : string.Empty;
+                salary.AvatarFileId = user != null ? user.AvatarFileId : null;
+                result.Data = salary;
+            }
+            catch (Exception ex)
+            {
+                throw new BadRequestException(Utilities.MakeExceptionMessage(ex));
+            }
+            return result;
+        }
+        public async Task<ResponseResult> GetMeInfo()
+        {
+            var result = new ResponseResult();
+            try
+            {
+                var userId = GlobalUserId != null ? GlobalUserId : string.Empty;
+                var entity = new MyInfo();
+                var user = await _userManager.FindByIdAsync(userId);
+                if (user != null)
+                {
+                    entity.FullName = user != null ? (user.FullName != null ? user.FullName : string.Empty) : string.Empty;
+                    entity.Address = user != null ? (user.Address != null ? user.Address : string.Empty) : string.Empty;
+                    entity.AvatarFileId = user != null ? user.AvatarFileId : null;
+                    entity.StartDateWork = await _dbContext.EmploymentContract.Where(x => x.UserId == userId && x.IsActive).Select(x => x.StartDate).FirstOrDefaultAsync();
+                    entity.PayrollCycle = await _salary.Where(x => x.IsActive && x.UserId == userId).CountAsync();
+                    entity.RoleName = "0";
+
+                }
+                result.Data = entity;
             }
             catch (Exception ex)
             {

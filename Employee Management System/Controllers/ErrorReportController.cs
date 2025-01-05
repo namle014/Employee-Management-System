@@ -27,6 +27,31 @@ namespace OA.WebAPI.AdminControllers
             return Ok(response);
         }
 
+
+        [HttpGet]
+        public async Task<IActionResult> CountErrorReportsInMonth([FromQuery] int year, [FromQuery] int month)
+        {
+            if (year <= 0 || month <= 0 || month > 12)
+            {
+                return BadRequest("Year and month must be valid values.");
+            }
+
+            var response = await _errorReportService.CountErrorReportsInMonth(year, month);
+            return Ok(response);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> CountErrorReportsByTypeAndYear(int year)
+        {
+            if (year <= 0)
+            {
+                return BadRequest("Year must be a valid value.");
+            }
+
+            var response = await _errorReportService.CountErrorReportsByTypeAndYear(year);
+            return Ok(response);
+        }
+
         [HttpGet("export")]
         public async Task<IActionResult> ExportFile([FromQuery] FilterErrorReportVModel model, [FromQuery] ExportFileVModel exportModel)
         {

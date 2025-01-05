@@ -57,6 +57,57 @@ namespace OA.Service
             return result;
         }
 
+        public async Task<ResponseResult> CountErrorReportsInMonth(int year, int month)
+        {
+            var result = new ResponseResult();
+
+            var currentMonthCount = await _context.ErrorReport
+                .Where(x => x.ReportedDate.HasValue && x.ReportedDate.Value.Year == year && x.ReportedDate.Value.Month == month)
+                .CountAsync();
+
+            var previousMonth = month == 1 ? 12 : month - 1;
+            var previousYear = month == 1 ? year - 1 : year;
+            var previousMonthCount = await _context.ErrorReport
+                .Where(x => x.ReportedDate.HasValue && x.ReportedDate.Value.Year == previousYear && x.ReportedDate.Value.Month == previousMonth)
+                .CountAsync();
+
+            double? percentageIncrease = null;
+            if (previousMonthCount > 0)
+            {
+                percentageIncrease = ((double)(currentMonthCount - previousMonthCount) / previousMonthCount) * 100;
+            }
+
+            result.Data = new
+            {
+                Year = year,
+                Month = month,
+                CurrentMonthCount = currentMonthCount,
+                PreviousMonthCount = previousMonthCount,
+                PercentageIncrease = percentageIncrease
+            };
+
+            return result;
+        }
+
+        public async Task<ResponseResult> CountErrorReportsByTypeAndYear(int year)
+        {
+            var result = new ResponseResult();         
+            var errorReports = await _context.ErrorReport
+                .Where(x => x.ReportedDate.HasValue && x.ReportedDate.Value.Year == year)
+                .GroupBy(x => x.Type) 
+                .Select(g => new
+                {
+                    Type = g.Key, 
+                    Count = g.Count()  
+                })
+                .ToListAsync();
+
+            result.Data = errorReports;
+
+            return result;
+        }
+
+
         // Export error reports to a file
         public async Task<ExportStream> ExportFile(FilterErrorReportVModel model, ExportFileVModel exportModel)
         {

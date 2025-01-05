@@ -8,6 +8,8 @@ namespace OA.Core.Services
     public interface IErrorReportService
     {
         Task<ResponseResult> Search(FilterErrorReportVModel model);
+        Task<ResponseResult> CountErrorReportsInMonth(int year, int month);
+        Task<ResponseResult> CountErrorReportsByTypeAndYear(int year);
         Task<ExportStream> ExportFile(FilterErrorReportVModel model, ExportFileVModel exportModel);
         Task<ResponseResult> GetById(int id);
         Task Create(ErrorReportCreateVModel model);

@@ -1,9 +1,13 @@
-﻿using AutoMapper;
+﻿using AngleSharp.Dom;
+using AutoMapper;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using OA.Core.Constants;
 using OA.Core.Models;
+using OA.Core.Repositories;
 using OA.Core.Services;
 using OA.Core.VModels;
+using OA.Domain.Services;
 using OA.Domain.VModels;
 using OA.Infrastructure.EF.Context;
 using OA.Infrastructure.EF.Entities;
@@ -15,11 +19,19 @@ namespace OA.Service
     {
         private readonly ApplicationDbContext _context; 
         private readonly IMapper _mapper;
+        private readonly UserManager<AspNetUser> _userManager;
+        private readonly RoleManager<AspNetRole> _roleManager;
+        private readonly IBaseRepository<SysFile> _sysFileRepo;
+        private readonly IBaseRepository<Department> _departmentService;
 
-        public TimeOffService(ApplicationDbContext context, IMapper mapper)
+        public TimeOffService(IBaseRepository<Department> departmentService, IBaseRepository<SysFile> sysFileRepo, RoleManager<AspNetRole> roleManager, UserManager<AspNetUser> userManager, ApplicationDbContext context, IMapper mapper)
         {
+            _userManager = userManager;
+            _roleManager = roleManager;
             _context = context;
             _mapper = mapper;
+            _sysFileRepo = sysFileRepo;
+            _departmentService = departmentService;
         }
 
         public async Task<ResponseResult> Search(FilterTimeOffVModel model)
@@ -104,13 +116,61 @@ namespace OA.Service
         {
             var result = new ResponseResult();
 
-            var records = await _context.TimeOff
-                .Where(x => x.StartDate >= fromDate && !x.IsAccepted)
-                .ToListAsync();
+            try
+            {
+                var timeOffRecords = await _context.TimeOff
+                    .Where(x => x.StartDate >= fromDate && !x.IsAccepted)
+                    .ToListAsync();
 
-            result.Data = records;
+              
+                var timeOffDetails = new List<dynamic>();
+
+                foreach (var timeOff in timeOffRecords)
+                {
+                    var user = await _userManager.FindByIdAsync(timeOff.UserId);
+                    if (user != null)
+                    {
+                        var userRoles = await _userManager.GetRolesAsync(user);
+
+                        var userAvatarPath = (string)null;
+                        if (user.AvatarFileId.HasValue)
+                        {                 
+                            var sysFile = await _sysFileRepo.GetById((int)user.AvatarFileId);     
+                            if (sysFile != null)
+                            {
+                                userAvatarPath = "https://localhost:44381/" + sysFile.Path;
+                            }
+                        }
+
+                        var userDepartment = user.DepartmentId.HasValue ? 
+                            (await _departmentService.GetById(user.DepartmentId.Value))?.Name ?? "": "";
+
+                        dynamic timeOffModel = new
+                        {
+                            Id = timeOff.Id,
+                            StartDate = timeOff.StartDate,
+                            EndDate = timeOff.EndDate,
+                            IsAccepted = timeOff.IsAccepted,
+                            UserFullName = user.FullName,
+                            UserRoles = userRoles.ToList(),
+                            UserEmployeeId = user.EmployeeId,
+                            UserAvatarPath = userAvatarPath,
+                            UserDepartment = userDepartment
+                        };
+                        timeOffDetails.Add(timeOffModel);
+                    }
+                }
+
+                result.Data = timeOffDetails;
+            }
+            catch (Exception ex)
+            {
+                throw new BadRequestException(Utilities.MakeExceptionMessage(ex));
+            }
+
             return result;
         }
+
 
 
 

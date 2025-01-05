@@ -49,8 +49,6 @@ namespace OA.Domain.VModels
     public class UserChangePasswordVModel
     {
         [Required]
-        public string UserId { get; set; } = string.Empty;
-        [Required]
         public string OldPassword { get; set; } = string.Empty;
         [Required]
         public string NewPassword { get; set; } = string.Empty;

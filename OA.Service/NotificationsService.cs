@@ -152,18 +152,44 @@ namespace OA.Service
             var query = _notifications.AsNoTracking()
                 .Where(x => (x.IsActive == model.IsActive) &&
                             (string.IsNullOrEmpty(model.Type) || x.Type == model.Type) &&
-                            (string.IsNullOrEmpty(model.Title) || x.Title.ToLowerInvariant().Contains(model.Title.ToLowerInvariant())) &&
+                            (string.IsNullOrEmpty(model.Title) || x.Title.ToLower().Contains(model.Title.ToLower())) &&
                             (model.SentDate == null || (model.SentDate.Value.Day == x.SentTime.Day && model.SentDate.Value.Month == x.SentTime.Month && model.SentDate.Value.Year == x.SentTime.Year)));
+
             int pageSize = model.PageSize > 0 ? model.PageSize : 100;
             int pageNumber = model.PageNumber > 0 ? model.PageNumber : 1;
 
             var totalRecords = await query.CountAsync();
 
-            var list = await query
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .Select(x => _mapper.Map<NotificationsGetAllVModel>(x))
-                .ToListAsync();
+            var notifications = await query
+                 .Skip((pageNumber - 1) * pageSize)
+                 .Take(pageSize)
+                 .ToListAsync(); // Truy xuất danh sách đầu tiên
+
+            var list = new List<NotificationsGetAllVModel>();
+
+            foreach (var x in notifications)
+            {
+                var user = await _userManager.FindByIdAsync(x.UserId);
+                string? avatarPath = null;
+                if (user?.AvatarFileId != null)
+                {
+                    var file = await _sysFileRepo.Where(x => x.Id == (int)user.AvatarFileId).FirstOrDefaultAsync();
+                    avatarPath = file != null ? "https://localhost:44381/" + file.Path : null;
+                }
+
+                list.Add(new NotificationsGetAllVModel
+                {
+                    UserId = x.UserId,
+                    Id = x.Id,
+                    Title = x.Title,
+                    Content = x.Content,
+                    SentTime = x.SentTime,
+                    Type = x.Type,
+                    IsActive = x.IsActive,
+                    FullName = user?.FullName,
+                    AvatarPath = avatarPath
+                });
+            }
 
             result.Data = new Pagination();
             result.Data.Records = list;

@@ -44,22 +44,24 @@ namespace OA.Service
             string? keyword = model.Keyword?.ToLower();
 
             var records = await _event.Where(x =>
+                (model.IsHoliday == null || x.IsHoliday == model.IsHoliday) &&
+                ((model.StartDate == null || model.EndDate == null) ||
+                    (x.StartDate >= model.StartDate && x.EndDate <= model.EndDate)) &&
                 (string.IsNullOrEmpty(keyword) ||
-                    x.Title.ToLower().Contains(keyword) ||
-                    (x.Description != null && x.Description.ToLower().Contains(keyword))
+                    x.Title.ToLower().Contains(keyword)
                 )).ToListAsync();
 
 
             if (model.IsDescending == false)
             {
                 records = string.IsNullOrEmpty(model.SortBy)
-                        ? records.OrderBy(r => r.Title).ToList()
+                        ? records.OrderBy(r => r.StartDate).ToList()
                         : records.OrderBy(r => r.GetType().GetProperty(model.SortBy)?.GetValue(r, null)).ToList();
             }
             else
             {
                 records = string.IsNullOrEmpty(model.SortBy)
-                        ? records.OrderByDescending(r => r.Title).ToList()
+                        ? records.OrderByDescending(r => r.StartDate).ToList()
                         : records.OrderByDescending(r => r.GetType().GetProperty(model.SortBy)?.GetValue(r, null)).ToList();
             }
 

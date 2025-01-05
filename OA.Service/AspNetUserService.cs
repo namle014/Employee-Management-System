@@ -728,7 +728,11 @@ namespace OA.Service
 
         public async Task ChangePassword(UserChangePasswordVModel model)
         {
-            var user = await _userManager.FindByIdAsync(model.UserId);
+            if (string.IsNullOrEmpty(GlobalUserId))
+            {
+                throw new BadRequestException("Vui lòng đăng nhập!");
+            }
+            var user = await _userManager.FindByIdAsync(GlobalUserId);
             if (user != null)
             {
                 var identityResult = await _userManager.ChangePasswordAsync(user, model.OldPassword, model.NewPassword);

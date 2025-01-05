@@ -16,7 +16,6 @@ namespace OA.Service
 
         public Task ChangePasswordProfile(UserChangePasswordVModel model)
         {
-            model.UserId = GlobalUserId ?? string.Empty;
             return _userService.ChangePassword(model);
         }
 

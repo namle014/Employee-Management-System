@@ -63,8 +63,8 @@ namespace OA.Domain.VModels.Role
         public string Keyword { get; set; } = string.Empty;
         public string CreatedDate { get; set; } = string.Empty;
         public bool Status { get; set; }
-        public string OrderBy { get; set; } = string.Empty;
-        public string OrderDirection { get; set; } = string.Empty;
+        public string? SortBy { get; set; }
+        public bool IsDescending { get; set; } = false;
         public int PageSize { get; set; } = CommonConstants.ConfigNumber.pageSizeDefault;
         public int PageNumber { get; set; } = 1;
         public bool IsExport { get; set; } = false;

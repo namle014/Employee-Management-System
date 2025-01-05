@@ -41,15 +41,15 @@ namespace OA.Core.VModels
         public string Title { get; set; } = string.Empty;
         public string Content { get; set; } = string.Empty;
         public DateTime SentTime { get; set; }
-        public string Type { get; set; } = string.Empty;
+        public string? Type { get; set; } = string.Empty;
+        public string UserId { get; set; } = string.Empty;
+        public string? FullName { get; set; } = string.Empty;
+        public string? AvatarPath { get; set; } = string.Empty;
         public bool IsActive { get; set; }
     }
 
     public class NotificationsGetByIdVModel : NotificationsGetAllVModel
     {
-        public string UserId { get; set; } = string.Empty;
-        public string FullName { get; set; } = string.Empty;
-        public string? AvatarPath { get; set; } = string.Empty;
         public string? Role { get; set; } = string.Empty;
         public List<string>? ListFile { get; set; }
         public List<string>? ListUser { get; set; }

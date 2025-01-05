@@ -1,6 +1,8 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using OA.Core.Constants;
 using OA.Core.Models;
 using OA.Core.Repositories;
@@ -43,8 +45,27 @@ namespace OA.Service
         public Task<ResponseResult> GetAll(FiltersGetAllByQueryStringRoleVModel model)
         {
             var result = new ResponseResult();
-            var query = _roleManager.Roles.AsQueryable().ToList()
-                        .OrderByDescending(x => x.CreatedDate);
+
+            var query = _roleManager.Roles.AsQueryable();
+
+            query = query.Where(x => x.Name != null && x.Name.ToLower().Contains(model.Keyword.ToLower()));
+
+            if (!string.IsNullOrEmpty(model.SortBy))
+            {
+                if (model.IsDescending == false)
+                {
+                    query = query.OrderBy(x => EF.Property<object>(x, model.SortBy));
+                }
+                else
+                {
+                    query = query.OrderByDescending(x => EF.Property<object>(x, model.SortBy));
+                }
+            }
+            else
+            {
+                query = query.OrderByDescending(x => x.CreatedDate);
+            }
+
             var data = new Pagination
             {
                 Records = query.Skip((model.PageNumber - 1) * model.PageSize).Take(model.PageSize),

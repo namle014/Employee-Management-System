@@ -1,4 +1,5 @@
-﻿using AutoMapper;
+﻿using Aspose.Pdf;
+using AutoMapper;
 using Employee_Management_System.Hubs;
 using Ganss.Xss;
 using Microsoft.AspNetCore.Http;
@@ -15,7 +16,9 @@ using OA.Infrastructure.EF.Entities;
 using OA.Repository;
 using OA.Service.Helpers;
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics.Metrics;
 using System.Web;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace OA.Service
 {
@@ -145,6 +148,192 @@ namespace OA.Service
             _sanitizer.AllowedCssProperties.Add("bottom");
         }
 
+        public async Task<ResponseResult> StatNotificationByMonth(int month, int year)
+        {
+            var result = new ResponseResult();
+
+            var query = _notifications.AsQueryable();
+
+            var userNotify = _userNotifications.AsQueryable();
+
+            var notifyOfMonth = await query
+                 .Where(x => x.SentTime.Year == year && x.SentTime.Month == month).ToListAsync();
+
+            var monthlyCounts = notifyOfMonth.Count();
+
+            if (month == 1)
+            {
+                year--;
+                month = 12;
+            }
+            else
+            {
+                month--;
+            }
+
+            var notifyOfPrevMonth = await query
+                 .Where(x => x.SentTime.Year == year && x.SentTime.Month == month).ToListAsync();
+
+            var monthlyCountsPrev = await query.Where(x => x.SentTime.Year == year && x.SentTime.Month == month).CountAsync();
+
+            double growthRate = 0;
+
+            if (monthlyCountsPrev > 0)
+            {
+                growthRate = (double)(monthlyCounts - monthlyCountsPrev) / monthlyCountsPrev * 100;
+            }
+            else
+            {
+                growthRate = monthlyCounts > 0 ? 100 : 0;
+            }
+
+            var readCounts = (from notification in notifyOfMonth
+                              join userNotification in userNotify
+                              on notification.Id equals userNotification.NotificationId
+                              where userNotification.IsRead == true
+                              select userNotification).Count();
+
+            var totalCurrent = (from notification in notifyOfMonth
+                                join userNotification in userNotify
+                                on notification.Id equals userNotification.NotificationId
+                                select userNotification).Count();
+
+            var readCountsPrev = (from notification in notifyOfPrevMonth
+                                  join userNotification in userNotify
+                                  on notification.Id equals userNotification.NotificationId
+                                  where userNotification.IsRead == true
+                                  select userNotification).Count();
+
+            var totalPrev = (from notification in notifyOfPrevMonth
+                             join userNotification in userNotify
+                             on notification.Id equals userNotification.NotificationId
+                             select userNotification).Count();
+
+            double x = totalCurrent != 0 ? 1.0 * readCounts / totalCurrent * 100 : 0;
+            double y = totalPrev != 0 ? 1.0 * readCountsPrev / totalPrev * 100 : 0;
+
+            double rateRead = 0;
+
+            if (y > 0)
+            {
+                rateRead = (double)(x - y) / y * 100;
+            }
+            else
+            {
+                rateRead = x > 0 ? 100 : 0;
+            }
+
+            result.Data = new
+            {
+                Counts = monthlyCounts,
+                Rate = growthRate,
+                ReadCounts = x,
+                RateRead = rateRead
+            };
+
+            return result;
+        }
+
+        public async Task<ResponseResult> StatNotificationByType(int year)
+        {
+            var result = new ResponseResult();
+
+            var query = _notifications.AsQueryable();
+
+            var listNotify = await query
+                    .Where(x => x.SentTime.Year == year)
+                    .GroupBy(x => x.Type)
+                    .Select(x => new { Type = x.Key, Count = x.Count() })
+                    .ToListAsync();
+
+            var defaultTypes = new List<string>
+                {
+                    "Public", "Attendance", "Discipline", "Event", "Insurance", "Reward", "Benefit", "Salary"
+                };
+
+            // Tạo một dictionary với các loại thông báo mặc định và kết quả truy vấn
+            var dictionary = defaultTypes.ToDictionary(
+                type => type,
+                type => listNotify.FirstOrDefault(x => x.Type == type)?.Count ?? 0
+            );
+
+            var totalCurrent = query.Where(x => x.SentTime.Year == year).Count();
+            var totalPrev = query.Where(x => x.SentTime.Year == year - 1).Count();
+
+            double rate = 0;
+
+            if (totalPrev > 0)
+            {
+                rate = (double)(totalCurrent - totalPrev) / totalPrev * 100;
+            }
+            else
+            {
+                rate = totalCurrent > 0 ? 100 : 0;
+            }
+
+            result.Data = new
+            {
+                NotificationData = dictionary,
+                Rate = rate,
+            };
+
+            return result;
+        }
+
+        public async Task<ResponseResult> CountNotifyReadByUser(FilterCountNotifyReadByUser model)
+        {
+            var result = new ResponseResult();
+
+            var notificationQuery = _notifications.AsQueryable();
+
+            var notifications = await notificationQuery
+                            .Where(x =>
+                                EF.Functions.DateDiffDay(model.StartDate, x.SentTime) >= 0 &&
+                                EF.Functions.DateDiffDay(x.SentTime, model.EndDate) >= 0
+                            )
+                            .ToListAsync();
+
+            var userNotifications = _userNotifications.AsQueryable();
+
+            var users = await _userManager.Users.Where(x => model.FullName == null || x.FullName.ToLower().Contains(model.FullName.ToLower())).ToListAsync();
+
+            var sysFile = _sysFileRepo.AsQueryable();
+
+            var data = (from notification in notifications
+                        join userNotify in userNotifications
+                        on notification.Id equals userNotify.NotificationId
+                        join user in users
+                        on userNotify.UserId equals user.Id
+                        join file in sysFile
+                        on user.AvatarFileId equals file.Id into userFiles
+                        from file in userFiles.DefaultIfEmpty()  // LEFT JOIN, sẽ có file là null nếu không có khớp
+                        where userNotify.IsRead == true
+                        group userNotify by new { user.Id, user.FullName, user.EmployeeId, file } into g
+                        select new
+                        {
+                            UserId = g.Key.Id,
+                            UserFullName = g.Key.FullName,
+                            EmployeeId = g.Key.EmployeeId,
+                            AvatarPath = g.Key.file != null && g.Key.file.Path != null ? "https://localhost:44381/" + g.Key.file.Path : null,
+                            ReadCount = g.Count()
+                        });
+
+
+            var totalRecords = data.Count();
+
+            data = data
+                .Skip((model.PageNumber - 1) * 10)
+                .Take(10).ToList();
+
+            result.Data = new
+            {
+                Records = data,
+                TotalRecords = totalRecords
+            };
+
+            return result;
+        }
+
         public async Task<ResponseResult> Search(FilterNotificationsVModel model)
         {
             var result = new ResponseResult();
@@ -165,6 +354,8 @@ namespace OA.Service
                  .Take(pageSize)
                  .ToListAsync(); // Truy xuất danh sách đầu tiên
 
+            var userNotifications = _userNotifications.AsQueryable();
+
             var list = new List<NotificationsGetAllVModel>();
 
             foreach (var x in notifications)
@@ -177,6 +368,14 @@ namespace OA.Service
                     avatarPath = file != null ? "https://localhost:44381/" + file.Path : null;
                 }
 
+                var receivedCount = await (from userNotification in userNotifications
+                                           where x.Id == userNotification.NotificationId
+                                           select x.Id).CountAsync();
+
+                var readCount = await (from userNotification in userNotifications
+                                       where x.Id == userNotification.NotificationId && userNotification.IsRead == true
+                                       select x.Id).CountAsync();
+
                 list.Add(new NotificationsGetAllVModel
                 {
                     UserId = x.UserId,
@@ -187,56 +386,15 @@ namespace OA.Service
                     Type = x.Type,
                     IsActive = x.IsActive,
                     FullName = user?.FullName,
-                    AvatarPath = avatarPath
+                    AvatarPath = avatarPath,
+                    ReceivedCount = receivedCount,
+                    ReadCount = readCount,
                 });
             }
 
             result.Data = new Pagination();
             result.Data.Records = list;
             result.Data.TotalRecords = totalRecords;
-
-            return result;
-        }
-
-        public async Task<ResponseResult> SearchForUser(FilterNotificationsForUserVModel model)
-        {
-            var result = new ResponseResult();
-
-            var query = from un in _userNotifications.AsNoTracking()
-                        join n in _dbContext.Notifications.AsNoTracking()
-                            on un.NotificationId equals n.Id
-                        where un.UserId == model.UserId &&
-                              (model.IsRead == null || model.IsRead == un.IsRead) &&
-                              un.IsActive == model.IsActive
-                        select new NotificationsGetAllForUserVModel
-                        {
-                            Id = un.Id,
-                            UserId = un.UserId,
-                            Title = n.Title,
-                            Content = n.Content,
-                            SentTime = n.SentTime,
-                            Type = n.Type,
-                            IsRead = un.IsRead,
-                            NotificationId = n.Id,
-                        };
-
-            int pageSize = model.PageSize > 0 ? model.PageSize : 100;
-            int pageNumber = model.PageNumber > 0 ? model.PageNumber : 1;
-
-            var totalRecords = await query.CountAsync();
-
-            var list = await query
-                .OrderByDescending(x => x.SentTime)
-                .ThenByDescending(x => x.Id)
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
-
-            result.Data = new Pagination
-            {
-                Records = list,
-                TotalRecords = totalRecords
-            };
 
             return result;
         }
@@ -513,16 +671,21 @@ namespace OA.Service
             }
         }
 
-        public async Task<ResponseResult> GetCountIsNew(UserNotificationsUpdateIsNewVModel model)
+        public async Task<ResponseResult> GetCountIsNew()
         {
-            var user = await _userManager.FindByIdAsync(model.UserId);
+            if (GlobalUserId == "" || GlobalUserId == null)
+            {
+                throw new ForbiddenException("Vui lòng đăng nhập!");
+            }
+
+            var user = await _userManager.FindByIdAsync(GlobalUserId);
             if (user == null)
             {
                 throw new NotFoundException(MsgConstants.WarningMessages.NotFoundData);
             }
 
             var userNotifications = _userNotifications
-                                        .Where(x => x.IsNew == true && x.UserId == model.UserId)
+                                        .Where(x => x.IsNew == true && x.UserId == GlobalUserId)
                                         .ToList();
 
             var result = new ResponseResult();
@@ -531,16 +694,21 @@ namespace OA.Service
             return result;
         }
 
-        public async Task UpdateIsNew(UserNotificationsUpdateIsNewVModel model)
+        public async Task UpdateIsNew()
         {
-            var user = await _userManager.FindByIdAsync(model.UserId);
+            if (GlobalUserId == "" || GlobalUserId == null)
+            {
+                throw new ForbiddenException("Vui lòng đăng nhập!");
+            }
+
+            var user = await _userManager.FindByIdAsync(GlobalUserId);
             if (user == null)
             {
                 throw new NotFoundException(MsgConstants.WarningMessages.NotFoundData);
             }
 
             var userNotifications = _userNotifications
-                                        .Where(x => x.IsNew == true && x.UserId == model.UserId)
+                                        .Where(x => x.IsNew == true && x.UserId == GlobalUserId)
                                         .ToList();
 
             if (userNotifications.Count > 0)
@@ -720,9 +888,14 @@ namespace OA.Service
             }
         }
 
-        public async Task ChangeStatusForUser(NotificationsUpdateReadVModel model)
+        public async Task ChangeStatusForUser()
         {
-            var entity = await _userNotifications.FindAsync(model.Id);
+            if (GlobalUserId == "" || GlobalUserId == null)
+            {
+                throw new ForbiddenException("Vui lòng đăng nhập!");
+            }
+
+            var entity = await _userNotifications.FindAsync(GlobalUserId);
 
             if (entity == null)
             {
@@ -738,16 +911,21 @@ namespace OA.Service
             }
         }
 
-        public async Task ChangeAllRead(NotificationsUpdateAllReadVModel model)
+        public async Task ChangeAllRead()
         {
-            var user = await _userManager.FindByIdAsync(model.UserId);
+            if (GlobalUserId == "" || GlobalUserId == null)
+            {
+                throw new ForbiddenException("Vui lòng đăng nhập!");
+            }
+
+            var user = await _userManager.FindByIdAsync(GlobalUserId);
             if (user == null)
             {
                 throw new NotFoundException(MsgConstants.WarningMessages.NotFoundData);
             }
 
             var notiList = await _userNotifications
-                .Where(x => x.IsRead == false && model.UserId == x.UserId)
+                .Where(x => x.IsRead == false && GlobalUserId == x.UserId)
                 .ToListAsync();
 
             if (!notiList.Any())
@@ -780,6 +958,54 @@ namespace OA.Service
             {
                 throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorRemove, _nameService));
             }
+        }
+
+        public async Task<ResponseResult> SearchForUser(FilterNotificationsForUserVModel model)
+        {
+            var result = new ResponseResult();
+
+            if (GlobalUserId == "" || GlobalUserId == null)
+            {
+                throw new ForbiddenException("Vui lòng đăng nhập!");
+            }
+
+            var query = from un in _userNotifications.AsNoTracking()
+                        join n in _dbContext.Notifications.AsNoTracking()
+                            on un.NotificationId equals n.Id
+                        where un.UserId == GlobalUserId &&
+                              (model.IsRead == null || model.IsRead == un.IsRead) &&
+                              un.IsActive == model.IsActive
+                        select new NotificationsGetAllForUserVModel
+                        {
+                            Id = un.Id,
+                            UserId = un.UserId,
+                            Title = n.Title,
+                            Content = n.Content,
+                            SentTime = n.SentTime,
+                            Type = n.Type,
+                            IsRead = un.IsRead,
+                            NotificationId = n.Id,
+                        };
+
+            int pageSize = 100;
+            int pageNumber = 1;
+
+            var totalRecords = await query.CountAsync();
+
+            var list = await query
+                .OrderByDescending(x => x.SentTime)
+                .ThenByDescending(x => x.Id)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            result.Data = new Pagination
+            {
+                Records = list,
+                TotalRecords = totalRecords
+            };
+
+            return result;
         }
     }
 }

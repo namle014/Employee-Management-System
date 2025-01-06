@@ -36,6 +36,99 @@ namespace OA.Service
             }
         }
 
+        public async Task<ResponseResult> StatEventByYear(int year)
+        {
+            var result = new ResponseResult();
+            var query = _event.AsQueryable();
+
+            var monthlyCounts1 = await query
+                 .Where(x => x.StartDate.Year == year || x.EndDate.Year == year)
+                 .GroupBy(x => x.StartDate.Year == year ? x.StartDate.Month : x.EndDate.Month)
+                 .Select(g => new { Month = g.Key, Count = g.Count() })
+                 .ToDictionaryAsync(x => x.Month, x => x.Count);
+
+            var list1 = Enumerable.Range(1, 12)
+                .Select(i => monthlyCounts1.ContainsKey(i) ? monthlyCounts1[i] : 0)
+                .ToList();
+
+            var monthlyCounts2 = await query
+                 .Where(x => x.StartDate.Year == year - 1 || x.EndDate.Year == year - 1)
+                 .GroupBy(x => x.StartDate.Year == year - 1 ? x.StartDate.Month : x.EndDate.Month)
+                 .Select(g => new { Month = g.Key, Count = g.Count() })
+                 .ToDictionaryAsync(x => x.Month, x => x.Count);
+
+            var list2 = Enumerable.Range(1, 12)
+                .Select(i => monthlyCounts2.ContainsKey(i) ? monthlyCounts2[i] : 0)
+                .ToList();
+
+
+            int countYear = await query.Where(x => x.StartDate.Year == year || x.EndDate.Year == year).CountAsync();
+            int countPrevYear = await query.Where(x => x.StartDate.Year == year - 1 || x.EndDate.Year == year - 1).CountAsync();
+
+            double growthRate = 0;
+
+            if (countPrevYear > 0)
+            {
+                growthRate = (double)(countYear - countPrevYear) / countPrevYear * 100;
+            }
+            else
+            {
+                growthRate = countYear > 0 ? 100 : 0;
+            }
+
+            result.Data = new
+            {
+                EventsByMonth = list1,
+                EventsByMonthPrev = list2,
+                Rate = growthRate,
+            };
+
+            return result;
+        }
+
+        public async Task<ResponseResult> TotalEventsByMonth(int month, int year)
+        {
+            var result = new ResponseResult();
+
+            var query = _event.AsQueryable();
+
+            var countCurrent = await query
+                 .Where(x => (x.StartDate.Year == year && x.StartDate.Month == month) || (x.EndDate.Year == year && x.EndDate.Month == month)).CountAsync();
+
+            if (month == 1)
+            {
+                year--;
+                month = 12;
+            }
+            else
+            {
+                month--;
+            }
+
+            var countPrev = await query
+                 .Where(x => (x.StartDate.Year == year && x.StartDate.Month == month) || (x.EndDate.Year == year && x.EndDate.Month == month)).CountAsync();
+
+
+            double growthRate = 0;
+
+            if (countPrev > 0)
+            {
+                growthRate = (double)(countCurrent - countPrev) / countPrev * 100;
+            }
+            else
+            {
+                growthRate = countCurrent > 0 ? 100 : 0;
+            }
+
+            result.Data = new
+            {
+                CountEvent = countCurrent,
+                Rate = growthRate,
+            };
+
+            return result;
+        }
+
         public async Task<ResponseResult> GetAll(EventFilterVModel model)
         {
             var result = new ResponseResult();

@@ -120,6 +120,7 @@ namespace OA.Service
             {
                 var timeOffRecords = await _context.TimeOff
                     .Where(x => x.StartDate >= fromDate && !x.IsAccepted)
+                    .OrderBy(x => x.StartDate)
                     .ToListAsync();
 
               
@@ -151,11 +152,14 @@ namespace OA.Service
                             StartDate = timeOff.StartDate,
                             EndDate = timeOff.EndDate,
                             IsAccepted = timeOff.IsAccepted,
-                            UserFullName = user.FullName,
-                            UserRoles = userRoles.ToList(),
-                            UserEmployeeId = user.EmployeeId,
-                            UserAvatarPath = userAvatarPath,
-                            UserDepartment = userDepartment
+                            Reason = timeOff.Reason,
+                            Content = timeOff.Content,
+                            CreatedDate = timeOff.CreatedDate,
+                            FullName = user.FullName,
+                            Roles = userRoles.ToList(),
+                            EmployeeId = user.EmployeeId,
+                            AvatarPath = userAvatarPath,
+                            Department = userDepartment
                         };
                         timeOffDetails.Add(timeOffModel);
                     }

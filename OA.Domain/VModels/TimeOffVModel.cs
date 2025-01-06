@@ -12,7 +12,7 @@ namespace OA.Domain.VModels
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
         public bool IsActive { get; set; }
-        public bool IsAccepted { get; set; }
+        public bool? IsAccepted { get; set; }
         public string Content { get; set; } = string.Empty;
     }
 

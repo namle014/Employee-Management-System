@@ -27,6 +27,14 @@ namespace OA.WebAPI.AdminControllers
             return Ok(response);
         }
 
+        [HttpGet]
+        public async Task<IActionResult> SearchByUserId([FromQuery] FilterTimeOffVModel model,string UserId)
+        {
+            var response = await _timeOffService.SearchByUserId(model, UserId);
+            return Ok(response);
+        }
+
+
         [HttpGet("time-off-statistics")]
         public async Task<IActionResult> GetTimeOffStatistics(int year, int month)
         {

@@ -1,5 +1,6 @@
 ﻿using AngleSharp.Dom;
 using AutoMapper;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using OA.Core.Constants;
@@ -12,6 +13,8 @@ using OA.Domain.VModels;
 using OA.Infrastructure.EF.Context;
 using OA.Infrastructure.EF.Entities;
 using OA.Service.Helpers;
+using System.Threading;
+using static System.Net.WebRequestMethods;
 
 namespace OA.Service
 {
@@ -23,6 +26,7 @@ namespace OA.Service
         private readonly RoleManager<AspNetRole> _roleManager;
         private readonly IBaseRepository<SysFile> _sysFileRepo;
         private readonly IBaseRepository<Department> _departmentService;
+
 
         public TimeOffService(IBaseRepository<Department> departmentService, IBaseRepository<SysFile> sysFileRepo, RoleManager<AspNetRole> roleManager, UserManager<AspNetUser> userManager, ApplicationDbContext context, IMapper mapper)
         {
@@ -39,9 +43,99 @@ namespace OA.Service
             var result = new ResponseResult();
             string? keyword = model.Keyword?.ToLower();
 
-            var recordsQuery = _context.TimeOff.AsQueryable();
+            var recordsQuery = await _context.TimeOff.ToListAsync();
 
-            
+
+            if (model.IsActive != null)
+            {
+                recordsQuery = recordsQuery.Where(x => x.IsActive == model.IsActive).ToList();
+
+            }
+
+            if (model.CreatedDate != null)
+            {
+                recordsQuery = recordsQuery.Where(x => x.CreatedDate.HasValue &&
+                                                      x.CreatedDate.Value.Date == model.CreatedDate.Value.Date).ToList();
+            }
+            if (!string.IsNullOrEmpty(keyword))
+            {
+                recordsQuery = recordsQuery.Where(x =>
+                    x.UserId.ToLower().Contains(keyword) ||
+                    (x.Reason != null && x.Reason.ToLower().Contains(keyword)) ||
+                    (x.CreatedBy != null && x.CreatedBy.ToLower().Contains(keyword))
+                ).ToList();
+            }
+
+
+
+            var recordsWithDetails = new List<dynamic>();
+
+            foreach (var timeOff in recordsQuery)
+            {
+                var user = await _userManager.FindByIdAsync(timeOff.UserId);
+                if (user != null)
+                {
+                 
+
+                    var userAvatarPath = "https://localhost:44381/avatars/aa1678f0-75b0-48d2-ae98-50871178e9bd.jfif";
+                    if (user.AvatarFileId.HasValue)
+                    {
+                        var sysFile = await _sysFileRepo.GetById((int)user.AvatarFileId);
+                        if (sysFile != null)
+                        {
+                            userAvatarPath = "https://localhost:44381/" + sysFile.Path;
+                        }
+                    }
+
+                 
+
+                    dynamic timeOffModel = new
+                    {
+                        Id = timeOff.Id,
+                        IsActive=timeOff.IsActive,
+                        CreatedBy= timeOff.CreatedBy,
+                        UserId = timeOff.UserId,
+                        StartDate = timeOff.StartDate,
+                        EndDate = timeOff.EndDate,
+                        IsAccepted = timeOff.IsAccepted,
+                        Reason = timeOff.Reason,
+                        Content = timeOff.Content,
+                        CreatedDate = timeOff.CreatedDate,
+                        FullName = user.FullName,
+                      
+                        EmployeeId = user.EmployeeId,
+                        AvatarPath = userAvatarPath,
+                      
+                    };
+                    recordsWithDetails.Add(timeOffModel);
+                }
+            }
+
+
+            var records = model.IsDescending
+                ? recordsWithDetails.OrderByDescending(r => r.Id).ToList()
+                : recordsWithDetails.OrderBy(r => r.Id).ToList();
+
+            result.Data = new Pagination()
+            {
+                Records = records.Skip((model.PageNumber - 1) * model.PageSize).Take(model.PageSize).ToList(),
+                TotalRecords = records.Count()
+            };
+
+
+
+            return result;
+        }
+
+
+        public async Task<ResponseResult> SearchByUserId(FilterTimeOffVModel model,string UserId)
+        {
+            var result = new ResponseResult();
+            string? keyword = model.Keyword?.ToLower();
+
+            var recordsQuery = _context.TimeOff.AsQueryable().Where(x => x.UserId == UserId); ;
+
+
             if (model.IsActive != null)
             {
                 recordsQuery = recordsQuery.Where(x => x.IsActive == model.IsActive);
@@ -53,12 +147,14 @@ namespace OA.Service
             }
             if (!string.IsNullOrEmpty(keyword))
             {
+                string lowerKeyword = keyword.ToLower();  
+
                 recordsQuery = recordsQuery.Where(x =>
-                    x.UserId.ToLower().Contains(keyword) ||
-                    (x.Reason != null && x.Reason.ToLower().Contains(keyword)) ||
-                    (x.CreatedBy != null && x.CreatedBy.ToLower().Contains(keyword))
+                    (x.Reason != null && x.Reason.ToLower().Contains(lowerKeyword)) ||
+                    (x.Content != null && x.Content.ToLower().Contains(lowerKeyword))
                 );
             }
+
 
             var records = model.IsDescending
                 ? await recordsQuery.OrderByDescending(r => r.Id).ToListAsync()
@@ -119,7 +215,7 @@ namespace OA.Service
             try
             {
                 var timeOffRecords = await _context.TimeOff
-                    .Where(x => x.StartDate >= fromDate && !x.IsAccepted)
+                    .Where(x => x.StartDate >= fromDate && x.IsAccepted == false)
                     .OrderBy(x => x.StartDate)
                     .ToListAsync();
 
@@ -133,7 +229,7 @@ namespace OA.Service
                     {
                         var userRoles = await _userManager.GetRolesAsync(user);
 
-                        var userAvatarPath = (string)null;
+                        var userAvatarPath = "https://localhost:44381/avatars/aa1678f0-75b0-48d2-ae98-50871178e9bd.jfif";
                         if (user.AvatarFileId.HasValue)
                         {                 
                             var sysFile = await _sysFileRepo.GetById((int)user.AvatarFileId);     

@@ -7,6 +7,7 @@ namespace OA.Core.Services
     public interface ITimeOffService
     {
         Task<ResponseResult> Search(FilterTimeOffVModel model);
+        Task<ResponseResult> SearchByUserId(FilterTimeOffVModel model, string UserId);
         Task<ResponseResult> CountTimeOffsInMonth(int year, int month);
         Task<ResponseResult> GetPendingFutureTimeOffs(DateTime fromDate);
         Task<ExportStream> ExportFile(FilterTimeOffVModel model, ExportFileVModel exportModel);

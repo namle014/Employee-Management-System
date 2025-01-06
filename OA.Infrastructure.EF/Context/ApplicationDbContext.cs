@@ -14,7 +14,7 @@ namespace OA.Infrastructure.EF.Context
         #region --DBSET--
         public virtual DbSet<AspNetUser> AspNetUsers { get; set; }
         public virtual DbSet<AspNetRole> AspNetRoles { get; set; }
-        //public virtual DbSet<AspNetUserRoles> AspNetUserRoles { get; set; }
+       // public virtual DbSet<AspNetUserRoles> AspNetUserRoles { get; set; }
         public virtual DbSet<SysFile> SysFile { get; set; } = null!;
         public virtual DbSet<SysFunction> SysFunctions { get; set; } = null!;
         public virtual DbSet<SysApi> SysApis { get; set; } = null!;

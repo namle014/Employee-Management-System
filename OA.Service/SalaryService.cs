@@ -2,6 +2,7 @@
 using Aspose.Pdf.AI;
 using Aspose.Pdf.Operators;
 using AutoMapper;
+using ChatGPT.Net.DTO.ChatGPTUnofficial;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -39,7 +40,7 @@ namespace OA.Service
             _mapper = mapper;
             _userManager = userManager;
         }
-
+        #region --ADMIN--
         public async Task Create()
         {
             var year = DateTime.Now.Year;
@@ -49,7 +50,7 @@ namespace OA.Service
             bool periodExists = await _salary.AnyAsync(x => x.IsActive && x.PayrollPeriod == period);
             if (periodExists)
             {
-                throw new BadRequestException($"Payroll period {period} already exists.");
+                throw new BadRequestException($"Đã tồn tại chu kỳ lương {period}.");
             }
 
             var query = _userManager.Users.Where(x => x.IsActive);
@@ -515,50 +516,38 @@ namespace OA.Service
             return Task.FromResult(result);
         }
 
-        public Task<ResponseResult> GetYearIncome(int year)
+        public async Task<ResponseResult> GetYearIncome(int year)
         {
             var result = new ResponseResult();
             var query = _salary.AsQueryable();
             var months = Enumerable.Range(1, 12).Select(m => m.ToString("D2")).ToArray();
-            var dbData = query
-                .Where(x => x.IsActive && x.PayrollPeriod != null && x.PayrollPeriod.StartsWith(year.ToString()))
-                .GroupBy(x => x.PayrollPeriod.Substring(5, 2))
-                .Select(g => new {
-                    month = g.Key,
-                    total = g.Sum(x => (decimal?)x.TotalSalary) ?? 0
-                })
-                .ToArray();
+            var dbData = (await _salary
+                .Where(x => x.IsActive && x.PayrollPeriod.Contains(year.ToString()))
+                .ToListAsync()) // Tải dữ liệu về client
+                .OrderBy(x => DateTime.ParseExact(x.PayrollPeriod, "MM-yyyy", null))
+                .GroupBy(x => x.PayrollPeriod)
+                .Select(g => g.Sum(x => x.TotalSalary)) 
+                .ToList();
 
-            var totalSalaries = months.Select(m => new
-            {
-                month = m,
-                total = dbData.FirstOrDefault(x => x.month == m)?.total ?? 0
-            }).ToArray();
+
 
             var bYear = year - 1;
 
-            var bdbData = query
-                .Where(x => x.IsActive && x.PayrollPeriod != null && x.PayrollPeriod.StartsWith(bYear.ToString()))
-                .GroupBy(x => x.PayrollPeriod.Substring(5, 2))
-                .Select(g => new {
-                    month = g.Key,
-                    total = g.Sum(x => (decimal?)x.TotalSalary) ?? 0
-                })
-                .ToArray();
-
-            var bTotalSalaries = months.Select(m => new
-            {
-                month = m,
-                total = bdbData.FirstOrDefault(x => x.month == m)?.total ?? 0
-            }).ToArray();
+            var bdbData = (await _salary
+                    .Where(x => x.IsActive && x.PayrollPeriod.Contains(bYear.ToString()))
+                    .ToListAsync()) // Tải dữ liệu về client
+                    .OrderBy(x => DateTime.ParseExact(x.PayrollPeriod, "MM-yyyy", null))
+                    .GroupBy(x => x.PayrollPeriod)
+                    .Select(g => g.Sum(x => x.TotalSalary))
+                    .ToList();
 
             result.Data = new
             {
-                yearList = totalSalaries,
-                bYearList = bTotalSalaries
+                yearList = dbData,
+                bYearList = bdbData
             };
 
-            return Task.FromResult(result);
+            return result;
         }
 
         public async Task<ResponseResult> GetInfoForDepartmentChart()
@@ -1270,7 +1259,86 @@ namespace OA.Service
             }
             return result;
         }
+        public async Task<ResponseResult> PayrollOverview(string period)
+        {
+            var result = new ResponseResult();
+            try
+            {
+                var month = Convert.ToInt32(period.Substring(0, 2));
+                var year = Convert.ToInt32(period.Substring(3, 4));
 
+                var previousMonth = month == 1 ? 12 : month - 1;
+                var previousYear = month == 1 ? year - 1 : year;
+
+                var firstDayOfMonth = new DateTime(year, month, 1);
+                var lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
+
+                var firstDayOfPreviousMonth = new DateTime(previousYear, previousMonth, 1);
+                var lastDayOfPreviousMonth = firstDayOfPreviousMonth.AddMonths(1).AddDays(-1);
+
+                var grossTotal = await _salary.Where(x => x.IsActive && x.PayrollPeriod == period).Select(x => x.SalaryPayment).SumAsync();
+                var netTotal = await _salary.Where(x => x.IsActive && x.PayrollPeriod == period).Select(x => x.TotalSalary).SumAsync();
+                
+                var contracts = await _dbContext.EmploymentContract
+                .Where(c => c.StartDate <= lastDayOfMonth && c.EndDate >= firstDayOfPreviousMonth).ToListAsync();
+                
+                var contractsInMonth = contracts.Count(c =>
+                c.StartDate <= lastDayOfMonth && c.EndDate >= firstDayOfMonth);
+
+                var totalBenefit = await _salary.Where(x => x.IsActive && x.PayrollPeriod == period).Select(x => x.TotalBenefit).SumAsync();
+
+                var totalPITax = await _salary.Where(x => x.IsActive && x.PayrollPeriod == period).Select(x => x.PITax).SumAsync();
+
+                var totalInsurance = await _salary.Where(x => x.IsActive && x.PayrollPeriod == period).Select(x => x.TotalInsurance).SumAsync();
+
+                var avgGross = Math.Round(grossTotal / contractsInMonth, 2);
+
+                var avgNet = Math.Round(netTotal / contractsInMonth, 2);
+
+                var avgInsurance = Math.Round(totalInsurance / contractsInMonth, 2);
+
+                var avgTax = Math.Round(totalPITax / contractsInMonth, 2);
+
+                var departmentList = await _dbContext.Department.Where(x => x.IsActive).ToListAsync();
+
+                var salaryPercent = new Dictionary<string, double>();
+
+                var total = await _salary.Where(x => x.IsActive && x.PayrollPeriod == period).Select(x => x.SalaryPayment).SumAsync();
+
+                foreach (var department in departmentList)
+                {
+                    var departmentName = department.Name;
+                    var departmentId = department.Id;
+                    var totalSalary = await (from salary in _dbContext.Salary
+                                             join user in _dbContext.AspNetUsers on salary.UserId equals user.Id
+                                             where user.DepartmentId == departmentId && salary.PayrollPeriod == period && salary.IsActive == true
+                                             select (decimal?)salary.SalaryPayment).SumAsync() ?? 0m;
+                    salaryPercent[departmentName] = Math.Round(((double)(totalSalary / total)) * 100, 2);
+                }
+
+                result.Data = new
+                {
+                    grossTotal = grossTotal,
+                    netTotal = netTotal,
+                    totalPersonnel = contractsInMonth,
+                    totalBenefit = totalBenefit,
+                    totalPITax = totalPITax,
+                    totalInsurance = totalInsurance,
+                    avgGross = avgGross,
+                    avgNet = avgNet,
+                    avgInsurance = avgInsurance,
+                    avgTax = avgTax,
+                    salaryPercent = salaryPercent
+                };
+            }
+            catch (Exception ex)
+            {
+                throw new BadRequestException(Utilities.MakeExceptionMessage(ex));
+            }
+            return result;
+        }
+        #endregion --ADMIN--
+        #region --USER--
         public async Task<ResponseResult> GetMe(string id)
         {
             var result = new ResponseResult();
@@ -1311,8 +1379,10 @@ namespace OA.Service
                     entity.AvatarFileId = user != null ? user.AvatarFileId : null;
                     entity.StartDateWork = await _dbContext.EmploymentContract.Where(x => x.UserId == userId && x.IsActive).Select(x => x.StartDate).FirstOrDefaultAsync();
                     entity.PayrollCycle = await _salary.Where(x => x.IsActive && x.UserId == userId).CountAsync();
-                    entity.RoleName = "0";
-
+                    entity.RoleName = user != null ? (await _userManager.GetRolesAsync(user)).ToList() : new List<string>();
+                    entity.DepartmentName = user != null ? await _dbContext.Department.Where(x => x.IsActive && x.Id == (user.DepartmentId ?? 1))?.Select(x => x.Name).FirstOrDefaultAsync() : string.Empty;
+                    entity.PhoneNumber = user != null ? (user.PhoneNumber != null ? user.PhoneNumber : string.Empty) : string.Empty;
+                    entity.Email = user != null ? (user.Email != null ? user.Email : string.Empty) : string.Empty;
                 }
                 result.Data = entity;
             }
@@ -1322,5 +1392,7 @@ namespace OA.Service
             }
             return result;
         }
+
+        #endregion --USER--
     }
 }

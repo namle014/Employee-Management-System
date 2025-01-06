@@ -923,6 +923,7 @@ namespace OA.Service
                     }
                     result.Data = new
                     {
+                        period = period,                                                                                                                                                                                                                                                                                                                            
                         salaryByDepartment = salaryByDepartment,
                         salaryPercent = salaryPercent
                     };
@@ -945,7 +946,7 @@ namespace OA.Service
             {
 
                 var period = _salary
-                    .AsEnumerable()  // Chuyển về bộ nhớ client
+                    .AsEnumerable()  // Chuyển về bộ nhớ client                                                                                                                                                                     
                     .OrderByDescending(x => DateTime.ParseExact(x.PayrollPeriod, "MM-yyyy", CultureInfo.InvariantCulture))
                     .Select(x => x.PayrollPeriod)
                     .FirstOrDefault();
@@ -1339,7 +1340,7 @@ namespace OA.Service
         }
         #endregion --ADMIN--
         #region --USER--
-        public async Task<ResponseResult> GetMe(string id)
+        public async Task<ResponseResult> GetMeSalaryInfo(string id)
         {
             var result = new ResponseResult();
             var userId = GlobalUserId;
@@ -1357,6 +1358,37 @@ namespace OA.Service
                 salary.FullName = user != null ? (user.FullName != null ? user.FullName : string.Empty) : string.Empty;
                 salary.AvatarFileId = user != null ? user.AvatarFileId : null;
                 result.Data = salary;
+            }
+            catch (Exception ex)
+            {
+                throw new BadRequestException(Utilities.MakeExceptionMessage(ex));
+            }
+            return result;
+        }
+        public async Task<ResponseResult>GetIncomeByYear(int year)
+        {
+            var result = new ResponseResult();
+            try
+            {
+                //var userId = GlobalUserId != null ? GlobalUserId : string.Empty;
+                var userId = "CC001";
+                var mySalaryList = await _salary.Where(x => x.IsActive && x.PayrollPeriod.Contains(year.ToString()) && x.UserId == userId).Select(x => x.TotalSalary).ToListAsync();
+                result.Data = mySalaryList;
+            }
+            catch (Exception ex)
+            {
+                throw new BadRequestException(Utilities.MakeExceptionMessage(ex));
+            }
+            return result;
+        }
+        public async Task<ResponseResult> GetMeInfoCycle(int year)
+        {
+            var result = new ResponseResult();
+            try
+            {
+                var infoCycleList = new List<MyInfoCycleVModel>();
+                var userId = GlobalUserId != null ? GlobalUserId : string.Empty;
+                var mySalaryList = await _salary.Where(x => x.IsActive && x.UserId == userId && x.PayrollPeriod.Contains(year.ToString())).ToListAsync();
             }
             catch (Exception ex)
             {

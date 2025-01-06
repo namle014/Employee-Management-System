@@ -31,5 +31,6 @@ namespace OA.Core.Services
         Task<ResponseResult> PayrollOverview(string period);
         Task<ResponseResult> GetUnpaidSalary(SalaryFilterVModel model, int year);
         Task<ResponseResult> GetMeInfo();
+        Task<ResponseResult> GetIncomeByYear(int year);
     }
 }

@@ -272,5 +272,15 @@ namespace OA.WebApi.Controllers
             }
             return NotFound(new { Message = "Không có dữ liệu" });
         }
+        [HttpGet]
+        public async Task<IActionResult> GetIncomeByYear(int year)
+        {
+            if (year < 1)
+            {
+                return new BadRequestObjectResult($"Năm {year} không hợp lệ");
+            }
+            var response = await _salaryService.GetIncomeByYear(year);
+            return Ok(response);
+        }
     }
 }

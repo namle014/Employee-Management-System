@@ -241,6 +241,16 @@ namespace OA.WebApi.Controllers
             var response = await _salaryService.GetPayrollReport(year);
             return Ok(response);
         }
+        [HttpGet]
+        public async Task<IActionResult> PayrollOverview(string period)
+        {
+            if (string.IsNullOrEmpty(period))
+            {
+                return new BadRequestObjectResult(string.Format(MsgConstants.Error404Messages.FieldIsInvalid, "period"));
+            }
+            var response = await _salaryService.PayrollOverview(period);
+            return Ok(response);
+        }
 
         [HttpGet]
         public async Task<IActionResult> GetUnpaidSalary([FromQuery] SalaryFilterVModel model, int year)
@@ -251,6 +261,16 @@ namespace OA.WebApi.Controllers
             }
             var response = await _salaryService.GetUnpaidSalary(model, year);
             return Ok(response);
+        }
+        [HttpGet]
+        public async Task<IActionResult> GetMeInfo()
+        {
+            var response = await _salaryService.GetMeInfo();
+            if (response.Data != null)
+            {
+                return Ok(response);
+            }
+            return NotFound(new { Message = "Không có dữ liệu" });
         }
     }
 }

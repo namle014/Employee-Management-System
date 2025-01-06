@@ -27,6 +27,12 @@ namespace OA.WebAPI.AdminControllers
             return Ok(response);
         }
 
+        [HttpGet]
+        public async Task<IActionResult> SearchByUserId([FromQuery] FilterErrorReportVModel model, string UserId)
+        {
+            var response = await _errorReportService.SearchByUserId(model,UserId);
+            return Ok(response);
+        }
 
         [HttpGet]
         public async Task<IActionResult> CountErrorReportsInMonth([FromQuery] int year, [FromQuery] int month)

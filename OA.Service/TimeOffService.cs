@@ -14,6 +14,7 @@ using OA.Infrastructure.EF.Context;
 using OA.Infrastructure.EF.Entities;
 using OA.Service.Helpers;
 using System.Threading;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 using static System.Net.WebRequestMethods;
 
 namespace OA.Service
@@ -57,14 +58,6 @@ namespace OA.Service
                 recordsQuery = recordsQuery.Where(x => x.CreatedDate.HasValue &&
                                                       x.CreatedDate.Value.Date == model.CreatedDate.Value.Date).ToList();
             }
-            if (!string.IsNullOrEmpty(keyword))
-            {
-                recordsQuery = recordsQuery.Where(x =>
-                    x.UserId.ToLower().Contains(keyword) ||
-                    (x.Reason != null && x.Reason.ToLower().Contains(keyword)) ||
-                    (x.CreatedBy != null && x.CreatedBy.ToLower().Contains(keyword))
-                ).ToList();
-            }
 
 
 
@@ -75,7 +68,7 @@ namespace OA.Service
                 var user = await _userManager.FindByIdAsync(timeOff.UserId);
                 if (user != null)
                 {
-                 
+
 
                     var userAvatarPath = "https://localhost:44381/avatars/aa1678f0-75b0-48d2-ae98-50871178e9bd.jfif";
                     if (user.AvatarFileId.HasValue)
@@ -87,13 +80,13 @@ namespace OA.Service
                         }
                     }
 
-                 
+
 
                     dynamic timeOffModel = new
                     {
                         Id = timeOff.Id,
-                        IsActive=timeOff.IsActive,
-                        CreatedBy= timeOff.CreatedBy,
+                        IsActive = timeOff.IsActive,
+                        CreatedBy = timeOff.CreatedBy,
                         UserId = timeOff.UserId,
                         StartDate = timeOff.StartDate,
                         EndDate = timeOff.EndDate,
@@ -102,19 +95,41 @@ namespace OA.Service
                         Content = timeOff.Content,
                         CreatedDate = timeOff.CreatedDate,
                         FullName = user.FullName,
-                      
                         EmployeeId = user.EmployeeId,
                         AvatarPath = userAvatarPath,
-                      
+
                     };
                     recordsWithDetails.Add(timeOffModel);
                 }
             }
 
 
-            var records = model.IsDescending
-                ? recordsWithDetails.OrderByDescending(r => r.Id).ToList()
-                : recordsWithDetails.OrderBy(r => r.Id).ToList();
+            if (!string.IsNullOrEmpty(keyword))
+            {
+                recordsWithDetails = recordsWithDetails.Where(x =>
+                    (x.Reason != null && x.Reason.ToLower().Contains(keyword)) ||
+                    (x.EmployeeId != null && x.EmployeeId.ToLower().Contains(keyword)) ||
+                    (x.Id != null && x.Id.ToString().ToLower().Contains(keyword)) ||
+                    (x.Content != null && x.Content.ToLower().Contains(keyword)) ||
+                    (x.FullName != null && x.FullName.ToLower().Contains(keyword))
+                ).ToList();
+            }
+
+
+            var records = recordsWithDetails.ToList();
+
+            if (model.IsDescending == false)
+            {
+                records = string.IsNullOrEmpty(model.SortBy)
+                        ? records.OrderBy(r => r.CreatedDate).ToList()
+                        : records.OrderBy(r => r.GetType().GetProperty(model.SortBy)?.GetValue(r, null)).ToList();
+            }
+            else
+            {
+                records = string.IsNullOrEmpty(model.SortBy)
+                        ? records.OrderByDescending(r => r.CreatedDate).ToList()
+                        : records.OrderByDescending(r => r.GetType().GetProperty(model.SortBy)?.GetValue(r, null)).ToList();
+            }
 
             result.Data = new Pagination()
             {
@@ -156,9 +171,20 @@ namespace OA.Service
             }
 
 
-            var records = model.IsDescending
-                ? await recordsQuery.OrderByDescending(r => r.Id).ToListAsync()
-                : await recordsQuery.OrderBy(r => r.Id).ToListAsync();
+            var records = recordsQuery.ToList();
+
+            if (model.IsDescending == false)
+            {
+                records = string.IsNullOrEmpty(model.SortBy)
+                        ? records.OrderBy(r => r.CreatedDate).ToList()
+                        : records.OrderBy(r => r.GetType().GetProperty(model.SortBy)?.GetValue(r, null)).ToList();
+            }
+            else
+            {
+                records = string.IsNullOrEmpty(model.SortBy)
+                        ? records.OrderByDescending(r => r.CreatedDate).ToList()
+                        : records.OrderByDescending(r => r.GetType().GetProperty(model.SortBy)?.GetValue(r, null)).ToList();
+            }
 
             result.Data = new Pagination()
             {

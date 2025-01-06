@@ -28,6 +28,8 @@ namespace OA.Core.Services
         Task<ResponseResult> GetGrossTotalByDepartments();
         Task<ResponseResult> GetPayrollOfDepartmentOvertime(int year);
         Task<ResponseResult> GetPayrollReport(int year);
+        Task<ResponseResult> PayrollOverview(string period);
         Task<ResponseResult> GetUnpaidSalary(SalaryFilterVModel model, int year);
+        Task<ResponseResult> GetMeInfo();
     }
 }

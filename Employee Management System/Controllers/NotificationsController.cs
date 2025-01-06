@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using OA.Core.Constants;
+using OA.Core.Models;
 using OA.Core.Services;
 using OA.Core.VModels;
 namespace OA.WebApi.Controllers
@@ -31,18 +32,42 @@ namespace OA.WebApi.Controllers
             return Ok(response);
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetCountIsNew([FromQuery] UserNotificationsUpdateIsNewVModel model)
-        {
-            var response = await _service.GetCountIsNew(model);
+        //[HttpGet]
+        //public async Task<IActionResult> GetCountIsNew([FromQuery] UserNotificationsUpdateIsNewVModel model)
+        //{
+        //    var response = await _service.GetCountIsNew(model);
 
-            return Ok(response);
-        }
+        //    return Ok(response);
+        //}
 
         [HttpGet]
         public async Task<IActionResult> Search([FromQuery] FilterNotificationsVModel model)
         {
             var response = await _service.Search(model);
+
+            return Ok(response);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> StatNotificationByMonth([FromQuery] int month, [FromQuery] int year)
+        {
+            var response = await _service.StatNotificationByMonth(month, year);
+
+            return Ok(response);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> CountNotifyReadByUser([FromQuery] FilterCountNotifyReadByUser model)
+        {
+            var response = await _service.CountNotifyReadByUser(model);
+
+            return Ok(response);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> StatNotificationByType([FromQuery] int year)
+        {
+            var response = await _service.StatNotificationByType(year);
 
             return Ok(response);
         }
@@ -81,18 +106,18 @@ namespace OA.WebApi.Controllers
             return NoContent();
         }
 
-        [HttpPut]
-        public async Task<IActionResult> UpdateIsNew([FromBody] UserNotificationsUpdateIsNewVModel model)
-        {
-            if (!ModelState.IsValid)
-            {
-                return new BadRequestObjectResult(ModelState);
-            }
+        //[HttpPut]
+        //public async Task<IActionResult> UpdateIsNew([FromBody] UserNotificationsUpdateIsNewVModel model)
+        //{
+        //    if (!ModelState.IsValid)
+        //    {
+        //        return new BadRequestObjectResult(ModelState);
+        //    }
 
-            await _service.UpdateIsNew(model);
+        //    await _service.UpdateIsNew(model);
 
-            return NoContent();
-        }
+        //    return NoContent();
+        //}
 
 
         [HttpPut(CommonConstants.Routes.Id)]
@@ -116,21 +141,21 @@ namespace OA.WebApi.Controllers
             return NoContent();
         }
 
-        [HttpPut]
-        public async Task<IActionResult> ChangeStatusForUser(NotificationsUpdateReadVModel model)
-        {
-            await _service.ChangeStatusForUser(model);
+        //[HttpPut]
+        //public async Task<IActionResult> ChangeStatusForUser(NotificationsUpdateReadVModel model)
+        //{
+        //    await _service.ChangeStatusForUser(model);
 
-            return NoContent();
-        }
+        //    return NoContent();
+        //}
 
-        [HttpPut]
-        public async Task<IActionResult> ChangeAllRead(NotificationsUpdateAllReadVModel model)
-        {
-            await _service.ChangeAllRead(model);
+        //[HttpPut]
+        //public async Task<IActionResult> ChangeAllRead(NotificationsUpdateAllReadVModel model)
+        //{
+        //    await _service.ChangeAllRead(model);
 
-            return NoContent();
-        }
+        //    return NoContent();
+        //}
 
         [HttpDelete(CommonConstants.Routes.Id)]
         public virtual async Task<IActionResult> Remove(int id)

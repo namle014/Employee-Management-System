@@ -7,7 +7,7 @@
         {
             public const string BaseRoute = "api/[controller]/[action]";
             public const string BaseRouteAdmin = "api/admin/[controller]/[action]";
-            public const string BaseRouteEnduser = "api/enduser/[controller]/[action]";
+            public const string BaseRouteUser = "api/user/[controller]/[action]";
             public const string SystemGroup = "APIs System";
             public const string AdminGroup = "APIs for WebAdmin";
             public const string CommonGroup = "APIs Common";

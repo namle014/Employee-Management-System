@@ -26,6 +26,20 @@ namespace OA.WebApi.Controllers
         }
 
         [HttpGet]
+        public async Task<IActionResult> StatEventByYear([FromQuery] int year)
+        {
+            var response = await _eventService.StatEventByYear(year);
+            return Ok(response);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> TotalEventsByMonth([FromQuery] int month, [FromQuery] int year)
+        {
+            var response = await _eventService.TotalEventsByMonth(month, year);
+            return Ok(response);
+        }
+
+        [HttpGet]
         public async Task<IActionResult> GetById(int id)
         {
             if (id <= 0)

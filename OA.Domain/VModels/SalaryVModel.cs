@@ -46,6 +46,13 @@ namespace OA.Core.VModels
         public DateTime StartDateWork { get; set; }
         public int? PayrollCycle { get; set; }
     }
+    public class MyInfoCycleVModel()
+    {
+        public string Period { get; set; } = string.Empty;
+        public bool Ispaid { get; set; }
+        public float NumberOfWorkingHours { get; set; }
+        public decimal TotalSalary { get; set; }
+    }
     public class SalaryGetByIdVModel
     {
         public int? AvatarFileId { get; set; }

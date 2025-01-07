@@ -9,5 +9,11 @@ namespace OA.Domain.Services
     {
         Task<ResponseResult> Search(RewardFilterVModel model);
         Task<ExportStream> ExportFile(RewardFilterVModel model, ExportFileVModel exportModel);
+
+        Task<ResponseResult> GetTotalRewards(int years, int month);
+
+        Task<ResponseResult> GetTotalRewardByEmployeeInMonth(int year, int month);
+
+        Task<ResponseResult> GetRewardStatInYear(int year);
     }
 }

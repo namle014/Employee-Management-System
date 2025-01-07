@@ -98,5 +98,17 @@ namespace OA.WebApi.Controllers
             var response = await _service.GetAll();
             return Ok(response);
         }
+
+        [HttpGet]
+        public async Task<IActionResult> GetInsuranceByYears([FromQuery] int year)
+        {
+            if (year <= 0)
+            {
+                return BadRequest("Year must be a valid value.");
+            }
+
+            var response = await _service.GetInsuranceByYears(year);
+            return Ok(response);
+        }
     }
 }

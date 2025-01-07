@@ -12,5 +12,7 @@ namespace OA.Core.Services
         Task ChangeStatus(string id);
         Task Remove(string id);
         Task<ResponseResult> GetAll();
+
+        Task<ResponseResult> GetInsuranceByYears(int years);
     }
 }

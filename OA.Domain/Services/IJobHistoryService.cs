@@ -10,7 +10,7 @@ namespace OA.Core.Services
         Task<ResponseResult> Search(FilterJobHistoryVModel model);
         Task<ExportStream> ExportFile(FilterJobHistoryVModel model, ExportFileVModel exportModel);
         Task<ResponseResult> GetById(int id);
-        Task Create(JobHistoryCreateVModel model);
+        Task Create(JobHistoryVModel model);
         Task Update(JobHistoryUpdateVModel model);
         Task Remove(int id);
     }

@@ -1,4 +1,6 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.SqlServer.Server;
 using OA.Core.Constants;
@@ -8,19 +10,23 @@ using OA.Core.VModels;
 using OA.Domain.VModels;
 using OA.Infrastructure.EF.Context;
 using OA.Infrastructure.EF.Entities;
+using OA.Repository;
 using OA.Service.Helpers;
 
 namespace OA.Service
 {
-    public class JobHistoryService : IJobHistoryService
+    public class JobHistoryService : GlobalVariables, IJobHistoryService
     {
         private readonly ApplicationDbContext _context;
         private readonly IMapper _mapper;
+        private readonly UserManager<AspNetUser> _userManager;
 
-        public JobHistoryService(ApplicationDbContext context, IMapper mapper)
+
+        public JobHistoryService(UserManager<AspNetUser> userManager, IHttpContextAccessor contextAccessor, ApplicationDbContext context, IMapper mapper) : base(contextAccessor)
         {
             _context = context;
             _mapper = mapper;
+            _userManager = userManager;
         }
 
         // Search for error reports with optional filtering
@@ -70,24 +76,52 @@ namespace OA.Service
         }
 
 
-        // Create a new error report
-        public async Task Create(JobHistoryCreateVModel model)
+
+        public async Task Create(JobHistoryVModel model)
         {
-            
-            
-                var entityCreated = _mapper.Map<JobHistoryCreateVModel, JobHistory>(model);
+          
+            List<string> usersToNotify;
 
-               
-                await _context.JobHistory.AddAsync(entityCreated);
-
-                var saveResult = await _context.SaveChangesAsync();
-                if (saveResult <= 0)
+            if (model.TypeToNotify == 1)
+            {
+                var users = await _userManager.Users.ToListAsync();
+                usersToNotify = users.Select(user => user.Id).ToList();
+            }
+            else
+            {
+                if (model.ListUser == null || !model.ListUser.Any())
                 {
-                    throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorCreate, "JobHistory"));
+                    throw new BadRequestException("ListUser cannot be null or empty.");
                 }
-            
-            
+                usersToNotify = model.ListUser;
+            }
+
+        
+            foreach (var userId in usersToNotify)
+            {
+                var jobHistory = new JobHistoryCreateVModel
+                {
+                    EmployeeId = userId,
+                    StartDate = model.StartDate,
+                    EndDate = model.EndDate,
+                    Note = model.Note,
+                    JobDescription = model.JobDescription,
+                    SupervisorId = GlobalUserId,
+                    WorkLocation = model.WorkLocation,
+                    Allowance = model.Allowance
+                };
+                var entity = _mapper.Map<JobHistoryCreateVModel, JobHistory>(jobHistory);
+                await _context.JobHistory.AddAsync(entity);
+            }
+
+            var saveResult = await _context.SaveChangesAsync();
+            if (saveResult <= 0)
+            {
+                throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorCreate, "JobHistory"));
+            }
         }
+
+
 
 
 

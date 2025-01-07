@@ -47,7 +47,7 @@ namespace OA.WebAPI.AdminControllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] JobHistoryCreateVModel model)
+        public async Task<IActionResult> Create([FromBody] JobHistoryVModel model)
         {
             if (!ModelState.IsValid)
             {

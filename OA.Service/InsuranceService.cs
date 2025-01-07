@@ -234,6 +234,10 @@ namespace OA.Service
             if(string.IsNullOrEmpty(value)) return true;
             return false;
         }
-        
+
+        public Task<ResponseResult> GetInsuranceByYears(int years)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

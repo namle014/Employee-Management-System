@@ -114,5 +114,135 @@ namespace OA.Service
                 throw new BadRequestException(string.Format(MsgConstants.ErrorMessages.ErrorCreate, "Object"));
             }
         }
+
+        public async Task<ResponseResult> GetTotalDisciplines(int years, int month)
+        {
+            var result = new ResponseResult();
+
+            var previousMonth = month == 1 ? 12 : month - 1;
+            var previousYear = month == 1 ? years - 1 : years;
+
+            var firstDayOfMonth = new DateTime(years, month, 1);
+            var lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
+
+            var firstDayOfPreviousMonth = new DateTime(previousYear, previousMonth, 1);
+            var lastDayOfPreviousMonth = firstDayOfPreviousMonth.AddMonths(1).AddDays(-1);
+
+            var disciplines = await _dbContext.Discipline.Where(c => c.Date <= lastDayOfMonth && c.Date >= firstDayOfPreviousMonth).ToListAsync();
+
+            var disciplinesInMonth = disciplines.Count(c =>
+                c.Date <= lastDayOfMonth && c.Date >= firstDayOfMonth);
+
+            var disciplinesInPreviousMonth = disciplines.Count(c =>
+                c.Date <= lastDayOfPreviousMonth && c.Date >= firstDayOfPreviousMonth);
+
+            var disciplinepercent = 0;
+            if (disciplinesInPreviousMonth == 0)
+            {
+                disciplinepercent = 100;
+            }
+            else
+            {
+                disciplinepercent = (disciplinesInMonth - disciplinesInPreviousMonth) * 100 / disciplinesInPreviousMonth;
+            }
+
+
+            result.Data = new
+            {
+                TotalBenefit = disciplinesInMonth,
+                BenefitPercent = disciplinepercent,
+            };
+            return result;
+        }
+
+        public Task<ResponseResult> GetTotalDisciplineByEmployeeInMonth(int year, int month)
+        {
+            var result = new ResponseResult();
+
+            try
+            {
+                var disciplineStats = new List<object>();
+
+                var firstDayOfMonth = new DateTime(year, month, 1);
+                var lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
+
+                var disciplines = _dbContext.Reward
+                        .Where(r => r.Date >= firstDayOfMonth && r.Date <= lastDayOfMonth)
+                        .GroupBy(r => r.UserId)
+                        .Select(g => new
+                        {
+                            UserId = g.Key,
+                            RewardCount = g.Count(),
+                            FullName = _dbContext.AspNetUsers
+                                .Where(u => u.Id == g.Key)
+                                .Select(u => u.FullName)
+                                .FirstOrDefault()
+                        })
+                        .OrderByDescending(r => r.RewardCount) // Sắp xếp giảm dần
+                        .ToList();
+                foreach (var discipline in disciplines)
+                {
+                    disciplineStats.Add(new
+                    {
+                        FullNames = discipline.FullName,
+                        TotalRewards = discipline.RewardCount
+                    });
+                }
+
+                result.Data = new
+                {
+                    DataDisciplines = disciplineStats
+                };
+
+            }
+            catch (Exception ex)
+            {
+                throw new BadRequestException(Utilities.MakeExceptionMessage(ex));
+            }
+            return Task.FromResult(result); // Bọc result trong Task
+        }
+
+        public async Task<ResponseResult> GetDisciplineStatInYear(int year)
+        {
+            var result = new ResponseResult();
+            try
+            {
+                var yearStats = new List<object>();
+
+                for (int month = 1; month <= 12; month++)
+                {
+
+                    var firstDayOfMonth = new DateTime(year, month, 1);
+                    var lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
+
+
+
+                    var Discipline = await _dbContext.Discipline.Where(c => c.Date <= lastDayOfMonth && c.Date >= firstDayOfMonth).ToListAsync();
+
+                    var disciplinesInMonth = Discipline.Count(c =>
+                        c.Date <= lastDayOfMonth && c.Date >= firstDayOfMonth);
+
+
+
+
+                    yearStats.Add(new
+                    {
+                        Month = month,
+                        DisciplinesInMonths = disciplinesInMonth,
+                    });
+                }
+
+                result.Data = new
+                {
+                    Year = year,
+                    MonthlyStats = yearStats
+                };
+            }
+            catch (Exception ex)
+            {
+                throw new BadRequestException(Utilities.MakeExceptionMessage(ex));
+            }
+            return result;
+        }
     }
 }

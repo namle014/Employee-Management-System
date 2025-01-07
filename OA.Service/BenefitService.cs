@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using ChatGPT.Net.DTO.ChatGPTUnofficial;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -11,6 +12,8 @@ using OA.Infrastructure.EF.Context;
 using OA.Infrastructure.EF.Entities;
 using OA.Repository;
 using OA.Service.Helpers;
+using System.Diagnostics.Contracts;
+using System.Reflection.Metadata.Ecma335;
 
 namespace OA.Service
 {
@@ -388,9 +391,8 @@ namespace OA.Service
                 var usertable = await _dbContext.AspNetUsers
                     .Where(x=>x.Id == userId).ToListAsync();
                 vmodel.FullName = usertable[0].FullName;
-                vmodel.Gender = usertable[0].Gender;
+                vmodel.Gender = usertable[0].Gender.ToString();
                 var roles = await _userManager.GetRolesAsync(usertable[0]);
-                vmodel.Roles = roles.ToList();
 
                 int? departmentId = usertable[0].DepartmentId;
                 var departmentName = await _dbContext.Department.Where(x=> x.Id == departmentId).Select(x => x.Name).FirstOrDefaultAsync();
@@ -406,15 +408,14 @@ namespace OA.Service
                     (string.IsNullOrEmpty(keyword) ||
                      (vmodel.FullName?.ToLower()?.Contains(keyword) == true) ||
                      (vmodel.BenefitName?.ToLower()?.Contains(keyword) == true) ||
-                     (vmodel.UserId?.ToLower()?.Contains(keyword) == true) ||
-                     (vmodel.Roles != null && vmodel.Roles.Any(role => role.ToLower().Contains(keyword))) 
+                     (vmodel.UserId?.ToLower()?.Contains(keyword) == true)) 
                      //(model.DepartmentIds != null && departmentId != null && model.DepartmentIds.Any(id => id == departmentId)) ||
-                    ) &&
-                    (model.Roles.Count == 0||(model.Roles.Count != 0 && vmodel.Roles.Count !=0 && model.Roles.Any(role => vmodel.Roles.Contains(role)))) &&
+                     &&
+                    
                     (model.DepartmentIds.Count == 0 || (model.DepartmentIds.Count != 0 && departmentId != null && model.DepartmentIds.Any(id => id == departmentId))) &&
                     (model.Gender == null || vmodel.Gender == model.Gender) &&
-                    (vmodel.BenefitContribution >= model.FromBenefitContribution &&
-                     vmodel.BenefitContribution < model.ToBenefitContribution)
+                    (model.FromBenefitContribution == 0 || model.ToBenefitContribution == 0 || (vmodel.BenefitContribution >= model.FromBenefitContribution &&
+                     vmodel.BenefitContribution < model.ToBenefitContribution))
                    )
 
                 list.Add(vmodel);
@@ -423,6 +424,126 @@ namespace OA.Service
             result.Data.Records = pagedRecords;
             result.Data.TotalRecords = list.Count;
 
+            return result;
+        }
+
+        public async Task<ResponseResult> GetTotalBenefitAndEmployeeByMonthAndYear(int year, int month)
+        {
+            var result = new ResponseResult();
+
+            var previousMonth = month == 1 ? 12 : month - 1;
+            var previousYear = month == 1 ? year - 1 : year;
+
+            var firstDayOfMonth = new DateTime(year, month, 1);
+            var lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
+
+            var firstDayOfPreviousMonth = new DateTime(previousYear, previousMonth, 1);
+            var lastDayOfPreviousMonth = firstDayOfPreviousMonth.AddMonths(1).AddDays(-1);
+
+            var benefitUsers = await _dbContext.BenefitUser.Where(c => c.CreatedDate <= lastDayOfMonth && c.CreatedDate >= firstDayOfPreviousMonth).ToListAsync();
+
+            var benefitsInMonth = benefitUsers.Count(c =>
+                c.CreatedDate <= lastDayOfMonth && c.CreatedDate >= firstDayOfMonth);
+
+            var benefitsInPreviousMonth = benefitUsers.Count(c =>
+                c.CreatedDate <= lastDayOfPreviousMonth && c.CreatedDate >= firstDayOfPreviousMonth);
+
+            var benefitpercent = 0;
+            if(benefitsInPreviousMonth == 0)
+            {
+                benefitpercent = 100;
+            }
+            else
+            {
+                benefitpercent = (benefitsInMonth - benefitsInPreviousMonth) * 100 / benefitsInPreviousMonth;
+            }
+
+            var EmployeeInMonth = await _dbContext.BenefitUser
+                .Where(c => c.CreatedDate <= lastDayOfMonth && c.CreatedDate >= firstDayOfMonth)
+                .Select(c => c.UserId) // Chọn UserId
+                .Distinct() // Lấy các UserId khác nhau
+                .CountAsync(); // Đếm số lượng UserId khác nhau
+
+            var EmployeeInPreviousMonth = await _dbContext.BenefitUser
+                .Where(c => c.CreatedDate <= lastDayOfPreviousMonth && c.CreatedDate >= firstDayOfPreviousMonth)
+                .Select(c => c.UserId) // Chọn UserId
+                .Distinct() // Lấy các UserId khác nhau
+                .CountAsync(); // Đếm số lượng UserId khác nhau
+
+            var employeeBenefitPercent = 0;
+            if (EmployeeInPreviousMonth == 0)
+            {
+                employeeBenefitPercent = 100;
+            }
+            else
+            {
+                employeeBenefitPercent = (EmployeeInMonth - EmployeeInPreviousMonth) * 100 / EmployeeInPreviousMonth ;
+            }
+
+            result.Data = new
+            {
+                TotalBenefit = benefitsInMonth,
+                BenefitPercent = benefitpercent,
+                TotalEmployee = EmployeeInMonth,
+                EmployeeBenefitPercent = employeeBenefitPercent
+            };
+            return result;
+
+        }
+
+        public async Task<ResponseResult> GetBenefitStatsByYears(int year)
+        {
+            var result = new ResponseResult();
+            try
+            {
+                var yearStats = new List<object>();
+
+                for (int month = 1; month <= 12; month++)
+                {
+                    var previousMonth = month == 1 ? 12 : month - 1;
+                    var previousYear = month == 1 ? year - 1 : year;
+                    var firstDayOfMonth = new DateTime(year, month, 1);
+                    var lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
+                    var firstDayOfPreviousMonth = new DateTime(previousYear, previousMonth, 1);
+                    var lastDayOfPreviousMonth = firstDayOfPreviousMonth.AddMonths(1).AddDays(-1);
+
+                    var benefitUsers = await _dbContext.BenefitUser.Where(c => c.CreatedDate <= lastDayOfMonth && c.CreatedDate >= firstDayOfPreviousMonth).ToListAsync();
+
+                    var benefitsInMonth = benefitUsers.Count(c =>
+                        c.CreatedDate <= lastDayOfMonth && c.CreatedDate >= firstDayOfMonth);
+
+                    var EmployeeInMonth = await _dbContext.BenefitUser
+                        .Where(c => c.CreatedDate <= lastDayOfMonth && c.CreatedDate >= firstDayOfMonth)
+                        .Select(c => c.UserId) // Chọn UserId
+                        .Distinct() // Lấy các UserId khác nhau
+                        .CountAsync(); // Đếm số lượng UserId khác nhau
+
+                    //yearStats.Add(new
+                    //{
+                    //    Month = month,
+                    //    StartCount = startCount,
+                    //    EndCount = endCount,
+                    //    ContractsInMonth = contractsInMonth,
+                    //});
+
+                    yearStats.Add(new
+                    {
+                        Month = month,
+                        BenefitsInMonths = benefitsInMonth,
+                        EmployeeInMonths = EmployeeInMonth
+                    });
+                }
+
+                result.Data = new
+                {
+                    Year = year,
+                    MonthlyStats = yearStats
+                };
+            }
+            catch (Exception ex)
+            {
+                throw new BadRequestException(Utilities.MakeExceptionMessage(ex));
+            }
             return result;
         }
     }

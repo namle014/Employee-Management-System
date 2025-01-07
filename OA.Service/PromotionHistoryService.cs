@@ -45,18 +45,35 @@ namespace OA.Service
 
             var entities = await _promotionHistory
             .Where(i => i.EmployeeId == id)
-            .OrderByDescending(i => i.PromotionDate) // Sắp xếp giảm dần theo PromotionDate
+            .OrderByDescending(i => i.PromotionDate) 
             .ToListAsync();
 
-            if (!entities.Any())
+            var list = new List<GetByIdPromotionHistory>();
+            foreach (var entity in entities)
             {
-                throw new NotFoundException(MsgConstants.WarningMessages.NotFoundData);
+                var vmodel = _mapper.Map<GetByIdPromotionHistory>(entity);
+
+                var fromRoleName = await _dbContext.AspNetRoles.Where(i => i.Id == entity.FromRoleId).Select(i => i.Name).FirstOrDefaultAsync();
+                var toRoleName = await _dbContext.AspNetRoles.Where(i => i.Id == entity.ToRoleId).Select(i => i.Name).FirstOrDefaultAsync();
+                if(fromRoleName != null && toRoleName != null)
+                {
+                    vmodel.FromRoleName = fromRoleName;
+                    vmodel.ToRoleName = toRoleName;
+                }
+               
+                list.Add(vmodel);
             }
 
-            // Ánh xạ danh sách các bản ghi sang DTO
-            var entityMapped = _mapper.Map<List<PromotionHistory>, List<GetByIdPromotionHistory>>(entities);
 
-            result.Data = entityMapped;
+
+            //if (!entities.Any())
+            //{
+            //    throw new NotFoundException(MsgConstants.WarningMessages.NotFoundData);
+            //}
+
+            //var entityMapped = _mapper.Map<List<PromotionHistory>, List<GetByIdPromotionHistory>>(entities);
+
+            result.Data = list;
 
             return result;
         }
@@ -156,7 +173,7 @@ namespace OA.Service
                 c.PromotionDate <= currentQuarterEnd && c.PromotionDate >= currentQuarterStart);
 
             var promotionHistoryPreviousQuarter = promotionHistories.Count(c =>
-                c.PromotionDate <= previousQuarterStart && c.PromotionDate >= previousQuarterEnd);
+                c.PromotionDate >= previousQuarterStart && c.PromotionDate <= previousQuarterEnd);
 
             var promotionHistoryPercent = 0;
             if (promotionHistoryPreviousQuarter == 0)

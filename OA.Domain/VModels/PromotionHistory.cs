@@ -25,5 +25,9 @@ namespace OA.Core.VModels
 
     }
 
-    public class GetByIdPromotionHistory : GetAllPromotionHistory { }
+    public class GetByIdPromotionHistory : GetAllPromotionHistory {
+        public string FromRoleName { get; set; } = string.Empty;
+        public string ToRoleName { get; set; } = string.Empty;
+
+    }
 }

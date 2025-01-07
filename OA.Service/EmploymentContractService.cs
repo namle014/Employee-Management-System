@@ -88,15 +88,15 @@ namespace OA.Service
 
             if (entity != null)
             {
-               
                 var manager = await _userManager.FindByIdAsync(entity.ManagerId.ToString());
 
                 if (manager != null)
                 {
                     var managerFullName = manager.FullName;
                     var managerEmployeeId = manager.EmployeeId;
+
                     var managerAvatarPath = "https://localhost:44381/avatars/aa1678f0-75b0-48d2-ae98-50871178e9bd.jfif";
-        
+
                     if (manager.AvatarFileId.HasValue)
                     {
                         var sysFile = await _sysFileRepo.GetById((int)manager.AvatarFileId);
@@ -105,16 +105,34 @@ namespace OA.Service
                             managerAvatarPath = "https://localhost:44381/" + sysFile.Path;
                         }
                     }
-                   
+
+
                     result.Data = new
                     {
-                        EmploymentContract = _mapper.Map<EmploymentContract>(entity),
-                        Manager = new
-                        {
+                        
+                            entity.Id,
+                            entity.IsActive,
+                            entity.CreatedBy,
+                            entity.CreatedDate,
+                            entity.UpdatedBy,
+                            entity.UpdatedDate,
+                            entity.UserId,
+                            entity.ContractName,
+                            entity.StartDate,
+                            entity.EndDate,
+                            entity.BasicSalary,
+                            entity.Clause,
+                            entity.ProbationPeriod,
+                            entity.WorkingHours,
+                            entity.TerminationClause,
+                            entity.ContractFileId,
+                            entity.TypeContract,
+                            entity.ManagerId,
+                            entity.Appendix,
                             ManagerFullName = managerFullName,
-                            ManagerId = managerEmployeeId,
+                            ManagerEmployeeId = managerEmployeeId,
                             ManagerAvatarPath = managerAvatarPath
-                        }
+                       
                     };
                 }
                 else
@@ -129,6 +147,7 @@ namespace OA.Service
 
             return result;
         }
+
 
 
 

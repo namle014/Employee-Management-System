@@ -48,6 +48,131 @@ namespace OA.Service
             return result;
         }
 
+
+        public async Task<ResponseResult> SearchByUser(string id)
+        {
+            var result = new ResponseResult();
+
+            // Lấy danh sách công việc của nhân viên
+            var entity = await _context.JobHistory
+                .Where(x => x.EmployeeId == id)
+                .OrderByDescending(x => x.StartDate)
+                .ToListAsync();
+
+            if (entity == null || !entity.Any())
+            {
+                throw new NotFoundException(MsgConstants.WarningMessages.NotFoundData);
+            }
+
+            var jobHistoryWithManagerInfo = new List<object>();
+
+           
+            foreach (var job in entity)
+            {
+                var managerInfo = new { SupervisorFullName = string.Empty, SupervisorEmployeeId = string.Empty };
+
+                if (!string.IsNullOrEmpty(job.SupervisorId))
+                {
+               
+                    var manager = await _userManager.FindByIdAsync(job.SupervisorId);
+
+                    if (manager != null)
+                    {
+                        managerInfo = new
+                        {
+                            SupervisorFullName = manager.FullName,
+                            SupervisorEmployeeId = manager.EmployeeId
+                        };
+                    }
+                }
+
+                var jobWithManager = new
+                {
+                    job.Id,
+                    job.EmployeeId,
+                    job.SupervisorId,
+                    job.JobDescription,
+                    job.WorkLocation,
+                    job.StartDate,
+                    job.EndDate,
+                    job.Allowance,
+                    job.Note,
+                    managerInfo.SupervisorFullName,
+                    managerInfo.SupervisorEmployeeId
+                };
+
+                jobHistoryWithManagerInfo.Add(jobWithManager);
+            }
+            result.Data = jobHistoryWithManagerInfo;
+            return result;
+        }
+
+
+        public async Task<ResponseResult> SearchByUser()
+        {
+            var result = new ResponseResult();
+
+            // Lấy danh sách công việc của nhân viên
+            var entity = await _context.JobHistory
+                .Where(x => x.EmployeeId == GlobalUserId)
+                .OrderByDescending(x => x.StartDate)
+                .ToListAsync();
+
+            if (entity == null || !entity.Any())
+            {
+                throw new NotFoundException(MsgConstants.WarningMessages.NotFoundData);
+            }
+
+            var jobHistoryWithManagerInfo = new List<object>();
+
+
+            foreach (var job in entity)
+            {
+                var managerInfo = new { SupervisorFullName = string.Empty, SupervisorEmployeeId = string.Empty };
+
+                if (!string.IsNullOrEmpty(job.SupervisorId))
+                {
+
+                    var manager = await _userManager.FindByIdAsync(job.SupervisorId);
+
+                    if (manager != null)
+                    {
+                        managerInfo = new
+                        {
+                            SupervisorFullName = manager.FullName,
+                            SupervisorEmployeeId = manager.EmployeeId
+                        };
+                    }
+                }
+
+                var jobWithManager = new
+                {
+                    job.Id,
+                    job.EmployeeId,
+                    job.SupervisorId,
+                    job.JobDescription,
+                    job.WorkLocation,
+                    job.StartDate,
+                    job.EndDate,
+                    job.Allowance,
+                    job.Note,
+                    managerInfo.SupervisorFullName,
+                    managerInfo.SupervisorEmployeeId
+                };
+
+                jobHistoryWithManagerInfo.Add(jobWithManager);
+            }
+            result.Data = jobHistoryWithManagerInfo;
+            return result;
+        }
+
+
+
+
+
+
+
+
         // Export error reports to a file
         public async Task<ExportStream> ExportFile(FilterJobHistoryVModel model, ExportFileVModel exportModel)
         {

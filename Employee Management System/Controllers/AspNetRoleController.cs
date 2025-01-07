@@ -7,6 +7,7 @@ using OA.Domain.VModels.Role;
 
 namespace OA.WebApi.AdminControllers
 {
+    [Authorize(Policy = CommonConstants.Authorize.CustomAuthorization)]
     [Route(CommonConstants.Routes.BaseRouteAdmin)]
     public class AspNetRoleController : Controller
     {

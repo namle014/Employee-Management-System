@@ -17,6 +17,7 @@ using OA.Core.Repositories;
 using AngleSharp.Dom;
 using OA.Repository;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 
 namespace OA.Service
 {
@@ -24,11 +25,14 @@ namespace OA.Service
     {
         private readonly ApplicationDbContext _context; 
         private readonly IMapper _mapper;
+        private readonly UserManager<AspNetUser> _userManager;
         private readonly IBaseRepository<SysFile> _sysFileRepo;
         private IHttpContextAccessor _contextAccessor;
 
-        public EmploymentContractService(ApplicationDbContext context, IHttpContextAccessor contextAccessor, IMapper mapper, IBaseRepository<SysFile> sysFileRepo):base(contextAccessor)
+        public EmploymentContractService(UserManager<AspNetUser> userManager, ApplicationDbContext context, IHttpContextAccessor contextAccessor,
+            IMapper mapper, IBaseRepository<SysFile> sysFileRepo):base(contextAccessor)
         {
+            _userManager = userManager;
             _context = context;
             _mapper = mapper;
             _sysFileRepo = sysFileRepo;
@@ -73,6 +77,60 @@ namespace OA.Service
 
             return result;
         }
+
+
+        public async Task<ResponseResult> SearchUser()
+        {
+            var result = new ResponseResult();
+
+            var entity = await _context.EmploymentContract
+                .FirstOrDefaultAsync(x => x.UserId == GlobalUserId);
+
+            if (entity != null)
+            {
+               
+                var manager = await _userManager.FindByIdAsync(entity.ManagerId.ToString());
+
+                if (manager != null)
+                {
+                    var managerFullName = manager.FullName;
+                    var managerEmployeeId = manager.EmployeeId;
+                    var managerAvatarPath = "https://localhost:44381/avatars/aa1678f0-75b0-48d2-ae98-50871178e9bd.jfif";
+        
+                    if (manager.AvatarFileId.HasValue)
+                    {
+                        var sysFile = await _sysFileRepo.GetById((int)manager.AvatarFileId);
+                        if (sysFile != null)
+                        {
+                            managerAvatarPath = "https://localhost:44381/" + sysFile.Path;
+                        }
+                    }
+                   
+                    result.Data = new
+                    {
+                        EmploymentContract = _mapper.Map<EmploymentContract>(entity),
+                        Manager = new
+                        {
+                            ManagerFullName = managerFullName,
+                            ManagerId = managerEmployeeId,
+                            ManagerAvatarPath = managerAvatarPath
+                        }
+                    };
+                }
+                else
+                {
+                    throw new NotFoundException("Quản lý không tồn tại trong hệ thống.");
+                }
+            }
+            else
+            {
+                throw new NotFoundException(MsgConstants.WarningMessages.NotFoundData);
+            }
+
+            return result;
+        }
+
+
 
 
         public async Task<ResponseResult> GetContractsExpiringSoon(FilterEmploymentContractVModel model, int daysUntilExpiration)

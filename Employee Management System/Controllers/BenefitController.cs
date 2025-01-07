@@ -3,6 +3,7 @@ using OA.Core.Constants;
 using OA.Core.Services;
 using OA.Core.VModels;
 using OA.Domain.VModels;
+using OA.Service;
 
 namespace OA.WebAPI.AdminControllers
 {
@@ -164,7 +165,29 @@ namespace OA.WebAPI.AdminControllers
             return NoContent();
         }
 
+        [HttpGet("monthly-stats")]
+        public async Task<IActionResult> GetTotalBenefitAndEmployeeByMonthAndYear([FromQuery] int year, [FromQuery] int month)
+        {
+            if (year <= 0 || month <= 0 || month > 12)
+            {
+                return BadRequest("Year and month must be valid values.");
+            }
 
+            var response = await _service.GetTotalBenefitAndEmployeeByMonthAndYear(year, month);
+            return Ok(response);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetBenefitStatsByYears([FromQuery] int year)
+        {
+            if (year <= 0)
+            {
+                return BadRequest("Year must be a valid value.");
+            }
+
+            var response = await _service.GetBenefitStatsByYears(year);
+            return Ok(response);
+        }
 
     }
 }

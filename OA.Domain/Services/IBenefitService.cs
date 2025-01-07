@@ -20,5 +20,9 @@ namespace OA.Core.Services
         Task RemoveBenefitType(string id);
         //Task<ResponseResult> GetAll();
         Task<ResponseResult> GetAllBenefitUser(GetAllBenefitUser model);
+        Task<ResponseResult> GetTotalBenefitAndEmployeeByMonthAndYear(int year, int month);
+        Task<ResponseResult> GetBenefitStatsByYears(int year);
+
+
     }
 }

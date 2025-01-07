@@ -27,6 +27,8 @@ namespace OA.WebAPI.AdminControllers
             return Ok(response);
         }
 
+        
+
         [HttpGet]
         public async Task<IActionResult> ExportFile([FromQuery] RewardFilterVModel model, [FromQuery] ExportFileVModel exportModel)
         {
@@ -34,5 +36,42 @@ namespace OA.WebAPI.AdminControllers
             var content = await _rewardService.ExportFile(model, exportModel);
             return File(content.Stream, content.ContentType, content.FileName);
         }
+
+        [HttpGet("monthly-stats")]
+        public async Task<IActionResult> GetTotalRewardByEmployeeInMonth([FromQuery] int year, [FromQuery] int month)
+        {
+            if (year <= 0 || month <= 0 || month > 12)
+            {
+                return BadRequest("Year and month must be valid values.");
+            }
+
+            var response = await _rewardService.GetTotalRewardByEmployeeInMonth(year, month);
+            return Ok(response);
+        }
+
+        [HttpGet("monthly-stats")]
+        public async Task<IActionResult> GetTotalRewards([FromQuery] int year, [FromQuery] int month)
+        {
+            if (year <= 0 || month <= 0 || month > 12)
+            {
+                return BadRequest("Year and month must be valid values.");
+            }
+
+            var response = await _rewardService.GetTotalRewards(year, month);
+            return Ok(response);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetRewardStatInYear([FromQuery] int year)
+        {
+            if (year <= 0)
+            {
+                return BadRequest("Year must be a valid value.");
+            }
+
+            var response = await _rewardService.GetRewardStatInYear(year);
+            return Ok(response);
+        }
+
     }
 }

@@ -16,6 +16,8 @@ namespace OA.Domain.VModels.Role
         [Required]
         public string Name { get; set; } = string.Empty;
         public bool? IsActive { get; set; }
+        public bool IsAdmin { get; set; }
+        public int LevelRole { get; set; }
     }
     public class AspNetRoleUpdateVModel : AspNetRoleCreateVModel
     {

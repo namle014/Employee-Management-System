@@ -178,6 +178,7 @@ builder.Services.AddScoped<IErrorReportService, ErrorReportService>();
 builder.Services.AddScoped<IJobHistoryService, JobHistoryService>();
 builder.Services.AddScoped<IMassageService, MassageService>();
 builder.Services.AddScoped<ITransferHistoryService, TransferHistoryService>();
+builder.Services.AddScoped<IPromotionHistoryService, PromotionHistoryService>();
 
 // Configure Identity
 var identityBuilder = builder.Services.AddIdentityCore<AspNetUser>(opt =>

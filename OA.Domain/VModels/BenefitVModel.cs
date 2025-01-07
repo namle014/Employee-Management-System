@@ -90,14 +90,13 @@ namespace OA.Core.VModels
         [Range(1, int.MaxValue)]
         public int PageNumber { get; set; } = 1;
         public string? SortBy { get; set; }
-        public bool IsExport { get; set; } = false;
+        // bool IsExport { get; set; } = false;
         public bool IsDescending { get; set; } = true;
         public string? Keyword { get; set; }
         public int Id { get; set; }
         public string UserId { get; set; } = string.Empty;
         public string FullName { get; set; } = string.Empty;
-        public bool? Gender { get; set; }
-        public List<string> Roles { get; set; } = new List<string>();
+        public string? Gender { get; set; }
         public string? DepartmentName{ get; set; }
         public List<int> DepartmentIds { get; set; } = new List<int>();
         public decimal FromBenefitContribution { get; set; }

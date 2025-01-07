@@ -65,5 +65,20 @@ namespace OA.Service
             }
             return result;
         }
+        public async Task<ResponseResult> GetMeInfo()
+        {
+            var result = new ResponseResult();
+            try
+            {
+                var userId = GlobalUserId != null ? GlobalUserId : string.Empty;
+                var entity = await _transferHistory.Where(x => x.EmployeeId == userId).ToListAsync();
+                result.Data = entity;
+            }
+            catch (Exception ex)
+            {
+                throw new BadRequestException(Utilities.MakeExceptionMessage(ex));
+            }
+            return result;
+        }
     }
 }

@@ -29,10 +29,6 @@ namespace OA.WebApi.Controllers
                 return new BadRequestObjectResult(string.Format(MsgConstants.Error404Messages.FieldIsInvalid, "Id"));
             }
             var response = await _salaryService.GetById(id);
-            if (!response.Success)
-            {
-                _logger.LogWarning(CommonConstants.LoggingEvents.GetItem, MsgConstants.ErrorMessages.ErrorGetById, _nameController);
-            }
             return Ok(response);
         }
 
@@ -60,13 +56,13 @@ namespace OA.WebApi.Controllers
             return Created();
         }
         [HttpPut]
-        public async Task<IActionResult> Update([FromBody] SalaryUpdateVModel model)
+        public async Task<IActionResult> Update(string Id)
         {
-            if (!ModelState.IsValid)
+            if (string.IsNullOrEmpty(Id))
             {
-                return new BadRequestObjectResult(ModelState);
+                return new BadRequestObjectResult("Phải có Id");
             }
-            await _salaryService.Update(model);
+            await _salaryService.Update(Id);
             return NoContent();
         }
         [HttpDelete(CommonConstants.Routes.Id)]
@@ -87,6 +83,16 @@ namespace OA.WebApi.Controllers
                 return new BadRequestObjectResult(string.Format(MsgConstants.Error404Messages.FieldIsInvalid, "id"));
             }
             await _salaryService.ChangeStatus(id);
+            return NoContent();
+        }
+        [HttpPut]
+        public async Task<IActionResult> PaymentConfirmation(string Id)
+        {
+            if (string.IsNullOrEmpty(Id))
+            {
+                return new BadRequestObjectResult("Phải có Id");
+            }
+            await _salaryService.PaymentConfirmation(Id);
             return NoContent();
         }
         [HttpGet]
@@ -262,25 +268,6 @@ namespace OA.WebApi.Controllers
             var response = await _salaryService.GetUnpaidSalary(model, year);
             return Ok(response);
         }
-        [HttpGet]
-        public async Task<IActionResult> GetMeInfo()
-        {
-            var response = await _salaryService.GetMeInfo();
-            if (response.Data != null)
-            {
-                return Ok(response);
-            }
-            return NotFound(new { Message = "Không có dữ liệu" });
-        }
-        [HttpGet]
-        public async Task<IActionResult> GetIncomeByYear(int year)
-        {
-            if (year < 1)
-            {
-                return new BadRequestObjectResult($"Năm {year} không hợp lệ");
-            }
-            var response = await _salaryService.GetIncomeByYear(year);
-            return Ok(response);
-        }
+        
     }
 }

@@ -1,5 +1,6 @@
 ﻿using AngleSharp.Dom;
 using AutoMapper;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -12,6 +13,7 @@ using OA.Domain.Services;
 using OA.Domain.VModels;
 using OA.Infrastructure.EF.Context;
 using OA.Infrastructure.EF.Entities;
+using OA.Repository;
 using OA.Service.Helpers;
 using System.Diagnostics.Contracts;
 using System.Threading;
@@ -20,7 +22,7 @@ using static System.Net.WebRequestMethods;
 
 namespace OA.Service
 {
-    public class TimeOffService : ITimeOffService
+    public class TimeOffService : GlobalVariables, ITimeOffService
     {
         private readonly ApplicationDbContext _context; 
         private readonly IMapper _mapper;
@@ -29,8 +31,9 @@ namespace OA.Service
         private readonly IBaseRepository<SysFile> _sysFileRepo;
         private readonly IBaseRepository<Department> _departmentService;
 
-
-        public TimeOffService(IBaseRepository<Department> departmentService, IBaseRepository<SysFile> sysFileRepo, RoleManager<AspNetRole> roleManager, UserManager<AspNetUser> userManager, ApplicationDbContext context, IMapper mapper)
+        public TimeOffService(IHttpContextAccessor contextAccessor,IBaseRepository<Department> departmentService, 
+            IBaseRepository<SysFile> sysFileRepo, RoleManager<AspNetRole> roleManager, UserManager<AspNetUser> userManager, 
+            ApplicationDbContext context, IMapper mapper) : base(contextAccessor)
         {
             _userManager = userManager;
             _roleManager = roleManager;
@@ -144,12 +147,12 @@ namespace OA.Service
         }
 
 
-        public async Task<ResponseResult> SearchByUserId(FilterTimeOffVModel model,string UserId)
+        public async Task<ResponseResult> SearchByUserId(FilterTimeOffVModel model)
         {
             var result = new ResponseResult();
             string? keyword = model.Keyword?.ToLower();
 
-            var recordsQuery = _context.TimeOff.AsQueryable().Where(x => x.UserId == UserId); ;
+            var recordsQuery = _context.TimeOff.AsQueryable().Where(x => x.UserId == GlobalUserId);
 
 
             if (model.IsActive != null)
@@ -257,6 +260,45 @@ namespace OA.Service
                 percentageIncrease = ((double)(currentMonthCount - previousMonthCount) / previousMonthCount) * 100;
             }
                       
+            result.Data = new
+            {
+                Year = year,
+                Month = month,
+                CurrentMonthCount = currentMonthCount,
+                PreviousMonthCount = previousMonthCount,
+                PercentageIncrease = percentageIncrease
+            };
+
+            return result;
+        }
+
+
+
+        public async Task<ResponseResult> CountTimeOffsInMonthUser(int year, int month)
+        {
+            var result = new ResponseResult();
+
+            if (month < 1 || month > 12)
+            {
+                throw new ArgumentException("Tháng phải nằm trong khoảng từ 1 đến 12.");
+            }
+
+            var currentMonthCount = await _context.TimeOff
+                .Where(x => x.StartDate.Year == year && x.StartDate.Month == month && x.UserId == GlobalUserId)
+                .CountAsync();
+
+            var previousMonth = month == 1 ? 12 : month - 1;
+            var previousYear = month == 1 ? year - 1 : year;
+            var previousMonthCount = await _context.TimeOff
+                .Where(x => x.StartDate.Year == previousYear && x.StartDate.Month == previousMonth && x.UserId == GlobalUserId)
+                .CountAsync();
+
+            double? percentageIncrease = null;
+            if (previousMonthCount > 0)
+            {
+                percentageIncrease = ((double)(currentMonthCount - previousMonthCount) / previousMonthCount) * 100;
+            }
+
             result.Data = new
             {
                 Year = year,
@@ -404,6 +446,8 @@ namespace OA.Service
         public async Task Create(TimeOffCreateVModel model)
         {
             var entityCreated = _mapper.Map<TimeOffCreateVModel, TimeOff>(model);
+            entityCreated.CreatedDate = DateTime.Now;
+            entityCreated.CreatedBy = GlobalUserName;
             await _context.TimeOff.AddAsync(entityCreated);
             var maxId = await _context.TimeOff.MaxAsync(x => (int?)x.Id) ?? 0; 
             entityCreated.Id = maxId + 1;

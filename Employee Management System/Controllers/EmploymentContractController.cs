@@ -28,6 +28,14 @@ namespace OA.WebAPI.AdminControllers
         }
 
 
+        [HttpGet]
+        public async Task<IActionResult> SearchUser()
+        {
+            var response = await _EmploymentContractService.SearchUser();
+            return Ok(response);
+        }
+
+
         [HttpGet("expiring-soon")]
         public async Task<IActionResult> GetContractsExpiringSoon([FromQuery] FilterEmploymentContractVModel model, int daysUntilExpiration)
         {

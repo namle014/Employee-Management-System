@@ -1,4 +1,6 @@
-﻿using AutoMapper;
+﻿using AngleSharp.Dom;
+using AutoMapper;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.SqlServer.Server;
@@ -10,11 +12,12 @@ using OA.Core.VModels;
 using OA.Domain.VModels;
 using OA.Infrastructure.EF.Context;
 using OA.Infrastructure.EF.Entities;
+using OA.Repository;
 using OA.Service.Helpers;
 
 namespace OA.Service
 {
-    public class ErrorReportService : IErrorReportService
+    public class ErrorReportService : GlobalVariables, IErrorReportService
     {
         private readonly ApplicationDbContext _context;
         private readonly IMapper _mapper;
@@ -23,7 +26,9 @@ namespace OA.Service
         private readonly IBaseRepository<SysFile> _sysFileRepo;
         private readonly IBaseRepository<Department> _departmentService;
 
-        public ErrorReportService(IBaseRepository<Department> departmentService, IBaseRepository<SysFile> sysFileRepo, RoleManager<AspNetRole> roleManager, UserManager<AspNetUser> userManager, ApplicationDbContext context, IMapper mapper)
+        public ErrorReportService(IHttpContextAccessor contextAccessor, IBaseRepository<Department> departmentService, 
+            IBaseRepository<SysFile> sysFileRepo, RoleManager<AspNetRole> roleManager, 
+            UserManager<AspNetUser> userManager, ApplicationDbContext context, IMapper mapper) : base(contextAccessor)
         {
             _userManager = userManager;
             _roleManager = roleManager;
@@ -153,13 +158,13 @@ namespace OA.Service
         }
 
 
-        public async Task<ResponseResult> SearchByUserId(FilterErrorReportVModel model, string UserId)
+        public async Task<ResponseResult> SearchByUserId(FilterErrorReportVModel model)
         {
             var result = new ResponseResult();
             string? keyword = model.Keyword?.ToLower();
             string? isType = model.IsType;
 
-            var recordsQuery = _context.ErrorReport.AsQueryable().Where(x => x.ReportedBy == UserId);
+            var recordsQuery = _context.ErrorReport.AsQueryable().Where(x => x.ReportedBy == GlobalUserId);
 
             if (!string.IsNullOrEmpty(isType))
             {
@@ -269,6 +274,42 @@ namespace OA.Service
             return result;
         }
 
+
+        public async Task<ResponseResult> CountErrorReportsInMonthUser(int year, int month)
+        {
+            var result = new ResponseResult();
+
+            var currentMonthCount = await _context.ErrorReport
+                .Where(x => x.ReportedDate.HasValue && x.ReportedDate.Value.Year == year && 
+                x.ReportedDate.Value.Month == month && x.ReportedBy == GlobalUserId)
+                .CountAsync();
+
+            var previousMonth = month == 1 ? 12 : month - 1;
+            var previousYear = month == 1 ? year - 1 : year;
+
+            var previousMonthCount = await _context.ErrorReport
+                .Where(x => x.ReportedDate.HasValue && x.ReportedDate.Value.Year == previousYear &&
+                x.ReportedDate.Value.Month == previousMonth && x.ReportedBy == GlobalUserId)
+                .CountAsync();
+
+            double? percentageIncrease = null;
+            if (previousMonthCount > 0)
+            {
+                percentageIncrease = ((double)(currentMonthCount - previousMonthCount) / previousMonthCount) * 100;
+            }
+
+            result.Data = new
+            {
+                Year = year,
+                Month = month,
+                CurrentMonthCount = currentMonthCount,
+                PreviousMonthCount = previousMonthCount,
+                PercentageIncrease = percentageIncrease
+            };
+
+            return result;
+        }
+
         public async Task<ResponseResult> CountErrorReportsByTypeAndYear(int year)
         {
             var result = new ResponseResult();         
@@ -279,6 +320,25 @@ namespace OA.Service
                 {
                     Type = g.Key, 
                     Count = g.Count()  
+                })
+                .ToListAsync();
+
+            result.Data = errorReports;
+
+            return result;
+        }
+
+
+        public async Task<ResponseResult> CountErrorReportsByTypeAndYearUser(int year)
+        {
+            var result = new ResponseResult();
+            var errorReports = await _context.ErrorReport
+                .Where(x => x.ReportedDate.HasValue && x.ReportedDate.Value.Year == year && x.ReportedBy == GlobalUserId)
+                .GroupBy(x => x.Type)
+                .Select(g => new
+                {
+                    Type = g.Key,
+                    Count = g.Count()
                 })
                 .ToListAsync();
 
@@ -318,13 +378,9 @@ namespace OA.Service
 
         // Create a new error report
         public async Task Create(ErrorReportCreateVModel model)
-        {
-            
-            
-                var entityCreated = _mapper.Map<ErrorReportCreateVModel, ErrorReport>(model);
-
-               
-                await _context.ErrorReport.AddAsync(entityCreated);
+        {            
+            var entityCreated = _mapper.Map<ErrorReportCreateVModel, ErrorReport>(model);
+            await _context.ErrorReport.AddAsync(entityCreated);
 
                 var saveResult = await _context.SaveChangesAsync();
                 if (saveResult <= 0)

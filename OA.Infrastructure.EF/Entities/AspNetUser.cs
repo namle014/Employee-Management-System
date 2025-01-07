@@ -22,7 +22,7 @@ namespace OA.Infrastructure.EF.Entities
         public int EmployeeDependents { get; set; }
         public string? Note { get; set; }
         public string? EmployeeId { get; set; }
-        
+        public int RemainingLeaveDays { get; set; }
 
         //[ForeignKey("AvatarFileId")]
         //public virtual SysFile? AvatarFile { get; set; }

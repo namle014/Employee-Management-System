@@ -45,7 +45,7 @@ namespace OA.WebApi.AdminControllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> ExportFile([FromQuery] FilterSysConfigurationVModel model, [FromQuery] ExportFileVModel exportModel)
+        public async Task<IActionResult> Export([FromQuery] FilterSysConfigurationVModel model, [FromQuery] ExportFileVModel exportModel)
         {
             exportModel.Type.ToUpper();
             var content = await _sysConfigService.ExportFile(model, exportModel);

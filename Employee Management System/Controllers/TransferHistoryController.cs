@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using OA.Core.Constants;
 using OA.Core.Services;
 using OA.Core.VModels;
@@ -6,18 +7,19 @@ using OA.Service;
 
 namespace OA.WebApi.Controllers
 {
+    [Authorize(Policy = CommonConstants.Authorize.CustomAuthorization)]
     [Route(CommonConstants.Routes.BaseRouteAdmin)]
     [ApiController]
 
-    public class TransferHistoryController: Controller
+    public class TransferHistoryController : Controller
     {
         private readonly ITransferHistoryService _transferHistoryService;
         private readonly ILogger _logger;
 
         public TransferHistoryController(ITransferHistoryService transferHistoryService, ILogger logger)
         {
-            _transferHistoryService=transferHistoryService;
-            _logger=logger;
+            _transferHistoryService = transferHistoryService;
+            _logger = logger;
         }
 
         [HttpGet]

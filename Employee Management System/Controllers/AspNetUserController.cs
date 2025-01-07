@@ -7,6 +7,7 @@ using OA.Domain.VModels.Role;
 using System.Text.RegularExpressions;
 namespace OA.WebApi.AdminControllers
 {
+    [Authorize(Policy = CommonConstants.Authorize.CustomAuthorization)]
     [Route(CommonConstants.Routes.BaseRouteAdmin)]
     public class AspNetUserController : Controller
     {

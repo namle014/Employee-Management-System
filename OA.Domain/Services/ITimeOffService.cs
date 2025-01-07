@@ -8,6 +8,7 @@ namespace OA.Core.Services
     {
         Task<ResponseResult> Search(FilterTimeOffVModel model);
         Task<ResponseResult> SearchByUserId(FilterTimeOffVModel model, string UserId);
+        Task<ResponseResult> GetTimeOffIsAccepted(int year);
         Task<ResponseResult> CountTimeOffsInMonth(int year, int month);
         Task<ResponseResult> GetPendingFutureTimeOffs(DateTime fromDate);
         Task<ExportStream> ExportFile(FilterTimeOffVModel model, ExportFileVModel exportModel);

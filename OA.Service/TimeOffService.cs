@@ -13,6 +13,7 @@ using OA.Domain.VModels;
 using OA.Infrastructure.EF.Context;
 using OA.Infrastructure.EF.Entities;
 using OA.Service.Helpers;
+using System.Diagnostics.Contracts;
 using System.Threading;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 using static System.Net.WebRequestMethods;
@@ -196,6 +197,41 @@ namespace OA.Service
         }
 
 
+
+        public async Task<ResponseResult> GetTimeOffIsAccepted(int year)
+        {
+            var result = new ResponseResult();
+
+            if (year < 1)
+            {
+                throw new ArgumentException("Năm không hợp lệ.");
+            }
+
+            var resultData = new List<object>();
+
+            for (int month = 1; month <= 12; month++)
+            {
+                var timeOffRecords = await _context.TimeOff
+                    .Where(x => x.CreatedDate.HasValue
+                             && x.CreatedDate.Value.Year == year
+                             && x.CreatedDate.Value.Month == month)
+                    .ToListAsync();
+
+                var monthlyStats = new
+                {
+                    Month = month,
+                    Unprocessed = timeOffRecords.Count(x => x.IsAccepted == null),
+                    Processed = timeOffRecords.Count(x => x.IsAccepted != null)
+                };
+
+                resultData.Add(monthlyStats);
+            }
+
+            result.Data = resultData;
+            return result;
+        }
+
+
         public async Task<ResponseResult> CountTimeOffsInMonth(int year, int month)
         {
             var result = new ResponseResult();
@@ -232,6 +268,8 @@ namespace OA.Service
 
             return result;
         }
+
+
 
 
         public async Task<ResponseResult> GetPendingFutureTimeOffs(DateTime fromDate)

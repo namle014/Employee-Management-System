@@ -207,6 +207,35 @@ namespace OA.Service
 
 
 
+        public async Task<ResponseResult> CountErrorReportsByStatusAndMonth(int year)
+        {
+            var result = new ResponseResult();
+          
+            var errorReports = await _context.ErrorReport
+                .Where(x => x.ReportedDate.HasValue && x.ReportedDate.Value.Year == year)
+                .GroupBy(x => x.ReportedDate.Value.Month)
+                .Select(g => new
+                {
+                    Month = g.Key,
+                    Unprocessed = g.Count(x => x.Status == "1" || x.Status == "0"),
+                    Processed = g.Count(x => x.Status == "2" || x.Status == "3")
+                })
+                .ToListAsync();
+
+            var resultData = Enumerable.Range(1, 12).Select(month => new
+            {
+                Month = month,
+                Unprocessed = errorReports.FirstOrDefault(x => x.Month == month)?.Unprocessed ?? 0,
+                Processed = errorReports.FirstOrDefault(x => x.Month == month)?.Processed ?? 0
+            }).ToArray();
+
+            result.Data = resultData;
+
+            return result;
+        }
+
+
+
 
         public async Task<ResponseResult> CountErrorReportsInMonth(int year, int month)
         {

@@ -34,6 +34,20 @@ namespace OA.WebAPI.AdminControllers
             return Ok(response);
         }
 
+
+        [HttpGet]
+        public async Task<IActionResult> CountErrorReportsByStatusAndMonth(int year)
+        {
+            if (year <= 0)
+            {
+                return BadRequest("Year must be a valid value.");
+            }
+
+            var response = await _errorReportService.CountErrorReportsByStatusAndMonth(year);
+            return Ok(response);
+        }
+
+
         [HttpGet]
         public async Task<IActionResult> CountErrorReportsInMonth([FromQuery] int year, [FromQuery] int month)
         {

@@ -34,6 +34,13 @@ namespace OA.WebAPI.AdminControllers
             return Ok(response);
         }
 
+        [HttpGet]
+        public async Task<IActionResult> GetTimeOffIsAccepted(int year)
+        {
+            var response = await _timeOffService.GetTimeOffIsAccepted(year);
+            return Ok(response);
+        }
+
 
         [HttpGet("time-off-statistics")]
         public async Task<IActionResult> GetTimeOffStatistics(int year, int month)

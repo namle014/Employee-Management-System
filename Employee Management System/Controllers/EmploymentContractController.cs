@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using OA.Core.Constants;
 using OA.Core.Services;
 using OA.Core.VModels;
@@ -6,6 +7,7 @@ using OA.Domain.VModels;
 
 namespace OA.WebAPI.AdminControllers
 {
+    [Authorize(Policy = CommonConstants.Authorize.CustomAuthorization)]
     [Route(CommonConstants.Routes.BaseRouteAdmin)]
     [ApiController]
     public class EmploymentContractController : ControllerBase
@@ -24,6 +26,14 @@ namespace OA.WebAPI.AdminControllers
         public async Task<IActionResult> Search([FromQuery] FilterEmploymentContractVModel model)
         {
             var response = await _EmploymentContractService.Search(model);
+            return Ok(response);
+        }
+
+
+        [HttpGet]
+        public async Task<IActionResult> SearchUser()
+        {
+            var response = await _EmploymentContractService.SearchUser();
             return Ok(response);
         }
 
@@ -151,6 +161,6 @@ namespace OA.WebAPI.AdminControllers
             return NoContent();
         }
 
-       
+
     }
 }

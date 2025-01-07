@@ -1,7 +1,10 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using OA.Core.Constants;
 
 namespace Employee_Management_System.Controllers
 {
+    [Authorize(Policy = CommonConstants.Authorize.CustomAuthorization)]
     [ApiController]
     [Route("[controller]")]
     public class WeatherForecastController : ControllerBase

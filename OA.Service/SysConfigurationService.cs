@@ -145,5 +145,45 @@ namespace OA.Service
             var exportData = ImportExportHelper<SysConfigurationExportVModel>.ExportFile(exportModel, records);
             return exportData;
         }
+
+        public async Task<ResponseResult> GetTime()
+        {
+            var result = new ResponseResult();
+
+            var morning_time = await _sysConfigRepo.Where(x => x.Key == "MORNING_TIME" && x.Type == "workship");
+            var lunch_break = await _sysConfigRepo.Where(x => x.Key == "LUNCH_BREAK" && x.Type == "workship");
+            var afternoon_time = await _sysConfigRepo.Where(x => x.Key == "AFTERNOON_TIME" && x.Type == "workship");
+            var quitting_time = await _sysConfigRepo.Where(x => x.Key == "QUITTING_TIME" && x.Type == "workship");
+
+            if (morning_time.Count() == 0)
+            {
+                throw new BadRequestException("Không có thời gian chấm công sáng trong hệ thống!");
+            }
+
+            if (afternoon_time.Count() == 0)
+            {
+                throw new BadRequestException("Không có thời gian chấm công chiều trong hệ thống!");
+            }
+
+            if (lunch_break.Count() == 0)
+            {
+                throw new BadRequestException("Không có thời gian nghỉ trưa trong hệ thống!");
+            }
+
+            if (quitting_time.Count() == 0)
+            {
+                throw new BadRequestException("Không có thời gian ra về trong hệ thống!");
+            }
+
+            result.Data = new
+            {
+                MorningTime = morning_time.FirstOrDefault()?.Value,
+                LunchBreak = lunch_break.FirstOrDefault()?.Value,
+                AfternoonTime = afternoon_time.FirstOrDefault()?.Value,
+                QuittingTime = quitting_time.FirstOrDefault()?.Value
+            };
+
+            return result;
+        }
     }
 }

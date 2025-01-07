@@ -1,5 +1,6 @@
 ﻿using AngleSharp.Dom;
 using AutoMapper;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -12,13 +13,16 @@ using OA.Domain.Services;
 using OA.Domain.VModels;
 using OA.Infrastructure.EF.Context;
 using OA.Infrastructure.EF.Entities;
+using OA.Repository;
 using OA.Service.Helpers;
+using System.Diagnostics.Contracts;
 using System.Threading;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 using static System.Net.WebRequestMethods;
 
 namespace OA.Service
 {
-    public class TimeOffService : ITimeOffService
+    public class TimeOffService : GlobalVariables, ITimeOffService
     {
         private readonly ApplicationDbContext _context; 
         private readonly IMapper _mapper;
@@ -27,8 +31,9 @@ namespace OA.Service
         private readonly IBaseRepository<SysFile> _sysFileRepo;
         private readonly IBaseRepository<Department> _departmentService;
 
-
-        public TimeOffService(IBaseRepository<Department> departmentService, IBaseRepository<SysFile> sysFileRepo, RoleManager<AspNetRole> roleManager, UserManager<AspNetUser> userManager, ApplicationDbContext context, IMapper mapper)
+        public TimeOffService(IHttpContextAccessor contextAccessor,IBaseRepository<Department> departmentService, 
+            IBaseRepository<SysFile> sysFileRepo, RoleManager<AspNetRole> roleManager, UserManager<AspNetUser> userManager, 
+            ApplicationDbContext context, IMapper mapper) : base(contextAccessor)
         {
             _userManager = userManager;
             _roleManager = roleManager;
@@ -57,14 +62,6 @@ namespace OA.Service
                 recordsQuery = recordsQuery.Where(x => x.CreatedDate.HasValue &&
                                                       x.CreatedDate.Value.Date == model.CreatedDate.Value.Date).ToList();
             }
-            if (!string.IsNullOrEmpty(keyword))
-            {
-                recordsQuery = recordsQuery.Where(x =>
-                    x.UserId.ToLower().Contains(keyword) ||
-                    (x.Reason != null && x.Reason.ToLower().Contains(keyword)) ||
-                    (x.CreatedBy != null && x.CreatedBy.ToLower().Contains(keyword))
-                ).ToList();
-            }
 
 
 
@@ -75,7 +72,7 @@ namespace OA.Service
                 var user = await _userManager.FindByIdAsync(timeOff.UserId);
                 if (user != null)
                 {
-                 
+
 
                     var userAvatarPath = "https://localhost:44381/avatars/aa1678f0-75b0-48d2-ae98-50871178e9bd.jfif";
                     if (user.AvatarFileId.HasValue)
@@ -87,13 +84,13 @@ namespace OA.Service
                         }
                     }
 
-                 
+
 
                     dynamic timeOffModel = new
                     {
                         Id = timeOff.Id,
-                        IsActive=timeOff.IsActive,
-                        CreatedBy= timeOff.CreatedBy,
+                        IsActive = timeOff.IsActive,
+                        CreatedBy = timeOff.CreatedBy,
                         UserId = timeOff.UserId,
                         StartDate = timeOff.StartDate,
                         EndDate = timeOff.EndDate,
@@ -102,19 +99,41 @@ namespace OA.Service
                         Content = timeOff.Content,
                         CreatedDate = timeOff.CreatedDate,
                         FullName = user.FullName,
-                      
                         EmployeeId = user.EmployeeId,
                         AvatarPath = userAvatarPath,
-                      
+
                     };
                     recordsWithDetails.Add(timeOffModel);
                 }
             }
 
 
-            var records = model.IsDescending
-                ? recordsWithDetails.OrderByDescending(r => r.Id).ToList()
-                : recordsWithDetails.OrderBy(r => r.Id).ToList();
+            if (!string.IsNullOrEmpty(keyword))
+            {
+                recordsWithDetails = recordsWithDetails.Where(x =>
+                    (x.Reason != null && x.Reason.ToLower().Contains(keyword)) ||
+                    (x.EmployeeId != null && x.EmployeeId.ToLower().Contains(keyword)) ||
+                    (x.Id != null && x.Id.ToString().ToLower().Contains(keyword)) ||
+                    (x.Content != null && x.Content.ToLower().Contains(keyword)) ||
+                    (x.FullName != null && x.FullName.ToLower().Contains(keyword))
+                ).ToList();
+            }
+
+
+            var records = recordsWithDetails.ToList();
+
+            if (model.IsDescending == false)
+            {
+                records = string.IsNullOrEmpty(model.SortBy)
+                        ? records.OrderBy(r => r.CreatedDate).ToList()
+                        : records.OrderBy(r => r.GetType().GetProperty(model.SortBy)?.GetValue(r, null)).ToList();
+            }
+            else
+            {
+                records = string.IsNullOrEmpty(model.SortBy)
+                        ? records.OrderByDescending(r => r.CreatedDate).ToList()
+                        : records.OrderByDescending(r => r.GetType().GetProperty(model.SortBy)?.GetValue(r, null)).ToList();
+            }
 
             result.Data = new Pagination()
             {
@@ -128,12 +147,12 @@ namespace OA.Service
         }
 
 
-        public async Task<ResponseResult> SearchByUserId(FilterTimeOffVModel model,string UserId)
+        public async Task<ResponseResult> SearchByUserId(FilterTimeOffVModel model)
         {
             var result = new ResponseResult();
             string? keyword = model.Keyword?.ToLower();
 
-            var recordsQuery = _context.TimeOff.AsQueryable().Where(x => x.UserId == UserId); ;
+            var recordsQuery = _context.TimeOff.AsQueryable().Where(x => x.UserId == GlobalUserId);
 
 
             if (model.IsActive != null)
@@ -156,9 +175,20 @@ namespace OA.Service
             }
 
 
-            var records = model.IsDescending
-                ? await recordsQuery.OrderByDescending(r => r.Id).ToListAsync()
-                : await recordsQuery.OrderBy(r => r.Id).ToListAsync();
+            var records = recordsQuery.ToList();
+
+            if (model.IsDescending == false)
+            {
+                records = string.IsNullOrEmpty(model.SortBy)
+                        ? records.OrderBy(r => r.CreatedDate).ToList()
+                        : records.OrderBy(r => r.GetType().GetProperty(model.SortBy)?.GetValue(r, null)).ToList();
+            }
+            else
+            {
+                records = string.IsNullOrEmpty(model.SortBy)
+                        ? records.OrderByDescending(r => r.CreatedDate).ToList()
+                        : records.OrderByDescending(r => r.GetType().GetProperty(model.SortBy)?.GetValue(r, null)).ToList();
+            }
 
             result.Data = new Pagination()
             {
@@ -166,6 +196,41 @@ namespace OA.Service
                 TotalRecords = records.Count()
             };
 
+            return result;
+        }
+
+
+
+        public async Task<ResponseResult> GetTimeOffIsAccepted(int year)
+        {
+            var result = new ResponseResult();
+
+            if (year < 1)
+            {
+                throw new ArgumentException("Năm không hợp lệ.");
+            }
+
+            var resultData = new List<object>();
+
+            for (int month = 1; month <= 12; month++)
+            {
+                var timeOffRecords = await _context.TimeOff
+                    .Where(x => x.CreatedDate.HasValue
+                             && x.CreatedDate.Value.Year == year
+                             && x.CreatedDate.Value.Month == month)
+                    .ToListAsync();
+
+                var monthlyStats = new
+                {
+                    Month = month,
+                    Unprocessed = timeOffRecords.Count(x => x.IsAccepted == null),
+                    Processed = timeOffRecords.Count(x => x.IsAccepted != null)
+                };
+
+                resultData.Add(monthlyStats);
+            }
+
+            result.Data = resultData;
             return result;
         }
 
@@ -208,6 +273,47 @@ namespace OA.Service
         }
 
 
+
+        public async Task<ResponseResult> CountTimeOffsInMonthUser(int year, int month)
+        {
+            var result = new ResponseResult();
+
+            if (month < 1 || month > 12)
+            {
+                throw new ArgumentException("Tháng phải nằm trong khoảng từ 1 đến 12.");
+            }
+
+            var currentMonthCount = await _context.TimeOff
+                .Where(x => x.StartDate.Year == year && x.StartDate.Month == month && x.UserId == GlobalUserId)
+                .CountAsync();
+
+            var previousMonth = month == 1 ? 12 : month - 1;
+            var previousYear = month == 1 ? year - 1 : year;
+            var previousMonthCount = await _context.TimeOff
+                .Where(x => x.StartDate.Year == previousYear && x.StartDate.Month == previousMonth && x.UserId == GlobalUserId)
+                .CountAsync();
+
+            double? percentageIncrease = null;
+            if (previousMonthCount > 0)
+            {
+                percentageIncrease = ((double)(currentMonthCount - previousMonthCount) / previousMonthCount) * 100;
+            }
+
+            result.Data = new
+            {
+                Year = year,
+                Month = month,
+                CurrentMonthCount = currentMonthCount,
+                PreviousMonthCount = previousMonthCount,
+                PercentageIncrease = percentageIncrease
+            };
+
+            return result;
+        }
+
+
+
+
         public async Task<ResponseResult> GetPendingFutureTimeOffs(DateTime fromDate)
         {
             var result = new ResponseResult();
@@ -215,7 +321,7 @@ namespace OA.Service
             try
             {
                 var timeOffRecords = await _context.TimeOff
-                    .Where(x => x.StartDate >= fromDate && x.IsAccepted == false)
+                    .Where(x => x.StartDate >= fromDate && x.IsAccepted == null)
                     .OrderBy(x => x.StartDate)
                     .ToListAsync();
 
@@ -273,6 +379,42 @@ namespace OA.Service
 
 
 
+        public async Task<ResponseResult> UpdateIsAcceptedAsync(int id, bool? isAccepted)
+        {
+            var result = new ResponseResult();
+
+            try
+            {
+                var timeOff = await _context.TimeOff.FirstOrDefaultAsync(x => x.Id == id);
+
+                if (timeOff == null)
+                {
+                    throw new NotFoundException($"Không tìm thấy yêu cầu nghỉ phép với Id = {id}.");
+                }
+                timeOff.IsAccepted = isAccepted;
+                timeOff.UpdatedDate = DateTime.UtcNow;
+
+                _context.TimeOff.Update(timeOff);
+                await _context.SaveChangesAsync();
+
+                result.Data = new
+                {
+                    Message = "Cập nhật trạng thái IsAccepted thành công.",
+                    TimeOffId = id,
+                    UpdatedIsAccepted = isAccepted
+                };
+            }
+            catch (Exception ex)
+            {
+                throw new BadRequestException(Utilities.MakeExceptionMessage(ex));
+            }
+
+            return result;
+        }
+
+
+
+
 
         public async Task<ExportStream> ExportFile(FilterTimeOffVModel model, ExportFileVModel exportModel)
         {
@@ -304,6 +446,8 @@ namespace OA.Service
         public async Task Create(TimeOffCreateVModel model)
         {
             var entityCreated = _mapper.Map<TimeOffCreateVModel, TimeOff>(model);
+            entityCreated.CreatedDate = DateTime.Now;
+            entityCreated.CreatedBy = GlobalUserName;
             await _context.TimeOff.AddAsync(entityCreated);
             var maxId = await _context.TimeOff.MaxAsync(x => (int?)x.Id) ?? 0; 
             entityCreated.Id = maxId + 1;

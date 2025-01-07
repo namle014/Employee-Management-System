@@ -10,6 +10,7 @@ namespace OA.Core.Services
         Task<ResponseResult> GetByConfigTypeKey(string type, string key);
         Task<ResponseResult> Search(FilterSysConfigurationVModel model);
         Task ChangeStatusMany(SysConfigurationChangeStatusManyVModel model);
+        Task<ResponseResult> GetTime();
         Task<ExportStream> ExportFile(FilterSysConfigurationVModel model, ExportFileVModel exportModel);
     }
 }

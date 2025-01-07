@@ -17,6 +17,19 @@ namespace OA.Domain.VModels
         public string? Allowance { get; set; }
     }
 
+    public class JobHistoryVModel
+    {
+        public List<string>? ListUser { get; set; }
+        public DateTime? StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
+        public string? Note { get; set; }
+        public string? JobDescription { get; set; }
+        public string? WorkLocation { get; set; }
+        public string? Allowance { get; set; }
+        public int TypeToNotify { get; set; }
+       
+    }
+
     public class JobHistoryUpdateVModel : JobHistoryCreateVModel
     {
         public int Id { get; set; }

@@ -100,24 +100,24 @@ namespace OA.Service
                 }
 
 
-                var totalHours = _dbContext.Timekeeping
-                    .Where(x => x.UserId == userId
-                                && x.IsActive
-                                && x.CheckInTime >= morningTime
-                                && x.CheckOutTime <= quittingTime
-                                && x.Date.Month == month
-                                && x.Date.Year == year)
-                    .AsEnumerable()
-                    .Sum(x => ((x.CheckOutTime - afternoonTime) + (lunchBreak - x.CheckInTime)).TotalHours);
+                //var totalHours = _dbContext.Timekeeping
+                //    .Where(x => x.UserId == userId
+                //                && x.IsActive
+                //                && x.CheckInTime >= morningTime
+                //                && x.CheckOutTime <= quittingTime
+                //                && x.Date.Month == month
+                //                && x.Date.Year == year)
+                //    .AsEnumerable()
+                //    .Sum(x => ((x.CheckOutTime - afternoonTime) + (lunchBreak - x.CheckInTime)).TotalHours);
 
-
+                double totalHours = 12;
 
                 var workdays = Math.Round(totalHours / 8, 2);
 
                 var dailyWage = (double)totalBasicSalary / workingDays * workdays;
 
 
-                var totalReward = _dbContext.Reward.Where(x => x.UserId == userId && x.IsActive &&x.Date.Month == month && x.Date.Year == year).Sum(x => x.Money) ?? 0;
+                var totalReward = _dbContext.Reward.Where(x => x.UserId == userId && x.IsActive && x.Date.Month == month && x.Date.Year == year).Sum(x => x.Money) ?? 0;
                 var totalDiscipline = _dbContext.Discipline.Where(x => x.UserId == userId && x.IsActive && x.Date.Month == month && x.Date.Year == year).Sum(x => x.Money);
                 var totalBenefit = await (from bUser in _dbContext.BenefitUser
                                           join benefit in _dbContext.Benefit on bUser.BenefitId equals benefit.Id
@@ -125,9 +125,9 @@ namespace OA.Service
                                           select bUser.BenefitContribution).SumAsync();
 
                 var insuranceList = await (from insuranceUser in _dbContext.InsuranceUser
-                                     join insurance in _dbContext.Insurance on insuranceUser.InsuranceId equals insurance.Id
-                                     where (insuranceUser.UserId == userId && insurance.IsActive && insuranceUser.Status != 2)
-                                     select insuranceUser).ToListAsync();
+                                           join insurance in _dbContext.Insurance on insuranceUser.InsuranceId equals insurance.Id
+                                           where (insuranceUser.UserId == userId && insurance.IsActive && insuranceUser.Status != 2)
+                                           select insuranceUser).ToListAsync();
 
                 var bhtn = Convert.ToDouble(_dbContext.SysConfigurations.FirstOrDefault(x => x.Key == "MD_BHTN")?.Value);
                 double totalInsurance = 0;
@@ -144,7 +144,7 @@ namespace OA.Service
                     var eIns = await _dbContext.InsuranceUser.FirstOrDefaultAsync(x => x.InsuranceId == ins.InsuranceId);
                     if (eIns != null)
                     {
-                        
+
                         eIns.Status = status;
                     }
 
@@ -211,7 +211,7 @@ namespace OA.Service
             }
             else if (taxableIncome <= 18000000)
             {
-                PITax = 15 / 100f *(double)taxableIncome - 750000;
+                PITax = 15 / 100f * (double)taxableIncome - 750000;
             }
             else if (taxableIncome <= 32000000)
             {
@@ -254,7 +254,7 @@ namespace OA.Service
                     entityMapped.BasicSalary = item.ProRatedSalary;
                     entityMapped.Reward = item.TotalReward;
                     entityMapped.Discipline = item.TotalDiscipline;
-                    
+
                     entityMapped.Timekeeping = item.NumberOfWorkingHours;
 
                     entityMapped.Benefit = item.TotalBenefit;
@@ -526,7 +526,7 @@ namespace OA.Service
                 .ToListAsync()) // Tải dữ liệu về client
                 .OrderBy(x => DateTime.ParseExact(x.PayrollPeriod, "MM-yyyy", null))
                 .GroupBy(x => x.PayrollPeriod)
-                .Select(g => g.Sum(x => x.TotalSalary)) 
+                .Select(g => g.Sum(x => x.TotalSalary))
                 .ToList();
 
 
@@ -707,7 +707,8 @@ namespace OA.Service
                     var year = Convert.ToInt32(payrollPeriod.Substring(3, 4));
 
                     var period = string.Empty;
-                    if (month <= 1) {
+                    if (month <= 1)
+                    {
                         year--;
                     }
                     period = year.ToString();
@@ -750,17 +751,17 @@ namespace OA.Service
                     .Select(x => x.PayrollPeriod)
                     .FirstOrDefault();
 
-                if(period != null)
+                if (period != null)
                 {
                     var month = Convert.ToInt32(period.Substring(0, 2));
                     var year = Convert.ToInt32(period.Substring(3, 4));
                     var baseSalary = await _salary.Where(x => x.PayrollPeriod == period && x.IsActive).Select(x => x.ProRatedSalary).SumAsync();
-                    var empReward = await _dbContext.Reward.Where(x => x.IsActive && x.IsReceived && x.Date.Month == month && x.Date.Year == year  ).Select(x => x.Money ?? 0).SumAsync();
+                    var empReward = await _dbContext.Reward.Where(x => x.IsActive && x.IsReceived && x.Date.Month == month && x.Date.Year == year).Select(x => x.Money ?? 0).SumAsync();
                     var PITax = await _salary.Where(x => x.PayrollPeriod == period && x.IsActive).Select(x => x.PITax).SumAsync();
                     var birthday = await (from bUser in _dbContext.BenefitUser
-                                               join benefit in _dbContext.Benefit on bUser.BenefitId equals benefit.Id
-                                               where ( benefit.IsActive && benefit.Name.ToLower().Contains("sinh nhật"))
-                                               select bUser.BenefitContribution).SumAsync();
+                                          join benefit in _dbContext.Benefit on bUser.BenefitId equals benefit.Id
+                                          where (benefit.IsActive && benefit.Name.ToLower().Contains("sinh nhật"))
+                                          select bUser.BenefitContribution).SumAsync();
                     var total = baseSalary + empReward + PITax + birthday;
                     result.Data = new
                     {
@@ -775,7 +776,8 @@ namespace OA.Service
                     throw new NotFoundException(MsgConstants.WarningMessages.NotFoundData);
                 }
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 throw new BadRequestException(Utilities.MakeExceptionMessage(ex));
             }
             return result;
@@ -814,7 +816,7 @@ namespace OA.Service
                     .Select(x => x.PayrollPeriod)
                     .FirstOrDefault();
 
-                if(period != null)
+                if (period != null)
                 {
                     var male = await (from user in _dbContext.AspNetUsers
                                       join salary in _salary on user.Id equals salary.UserId
@@ -867,7 +869,7 @@ namespace OA.Service
                 {
                     var netSalary = (double)await (_salary.Where(x => x.IsActive && x.PayrollPeriod == period).Select(x => x.TotalSalary)).SumAsync();
                     var PITax = (double)await (_salary.Where(x => x.IsActive && x.PayrollPeriod == period).Select(x => x.PITax)).SumAsync();
-                    var totalInsurance = (double) await _salary.Where(x => x.IsActive && x.PayrollPeriod == period).Select(x => x.TotalInsurance).SumAsync();
+                    var totalInsurance = (double)await _salary.Where(x => x.IsActive && x.PayrollPeriod == period).Select(x => x.TotalInsurance).SumAsync();
 
                     var total = netSalary + PITax + totalInsurance;
 
@@ -923,6 +925,7 @@ namespace OA.Service
                     }
                     result.Data = new
                     {
+                        period = period,
                         salaryByDepartment = salaryByDepartment,
                         salaryPercent = salaryPercent
                     };
@@ -945,7 +948,7 @@ namespace OA.Service
             {
 
                 var period = _salary
-                    .AsEnumerable()  // Chuyển về bộ nhớ client
+                    .AsEnumerable()  // Chuyển về bộ nhớ client                                                                                                                                                                     
                     .OrderByDescending(x => DateTime.ParseExact(x.PayrollPeriod, "MM-yyyy", CultureInfo.InvariantCulture))
                     .Select(x => x.PayrollPeriod)
                     .FirstOrDefault();
@@ -1008,7 +1011,7 @@ namespace OA.Service
                 {
                     var year = Convert.ToInt32(period.Substring(3, 4));
                     var month = Convert.ToInt32(period.Substring(0, 2));
-                    if(month == 1)
+                    if (month == 1)
                     {
                         month = 12;
                         year--;
@@ -1023,7 +1026,7 @@ namespace OA.Service
                     var userCount = await _salary.Where(x => x.IsActive && x.PayrollPeriod == period).CountAsync();
 
                     var grossProgress = grossTotal > 0m ? (decimal?)Math.Round((netTotal / grossTotal) * 100, 2) : null;
-                    var netProgress = netTotal > 0m && userCount > 0 ? (decimal?)Math.Round((netTotal / userCount) / netTotal *100 , 2) : null;
+                    var netProgress = netTotal > 0m && userCount > 0 ? (decimal?)Math.Round((netTotal / userCount) / netTotal * 100, 2) : null;
                     var netPerPerson = userCount > 0 ? (decimal?)Math.Round(netTotal / userCount, 2) : null;
                     var basicProgress = userCount > 0 && basicTotal > 0 ? (decimal?)Math.Round((basicTotal / userCount) / basicTotal * 100, 2) : null;
                     var basicPerPerson = userCount > 0 ? (decimal?)Math.Round(basicTotal / userCount, 2) : null;
@@ -1034,12 +1037,12 @@ namespace OA.Service
                     decimal bGross = 0, bNet = 0, bBasic = 0;
                     if (bPeriodExists)
                     {
-                         bGross = await _salary.Where(x => x.IsActive && x.PayrollPeriod == bPeriod).Select(x => x.SalaryPayment).SumAsync();
-                         bNet = await _salary.Where(x => x.IsActive && x.PayrollPeriod == bPeriod).Select(x => x.TotalSalary).SumAsync();
-                         bBasic = await _salary.Where(x => x.IsActive && x.PayrollPeriod == bPeriod).Select(x => x.ProRatedSalary).SumAsync();
+                        bGross = await _salary.Where(x => x.IsActive && x.PayrollPeriod == bPeriod).Select(x => x.SalaryPayment).SumAsync();
+                        bNet = await _salary.Where(x => x.IsActive && x.PayrollPeriod == bPeriod).Select(x => x.TotalSalary).SumAsync();
+                        bBasic = await _salary.Where(x => x.IsActive && x.PayrollPeriod == bPeriod).Select(x => x.ProRatedSalary).SumAsync();
 
-                        grossPercent = bGross != 0 ? (float)(((grossTotal - bGross) / bGross) * 100) : null ;
-                        netPercent = bNet !=0 ? (float)(((netTotal - bNet) / bNet) * 100) : null;
+                        grossPercent = bGross != 0 ? (float)(((grossTotal - bGross) / bGross) * 100) : null;
+                        netPercent = bNet != 0 ? (float)(((netTotal - bNet) / bNet) * 100) : null;
                         basicPercent = bBasic != 0 ? (float)(((basicTotal - bBasic) / bBasic) * 100) : null;
                     }
 
@@ -1278,10 +1281,10 @@ namespace OA.Service
 
                 var grossTotal = await _salary.Where(x => x.IsActive && x.PayrollPeriod == period).Select(x => x.SalaryPayment).SumAsync();
                 var netTotal = await _salary.Where(x => x.IsActive && x.PayrollPeriod == period).Select(x => x.TotalSalary).SumAsync();
-                
+
                 var contracts = await _dbContext.EmploymentContract
                 .Where(c => c.StartDate <= lastDayOfMonth && c.EndDate >= firstDayOfPreviousMonth).ToListAsync();
-                
+
                 var contractsInMonth = contracts.Count(c =>
                 c.StartDate <= lastDayOfMonth && c.EndDate >= firstDayOfMonth);
 
@@ -1339,7 +1342,7 @@ namespace OA.Service
         }
         #endregion --ADMIN--
         #region --USER--
-        public async Task<ResponseResult> GetMe(string id)
+        public async Task<ResponseResult> GetMeSalaryInfo(string id)
         {
             var result = new ResponseResult();
             var userId = GlobalUserId;
@@ -1357,6 +1360,37 @@ namespace OA.Service
                 salary.FullName = user != null ? (user.FullName != null ? user.FullName : string.Empty) : string.Empty;
                 salary.AvatarFileId = user != null ? user.AvatarFileId : null;
                 result.Data = salary;
+            }
+            catch (Exception ex)
+            {
+                throw new BadRequestException(Utilities.MakeExceptionMessage(ex));
+            }
+            return result;
+        }
+        public async Task<ResponseResult> GetIncomeByYear(int year)
+        {
+            var result = new ResponseResult();
+            try
+            {
+                //var userId = GlobalUserId != null ? GlobalUserId : string.Empty;
+                var userId = "CC001";
+                var mySalaryList = await _salary.Where(x => x.IsActive && x.PayrollPeriod.Contains(year.ToString()) && x.UserId == userId).Select(x => x.TotalSalary).ToListAsync();
+                result.Data = mySalaryList;
+            }
+            catch (Exception ex)
+            {
+                throw new BadRequestException(Utilities.MakeExceptionMessage(ex));
+            }
+            return result;
+        }
+        public async Task<ResponseResult> GetMeInfoCycle(int year)
+        {
+            var result = new ResponseResult();
+            try
+            {
+                var infoCycleList = new List<MyInfoCycleVModel>();
+                var userId = GlobalUserId != null ? GlobalUserId : string.Empty;
+                var mySalaryList = await _salary.Where(x => x.IsActive && x.UserId == userId && x.PayrollPeriod.Contains(year.ToString())).ToListAsync();
             }
             catch (Exception ex)
             {

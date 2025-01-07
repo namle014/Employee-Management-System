@@ -100,6 +100,8 @@ namespace OA.Domain.VModels
 
     public class GetMeVModel : UserGetAllVModel
     {
+        public bool IsAdmin { get; set; } = false;
+        public int RemainingLeaveDays { get; set; }
         public List<MenuLeft> MenuLeft { get; set; } = new List<MenuLeft>();
     }
 

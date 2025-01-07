@@ -25,13 +25,17 @@ namespace OA.Domain.VModels
 
     public class FilterErrorReportVModel
     {
-        public string? Status { get; set; }
-        public string? Keyword { get; set; }
+        public bool? IsActive { get; set; } = true;
+        public DateTime? CreatedDate { get; set; }
+        [Range(1, int.MaxValue)]
         public int PageSize { get; set; } = CommonConstants.ConfigNumber.pageSizeDefault;
         [Range(1, int.MaxValue)]
         public int PageNumber { get; set; } = 1;
-        public bool IsDescending { get; set; } = true;
+        public string? SortBy { get; set; }
         public bool IsExport { get; set; } = false;
+        public bool IsDescending { get; set; } = true;
+        public string? Keyword { get; set; }
+        public string? IsType { get; set; }
     }
 
     public class ErrorReportExportVModel

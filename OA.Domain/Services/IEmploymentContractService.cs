@@ -7,6 +7,7 @@ namespace OA.Core.Services
     public interface IEmploymentContractService
     {
         Task<ResponseResult> Search(FilterEmploymentContractVModel model);
+        Task<ResponseResult> SearchUser();
         Task<ResponseResult> GetContractsExpiringSoon(FilterEmploymentContractVModel model, int daysUntilExpiration);
         Task<ResponseResult> GetContractCountByType();
         Task<ResponseResult> GetEmployeeStatsByMonthAndYear(int year, int month);

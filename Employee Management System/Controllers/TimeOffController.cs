@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using OA.Core.Constants;
 using OA.Core.Services;
 using OA.Core.VModels;
@@ -7,6 +8,7 @@ using OA.Service.Helpers;
 
 namespace OA.WebAPI.AdminControllers
 {
+    [Authorize(Policy = CommonConstants.Authorize.CustomAuthorization)]
     [Route(CommonConstants.Routes.BaseRouteAdmin)]
     [ApiController]
     public class TimeOffController : ControllerBase
@@ -29,7 +31,7 @@ namespace OA.WebAPI.AdminControllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> SearchByUserId([FromQuery] FilterTimeOffVModel model,string UserId)
+        public async Task<IActionResult> SearchByUserId([FromQuery] FilterTimeOffVModel model, string UserId)
         {
             var response = await _timeOffService.SearchByUserId(model, UserId);
             return Ok(response);
@@ -166,6 +168,6 @@ namespace OA.WebAPI.AdminControllers
             return NoContent();
         }
 
-      
+
     }
 }

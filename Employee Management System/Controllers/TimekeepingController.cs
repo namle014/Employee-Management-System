@@ -20,6 +20,13 @@ namespace OA.WebApi.Controllers
             _logger = logger;
         }
 
+        [HttpGet("get-ip")]
+        public IActionResult GetIP()
+        {
+            var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+            return Ok(new { ip = ipAddress });
+        }
+
         [HttpGet]
         public async Task<IActionResult> GetById(int id)
         {

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using OA.Core.Constants;
 using OA.Core.Services;
 using OA.Core.VModels;
@@ -6,6 +7,7 @@ using OA.Domain.VModels;
 
 namespace OA.WebApi.Controllers
 {
+    [Authorize(Policy = CommonConstants.Authorize.CustomAuthorization)]
     [Route(CommonConstants.Routes.BaseRouteAdmin)]
     [ApiController]
 
@@ -17,8 +19,8 @@ namespace OA.WebApi.Controllers
 
         public SalaryController(ISalaryService salaryService, ILogger<SalaryController> logger)
         {
-            _salaryService=salaryService;
-            _logger=logger;
+            _salaryService = salaryService;
+            _logger = logger;
         }
 
         [HttpGet]
@@ -135,7 +137,7 @@ namespace OA.WebApi.Controllers
         public async Task<IActionResult> GetInfoForSalarySummary()
         {
             var response = await _salaryService.GetInfoForSalarySummary();
-            if(response.Data != null)
+            if (response.Data != null)
             {
                 return Ok(response);
             }

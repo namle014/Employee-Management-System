@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using OA.Core.Constants;
 using OA.Core.Services;
 using OA.Core.VModels;
@@ -7,6 +8,7 @@ using OA.Service;
 
 namespace OA.WebAPI.AdminControllers
 {
+    [Authorize(Policy = CommonConstants.Authorize.CustomAuthorization)]
     [Route(CommonConstants.Routes.BaseRouteAdmin)]
     [ApiController]
     public class ErrorReportController : ControllerBase
@@ -30,7 +32,7 @@ namespace OA.WebAPI.AdminControllers
         [HttpGet]
         public async Task<IActionResult> SearchByUserId([FromQuery] FilterErrorReportVModel model, string UserId)
         {
-            var response = await _errorReportService.SearchByUserId(model,UserId);
+            var response = await _errorReportService.SearchByUserId(model, UserId);
             return Ok(response);
         }
 

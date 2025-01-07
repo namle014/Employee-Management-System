@@ -163,6 +163,10 @@ namespace OA.Service
             foreach (var roleName in model.Roles)
             {
                 var role = await _roleManager.FindByNameAsync(roleName) ?? new AspNetRole();
+                if (role.IsAdmin)
+                {
+                    model.IsAdmin = true;
+                }
                 if (role.JsonRoleHasFunctions != null)
                 {
                     roleJsons.Add(role.JsonRoleHasFunctions.ToString());

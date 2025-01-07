@@ -28,6 +28,34 @@ namespace OA.Core.VModels
 
     }
 
+    public class TimekeepingCreateUserVModel
+    {
+        public string IPAddress { get; set; } = string.Empty;
+    }
+
+    public class CheckOutVModel
+    {
+        public int Id { get; set; }
+    }
+
+    public class FilterTimekeepingGetByDateVModel
+    {
+        public DateTime Date { get; set; }
+    }
+
+    public class FilterTimekeepingForUserVModel
+    {
+        public DateTime? StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
+        public int? Status { get; set; }
+        public bool IsInvalid { get; set; }
+        public bool IsLate { get; set; }
+        public bool IsEarly { get; set; }
+        public bool IsOnTime { get; set; }
+        public int PageSize { get; set; } = 10;
+        public int PageNumber { get; set; } = 1;
+    }
+
     public class FilterTimekeepingVModel
     {
         public string? UserId { get; set; }

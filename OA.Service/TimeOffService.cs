@@ -279,7 +279,7 @@ namespace OA.Service
             try
             {
                 var timeOffRecords = await _context.TimeOff
-                    .Where(x => x.StartDate >= fromDate && x.IsAccepted == false)
+                    .Where(x => x.StartDate >= fromDate && x.IsAccepted == null)
                     .OrderBy(x => x.StartDate)
                     .ToListAsync();
 
@@ -334,6 +334,42 @@ namespace OA.Service
 
             return result;
         }
+
+
+
+        public async Task<ResponseResult> UpdateIsAcceptedAsync(int id, bool? isAccepted)
+        {
+            var result = new ResponseResult();
+
+            try
+            {
+                var timeOff = await _context.TimeOff.FirstOrDefaultAsync(x => x.Id == id);
+
+                if (timeOff == null)
+                {
+                    throw new NotFoundException($"Không tìm thấy yêu cầu nghỉ phép với Id = {id}.");
+                }
+                timeOff.IsAccepted = isAccepted;
+                timeOff.UpdatedDate = DateTime.UtcNow;
+
+                _context.TimeOff.Update(timeOff);
+                await _context.SaveChangesAsync();
+
+                result.Data = new
+                {
+                    Message = "Cập nhật trạng thái IsAccepted thành công.",
+                    TimeOffId = id,
+                    UpdatedIsAccepted = isAccepted
+                };
+            }
+            catch (Exception ex)
+            {
+                throw new BadRequestException(Utilities.MakeExceptionMessage(ex));
+            }
+
+            return result;
+        }
+
 
 
 

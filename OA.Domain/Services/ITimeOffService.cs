@@ -11,6 +11,7 @@ namespace OA.Core.Services
         Task<ResponseResult> GetTimeOffIsAccepted(int year);
         Task<ResponseResult> CountTimeOffsInMonth(int year, int month);
         Task<ResponseResult> GetPendingFutureTimeOffs(DateTime fromDate);
+        Task<ResponseResult> UpdateIsAcceptedAsync(int id, bool? isAccepted);
         Task<ExportStream> ExportFile(FilterTimeOffVModel model, ExportFileVModel exportModel);
         Task<ResponseResult> GetById(int id);
         Task Create(TimeOffCreateVModel model);

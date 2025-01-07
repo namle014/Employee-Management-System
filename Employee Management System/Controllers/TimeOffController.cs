@@ -3,6 +3,7 @@ using OA.Core.Constants;
 using OA.Core.Services;
 using OA.Core.VModels;
 using OA.Domain.VModels;
+using OA.Service.Helpers;
 
 namespace OA.WebAPI.AdminControllers
 {
@@ -57,6 +58,43 @@ namespace OA.WebAPI.AdminControllers
             var response = await _timeOffService.GetPendingFutureTimeOffs(fromDate);
             return Ok(response);
         }
+
+
+        [HttpPut]
+        public async Task<IActionResult> UpdateIsAccepted(int id, bool? isAccepted)
+        {
+            if (id <= 0)
+            {
+                return BadRequest(string.Format(MsgConstants.Error404Messages.FieldIsInvalid, "Id"));
+            }
+
+            if (isAccepted == null)
+            {
+                return BadRequest(new { Message = "Giá trị IsAccepted không được để trống." });
+            }
+
+            try
+            {
+                var result = await _timeOffService.UpdateIsAcceptedAsync(id, isAccepted);
+                return Ok(result);
+            }
+            catch (NotFoundException ex)
+            {
+                _logger.LogError(ex, $"Không tìm thấy yêu cầu nghỉ phép với Id = {id}.");
+                return NotFound(new { Message = ex.Message });
+            }
+            catch (BadRequestException ex)
+            {
+                _logger.LogError(ex, "Dữ liệu đầu vào không hợp lệ.");
+                return BadRequest(new { Message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Đã xảy ra lỗi hệ thống trong quá trình cập nhật IsAccepted.");
+                return StatusCode(500, new { Message = "Đã xảy ra lỗi hệ thống.", Details = ex.Message });
+            }
+        }
+
 
 
 

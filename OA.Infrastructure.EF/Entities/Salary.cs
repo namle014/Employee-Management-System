@@ -14,7 +14,7 @@
 
         public decimal TotalSalary {  get; set; }
         public decimal SalaryPayment { get; set; }
-        public bool? IsPaid { get; set; }
+        public bool IsPaid { get; set; }
         public string PayrollPeriod { get; set; } = string.Empty;
         public decimal ProRatedSalary { get; set; }
         public decimal PITax { get; set; }

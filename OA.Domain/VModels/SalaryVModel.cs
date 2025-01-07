@@ -27,42 +27,45 @@ namespace OA.Core.VModels
         public bool IsActive { get; set; }
         public bool? Ispaid { get; set; }
         public string PayrollPeriod { get; set; } = string.Empty;
+        public decimal TotalSalary { get; set; }
     }
 
     public class UnPaidSalaryVModel : SalaryGetAllVModel
     {
-        public int? AvatarFileId { get; set; }
+        public string? AvatarPath { get; set; }
     }
 
     public class MyInfo
     {
-        public int? AvatarFileId { get; set; }
+        public string? AvatarPath { get; set; }
         public string FullName { get; set; } = string.Empty;
         public List<string> RoleName { get; set; } = new List<string>();
         public string DepartmentName { get; set; } = string.Empty;
         public string? PhoneNumber { get; set; }
         public string Email { get; set; } = string.Empty;
         public string Address { get; set; } = string.Empty;
-        public DateTime StartDateWork { get; set; }
+        public string? StartDateWork { get; set; }
         public int? PayrollCycle { get; set; }
     }
     public class MyInfoCycleVModel()
     {
+        public string Id { get; set; } = string.Empty;
         public string Period { get; set; } = string.Empty;
         public bool Ispaid { get; set; }
-        public float NumberOfWorkingHours { get; set; }
+        public double? NumberOfWorkingHours { get; set; }
         public decimal TotalSalary { get; set; }
     }
     public class SalaryGetByIdVModel
     {
-        public int? AvatarFileId { get; set; }
+        public string? AvatarPath { get; set; }
         public string FullName { get; set; } = string.Empty;
+        public string? EmployeeId { get; set; }
         public string Id { get; set; } = string.Empty;
         public bool IsActive { get; set; }
         public string UserId { get; set; } = string.Empty;
-
-        public DateTime Date { get; set; }
-
+        public List<string> RoleName { get; set; } = new List<string>();
+        public string DepartmentName { get; set; } = string.Empty;
+        public string? Date { get; set; }
         public decimal TotalSalary { get; set; }
         public decimal SalaryPayment { get; set; }
         public bool? IsPaid { get; set; }

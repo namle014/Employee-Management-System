@@ -38,7 +38,8 @@ namespace OA.Service
         {
             var entity = _mapper.Map<MessageCreateVModel,Message>(model);
             entity.CreatedAt = DateTime.Now;
-            entity.UserId = model.UserId;
+            entity.Content = model.Content;
+            entity.UserId = GlobalUserId != null ? GlobalUserId : string.Empty;
             
             _message.Add(entity);
             bool success = await _dbContext.SaveChangesAsync() > 0;

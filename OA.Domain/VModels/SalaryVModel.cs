@@ -33,12 +33,14 @@ namespace OA.Core.VModels
     public class UnPaidSalaryVModel : SalaryGetAllVModel
     {
         public string? AvatarPath { get; set; }
+
     }
 
     public class MyInfo
     {
         public string? AvatarPath { get; set; }
         public string FullName { get; set; } = string.Empty;
+        public string Birthday { get; set; } = string.Empty;
         public List<string> RoleName { get; set; } = new List<string>();
         public string DepartmentName { get; set; } = string.Empty;
         public string? PhoneNumber { get; set; }

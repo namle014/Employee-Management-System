@@ -15,5 +15,6 @@ namespace OA.Domain.Services
         Task<ResponseResult> GetTotalRewardByEmployeeInMonth(int year, int month);
 
         Task<ResponseResult> GetRewardStatInYear(int year);
+        Task<ResponseResult> GetMeRewardInfo(RewardFilterVModel model, int year);
     }
 }

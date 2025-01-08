@@ -7,6 +7,7 @@ using OA.Core.VModels;
 using OA.Domain.Services;
 using OA.Infrastructure.EF.Context;
 using OA.Infrastructure.EF.Entities;
+using OA.Repository;
 using OA.Service.Helpers;
 //using Twilio.TwiML.Voice;
 
@@ -237,6 +238,50 @@ namespace OA.Service
                     Year = year,
                     MonthlyStats = yearStats
                 };
+            }
+            catch (Exception ex)
+            {
+                throw new BadRequestException(Utilities.MakeExceptionMessage(ex));
+            }
+            return result;
+        }
+        public async Task<ResponseResult> GetMeDisciplineInfo(DisciplineFilterVModel model ,int year)
+        {
+            var result = new ResponseResult();
+            try
+            {
+                var userId = GlobalVariables.GlobalUserId != null ? GlobalVariables.GlobalUserId : string.Empty;
+                var disciplineList = await _dbContext.Discipline.Where(x => x.IsActive && x.UserId == userId && x.Date.Year == year).ToListAsync();
+                string? keyword = model.Keyword?.ToLower();
+                var salaryAns = disciplineList.Where(x =>
+                            (x.IsActive == model.IsActive) &&
+
+                            (string.IsNullOrEmpty(keyword) ||
+                                    x.Reason.ToLower().Contains(keyword) ||
+                                    x.Date.ToString().ToLower().Contains(keyword) ||
+                                    x.Money.ToString().ToLower().Contains(keyword) ||
+                                    x.Note.ToLower().Contains(keyword)
+
+                            ));
+                if (model.IsDescending == false)
+                {
+                    salaryAns = string.IsNullOrEmpty(model.SortBy)
+                            ? salaryAns.OrderBy(r => r.Date).ToList()
+                            : salaryAns.OrderBy(r => r.GetType().GetProperty(model.SortBy)?.GetValue(r, null)).ToList();
+                }
+                else
+                {
+                    salaryAns = string.IsNullOrEmpty(model.SortBy)
+                            ? salaryAns.OrderByDescending(r => r.Date).ToList()
+                            : salaryAns.OrderByDescending(r => r.GetType().GetProperty(model.SortBy)?.GetValue(r, null)).ToList();
+                }
+
+                result.Data = new Pagination();
+
+                var pagedRecords = salaryAns.Skip((model.PageNumber - 1) * model.PageSize).Take(model.PageSize).ToList();
+
+                result.Data.Records = pagedRecords;
+                result.Data.TotalRecords = salaryAns.Count();
             }
             catch (Exception ex)
             {

@@ -113,18 +113,8 @@ namespace OA.Service
                     }
                 }
 
-
-                //var totalHours = _dbContext.Timekeeping
-                //    .Where(x => x.UserId == userId
-                //                && x.IsActive
-                //                && x.CheckInTime >= morningTime
-                //                && x.CheckOutTime <= quittingTime
-                //                && x.Date.Month == month
-                //                && x.Date.Year == year)
-                //    .AsEnumerable()
-                //    .Sum(x => ((x.CheckOutTime - afternoonTime) + (lunchBreak - x.CheckInTime)).TotalHours);
-
-                double totalHours = 12;
+                var totalHours = await _dbContext.Timekeeping.Where(x => x.UserId == userId && x.Date.Year == year && x.Date.Month == month && x.IsActive)
+                    .Select(x => x.TotalHours).SumAsync();
 
                 var workdays = Math.Round(totalHours / 8, 2);
 
@@ -375,7 +365,8 @@ namespace OA.Service
                     }
                 }
 
-                double totalHours = 12;
+                var totalHours = await _dbContext.Timekeeping.Where(x => x.UserId == userId && x.Date.Year == year && x.Date.Month == month && x.IsActive)
+                    .Select(x => x.TotalHours).SumAsync();
 
                 var workingHours = workingDays * 8;
 
@@ -1486,6 +1477,10 @@ namespace OA.Service
                     entity.AvatarPath = user.AvatarFileId != null ? "https://localhost:44381/" + (await _sysFileRepo.GetById((int)user.AvatarFileId))?.Path : null;
                     var date = await _dbContext.EmploymentContract.Where(x => x.UserId == userId && x.IsActive).Select(x => x.StartDate).FirstOrDefaultAsync();
                     entity.StartDateWork = date.ToString("dd-MM-yyyy");
+                    var birthday = user != null ? (user.Birthday != null ? user.Birthday : null) : null;
+                    entity.Birthday = user?.Birthday.HasValue == true
+                        ? user.Birthday.Value.ToString("dd-MM-yyyy")
+                        : null;
 
                     entity.PayrollCycle = await _salary.Where(x => x.IsActive && x.UserId == userId).CountAsync();
                     entity.RoleName = user != null ? (await _userManager.GetRolesAsync(user)).ToList() : new List<string>();

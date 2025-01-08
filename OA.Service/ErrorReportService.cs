@@ -162,31 +162,98 @@ namespace OA.Service
         {
             var result = new ResponseResult();
             string? keyword = model.Keyword?.ToLower();
+
             string? isType = model.IsType;
 
-            var recordsQuery = _context.ErrorReport.AsQueryable().Where(x => x.ReportedBy == GlobalUserId);
+            var recordsQuery = await _context.ErrorReport.Where(x => x.ReportedBy == GlobalUserId).ToListAsync();
+
 
             if (!string.IsNullOrEmpty(isType))
             {
-                recordsQuery = recordsQuery.Where(x => x.Type == isType);
+                recordsQuery = recordsQuery.Where(x => x.Type == isType).ToList();
             }
+
+
+            var recordsWithDetails = new List<dynamic>();
+
+            foreach (var ErrorReport in recordsQuery)
+            {
+                if (ErrorReport.ReportedBy != null)
+                {
+                    var user = await _userManager.FindByIdAsync(ErrorReport.ReportedBy);
+                    var manager = await _userManager.FindByIdAsync(ErrorReport.ResolvedBy);
+                    if (user != null)
+                    {
+
+
+                        var userAvatarPath = "https://localhost:44381/avatars/aa1678f0-75b0-48d2-ae98-50871178e9bd.jfif";
+                        if (user.AvatarFileId.HasValue)
+                        {
+                            var sysFile = await _sysFileRepo.GetById((int)user.AvatarFileId);
+                            if (sysFile != null)
+                            {
+                                userAvatarPath = "https://localhost:44381/" + sysFile.Path;
+                            }
+                        }
+
+                        var managerAvatarPath = "https://localhost:44381/avatars/aa1678f0-75b0-48d2-ae98-50871178e9bd.jfif";
+
+                        if (manager != null)
+                        {
+                            if (manager.AvatarFileId.HasValue)
+                            {
+                                var sysFile = await _sysFileRepo.GetById((int)manager.AvatarFileId);
+                                if (sysFile != null)
+                                {
+                                    managerAvatarPath = "https://localhost:44381/" + sysFile.Path;
+                                }
+                            }
+                        }
+
+
+                        dynamic ErrorReportModel = new
+                        {
+                            Id = ErrorReport.Id,
+                            ReportedBy = ErrorReport.ReportedBy,
+                            ReportedDate = ErrorReport.ReportedDate,
+                            Type = ErrorReport.Type,
+                            TypeId = ErrorReport.TypeId,
+                            Description = ErrorReport.Description,
+                            Status = ErrorReport.Status,
+                            ResolvedBy = ErrorReport.ResolvedBy,
+                            ResolvedDate = ErrorReport.ResolvedDate,
+                            ResolutionDetails = ErrorReport.ResolutionDetails,
+                            ReportedFullName = user.FullName,
+                            ReportedId = user.EmployeeId,
+                            ReportedAvatarPath = userAvatarPath,
+                            ResolvedFullName = manager?.FullName,
+                            ResolvedId = manager?.EmployeeId,
+                            ResolvedAvatarPath = managerAvatarPath,
+                        };
+                        recordsWithDetails.Add(ErrorReportModel);
+                    }
+                }
+            }
+
 
             if (!string.IsNullOrEmpty(keyword))
             {
                 string lowerKeyword = keyword.ToLower();
-
-                recordsQuery = recordsQuery.Where(x =>
+                recordsWithDetails = recordsWithDetails.Where(x =>
                     (x.ReportedBy != null && x.ReportedBy.ToLower().Contains(lowerKeyword)) ||
                     (x.TypeId != null && x.TypeId.ToLower().Contains(lowerKeyword)) ||
                     (x.Description != null && x.Description.ToLower().Contains(lowerKeyword)) ||
                     (x.ResolvedBy != null && x.ResolvedBy.ToLower().Contains(lowerKeyword)) ||
                     (x.ResolutionDetails != null && x.ResolutionDetails.ToLower().Contains(lowerKeyword)) ||
-                    (x.Type != null && x.Type.ToLower().Contains(lowerKeyword))
-                );
+                    (x.Type != null && x.Type.ToLower().Contains(lowerKeyword)) ||
+                    (x.ReportedFullName != null && x.ReportedFullName.ToLower().Contains(lowerKeyword)) ||
+                    (x.ReportedId != null && x.ReportedId.ToLower().Contains(lowerKeyword)) ||
+                    (x.ResolvedFullName != null && x.ResolvedFullName.ToLower().Contains(lowerKeyword)) ||
+                    (x.ResolvedId != null && x.ResolvedId.ToLower().Contains(lowerKeyword))
+                ).ToList();
             }
 
-
-            var records = recordsQuery.ToList();
+            var records = recordsWithDetails.ToList();
 
             if (model.IsDescending == false)
             {
@@ -206,6 +273,7 @@ namespace OA.Service
                 Records = records.Skip((model.PageNumber - 1) * model.PageSize).Take(model.PageSize).ToList(),
                 TotalRecords = records.Count()
             };
+
 
             return result;
         }

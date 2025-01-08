@@ -15,5 +15,6 @@ namespace OA.Domain.Services
         Task<ResponseResult> GetTotalDisciplineByEmployeeInMonth(int year, int month);
 
         Task<ResponseResult> GetDisciplineStatInYear(int year);
+        Task<ResponseResult> GetMeDisciplineInfo(DisciplineFilterVModel model, int year);
     }
 }

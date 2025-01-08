@@ -14,6 +14,7 @@ namespace OA.Infrastructure.EF.Context
         #region --DBSET--
         public virtual DbSet<AspNetUser> AspNetUsers { get; set; }
         public virtual DbSet<AspNetRole> AspNetRoles { get; set; }
+        //public virtual DbSet<AspNetUserRoles> AspNetUserRoles { get; set; }
        // public virtual DbSet<AspNetUserRoles> AspNetUserRoles { get; set; }
         public virtual DbSet<SysFile> SysFile { get; set; } = null!;
         public virtual DbSet<SysFunction> SysFunctions { get; set; } = null!;
@@ -66,6 +67,8 @@ namespace OA.Infrastructure.EF.Context
             modelBuilder.Entity<Salary>()
                 .Property(e => e.Date)
                 .HasColumnType("date");
+
+           // modelBuilder.Entity<AspNetUserRoles>().HasNoKey();
         }
     }
 }

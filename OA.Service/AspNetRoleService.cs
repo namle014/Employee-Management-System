@@ -248,6 +248,8 @@ namespace OA.Service
             // Trả về ID mới
             return entity.Id;
         }
+
+        
     }
 
 }

@@ -37,7 +37,7 @@ namespace OA.Service
             string? keyword = model.Keyword?.ToLower();
             var records = await _departmentRepo.
                         Where(x =>
-                            (model.IsActive == null || model.IsActive == x.IsActive) &&
+                            (x.IsActive == true) &&
                             (model.CreatedDate == null ||
                                     (x.CreatedDate.HasValue &&
                                     x.CreatedDate.Value.Year == model.CreatedDate.Value.Year &&
